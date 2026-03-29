@@ -1,492 +1,378 @@
---[[
-    XU 脚本中心 - 完整功能版
-    支持：拖动悬浮窗 | 缩小为可移动正方形 | 12种主题 | 作者信息框
-]]
-
+-- XU 脚本中心 - 纯净版
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+local gui = player:WaitForChild("PlayerGui")
 
--- 创建GUI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "XU_Center"
 screenGui.ResetOnSpawn = false
-screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-screenGui.Parent = playerGui
+screenGui.Parent = gui
 
--- ==================== 调试面板 ====================
-local debugFrame = Instance.new("Frame")
-debugFrame.Size = UDim2.new(0, 220, 0, 40)
-debugFrame.Position = UDim2.new(0, 10, 1, -50)
-debugFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
-debugFrame.BackgroundTransparency = 0.6
-debugFrame.Parent = screenGui
-local debugText = Instance.new("TextLabel")
-debugText.Size = UDim2.new(1,0,1,0)
-debugText.BackgroundTransparency = 1
-debugText.Text = "就绪"
-debugText.TextColor3 = Color3.fromRGB(255,255,0)
-debugText.TextSize = 14
-debugText.Parent = debugFrame
-
-local function log(msg)
-    debugText.Text = msg
-    print("[XU] " .. msg)
-    task.wait(2)
-    debugText.Text = "就绪"
-end
-
--- ==================== 主题库（12种） ====================
+-- 主题数据（12种）
 local themes = {
-    { name = "深海蓝", mainBg = Color3.fromRGB(12,22,42), sideBg = Color3.fromRGB(22,32,55), accent = Color3.fromRGB(0,160,255), text = Color3.fromRGB(230,240,255) },
-    { name = "暗夜紫", mainBg = Color3.fromRGB(28,18,48), sideBg = Color3.fromRGB(42,28,68), accent = Color3.fromRGB(180,100,255), text = Color3.fromRGB(240,220,255) },
-    { name = "墨玉绿", mainBg = Color3.fromRGB(18,38,28), sideBg = Color3.fromRGB(28,52,38), accent = Color3.fromRGB(80,210,140), text = Color3.fromRGB(220,255,230) },
-    { name = "炽热红", mainBg = Color3.fromRGB(45,18,25), sideBg = Color3.fromRGB(65,28,38), accent = Color3.fromRGB(255,80,100), text = Color3.fromRGB(255,220,220) },
-    { name = "琥珀橙", mainBg = Color3.fromRGB(45,28,12), sideBg = Color3.fromRGB(65,42,20), accent = Color3.fromRGB(255,160,60), text = Color3.fromRGB(255,240,210) },
-    { name = "樱花粉", mainBg = Color3.fromRGB(50,25,40), sideBg = Color3.fromRGB(70,38,58), accent = Color3.fromRGB(255,140,180), text = Color3.fromRGB(255,230,240) },
-    { name = "极光青", mainBg = Color3.fromRGB(15,40,35), sideBg = Color3.fromRGB(25,55,45), accent = Color3.fromRGB(100,230,180), text = Color3.fromRGB(210,255,240) },
-    { name = "星云紫", mainBg = Color3.fromRGB(35,20,55), sideBg = Color3.fromRGB(50,30,75), accent = Color3.fromRGB(210,120,255), text = Color3.fromRGB(250,230,255) },
-    { name = "日落橙", mainBg = Color3.fromRGB(55,30,15), sideBg = Color3.fromRGB(75,45,25), accent = Color3.fromRGB(255,140,80), text = Color3.fromRGB(255,235,210) },
-    { name = "冰霜白", mainBg = Color3.fromRGB(50,55,65), sideBg = Color3.fromRGB(70,75,85), accent = Color3.fromRGB(150,200,255), text = Color3.fromRGB(240,245,255) },
-    { name = "暗金棕", mainBg = Color3.fromRGB(40,30,20), sideBg = Color3.fromRGB(60,45,30), accent = Color3.fromRGB(220,180,100), text = Color3.fromRGB(255,245,220) },
-    { name = "霓虹粉", mainBg = Color3.fromRGB(60,20,50), sideBg = Color3.fromRGB(80,35,70), accent = Color3.fromRGB(255,80,180), text = Color3.fromRGB(255,220,240) }
+	{name="深海蓝", main=Color3.fromRGB(12,22,42), side=Color3.fromRGB(22,32,55), accent=Color3.fromRGB(0,160,255), text=Color3.fromRGB(230,240,255)},
+	{name="暗夜紫", main=Color3.fromRGB(28,18,48), side=Color3.fromRGB(42,28,68), accent=Color3.fromRGB(180,100,255), text=Color3.fromRGB(240,220,255)},
+	{name="墨玉绿", main=Color3.fromRGB(18,38,28), side=Color3.fromRGB(28,52,38), accent=Color3.fromRGB(80,210,140), text=Color3.fromRGB(220,255,230)},
+	{name="炽热红", main=Color3.fromRGB(45,18,25), side=Color3.fromRGB(65,28,38), accent=Color3.fromRGB(255,80,100), text=Color3.fromRGB(255,220,220)},
+	{name="琥珀橙", main=Color3.fromRGB(45,28,12), side=Color3.fromRGB(65,42,20), accent=Color3.fromRGB(255,160,60), text=Color3.fromRGB(255,240,210)},
+	{name="樱花粉", main=Color3.fromRGB(50,25,40), side=Color3.fromRGB(70,38,58), accent=Color3.fromRGB(255,140,180), text=Color3.fromRGB(255,230,240)},
+	{name="极光青", main=Color3.fromRGB(15,40,35), side=Color3.fromRGB(25,55,45), accent=Color3.fromRGB(100,230,180), text=Color3.fromRGB(210,255,240)},
+	{name="星云紫", main=Color3.fromRGB(35,20,55), side=Color3.fromRGB(50,30,75), accent=Color3.fromRGB(210,120,255), text=Color3.fromRGB(250,230,255)},
+	{name="日落橙", main=Color3.fromRGB(55,30,15), side=Color3.fromRGB(75,45,25), accent=Color3.fromRGB(255,140,80), text=Color3.fromRGB(255,235,210)},
+	{name="冰霜白", main=Color3.fromRGB(50,55,65), side=Color3.fromRGB(70,75,85), accent=Color3.fromRGB(150,200,255), text=Color3.fromRGB(240,245,255)},
+	{name="暗金棕", main=Color3.fromRGB(40,30,20), side=Color3.fromRGB(60,45,30), accent=Color3.fromRGB(220,180,100), text=Color3.fromRGB(255,245,220)},
+	{name="霓虹粉", main=Color3.fromRGB(60,20,50), side=Color3.fromRGB(80,35,70), accent=Color3.fromRGB(255,80,180), text=Color3.fromRGB(255,220,240)}
 }
-local currentThemeIndex = 1
+local curTheme = 1
 
--- 应用主题
-local function applyTheme(index)
-    local t = themes[index]
-    if not t then return end
-    mainFrame.BackgroundColor3 = t.mainBg
-    sideBar.BackgroundColor3 = t.sideBg
-    titleBar.BackgroundColor3 = t.sideBg
-    contentArea.BackgroundColor3 = t.mainBg
-    contentText.TextColor3 = t.text
-    for _, btn in pairs(sideBarButtons) do
-        btn.TextColor3 = t.text
-        if btn.isSelected then
-            btn.BackgroundColor3 = t.accent
-        else
-            btn.BackgroundColor3 = t.sideBg
-        end
-    end
-    -- 更新主题按钮列表（如果存在）
-    for _, btn in pairs(themeButtons or {}) do
-        btn.BackgroundColor3 = t.accent
-    end
-    log("主题切换为：" .. t.name)
-end
-
--- ==================== 创建主窗口 ====================
+-- 窗口元素
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 450, 0, 340)
 mainFrame.Position = UDim2.new(0.5, -225, 0.5, -170)
-mainFrame.BackgroundColor3 = themes[1].mainBg
+mainFrame.BackgroundColor3 = themes[1].main
 mainFrame.BackgroundTransparency = 0.05
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
 mainFrame.Parent = screenGui
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 14)
-mainCorner.Parent = mainFrame
+Instance.new("UICorner").CornerRadius = UDim.new(0,14); Instance.new("UICorner").Parent = mainFrame
 
--- 标题栏（可拖动区域）
+-- 标题栏（可拖动）
 local titleBar = Instance.new("Frame")
-titleBar.Size = UDim2.new(1, 0, 0, 48)
-titleBar.BackgroundColor3 = themes[1].sideBg
+titleBar.Size = UDim2.new(1,0,0,48)
+titleBar.BackgroundColor3 = themes[1].side
 titleBar.BackgroundTransparency = 0.3
 titleBar.BorderSizePixel = 0
 titleBar.Parent = mainFrame
-local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 14)
-titleCorner.Parent = titleBar
+Instance.new("UICorner").CornerRadius = UDim.new(0,14); Instance.new("UICorner").Parent = titleBar
 
--- 拖动图标
-local dragIcon = Instance.new("TextButton")
-dragIcon.Size = UDim2.new(0, 44, 0, 44)
-dragIcon.Position = UDim2.new(0, 8, 0, 2)
-dragIcon.BackgroundTransparency = 1
-dragIcon.Text = "☰"
-dragIcon.TextColor3 = Color3.fromRGB(255,255,255)
-dragIcon.TextSize = 28
-dragIcon.Font = Enum.Font.GothamBold
-dragIcon.Parent = titleBar
+local dragBtn = Instance.new("TextButton")
+dragBtn.Size = UDim2.new(0,44,0,44)
+dragBtn.Position = UDim2.new(0,8,0,2)
+dragBtn.BackgroundTransparency = 1
+dragBtn.Text = "☰"
+dragBtn.TextColor3 = Color3.new(1,1,1)
+dragBtn.TextSize = 28
+dragBtn.Font = Enum.Font.GothamBold
+dragBtn.Parent = titleBar
 
--- 标题文字
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(0, 150, 1, 0)
-titleLabel.Position = UDim2.new(0, 56, 0, 0)
+titleLabel.Size = UDim2.new(0,150,1,0)
+titleLabel.Position = UDim2.new(0,56,0,0)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "XU 脚本中心"
-titleLabel.TextColor3 = Color3.fromRGB(255,255,255)
+titleLabel.TextColor3 = Color3.new(1,1,1)
 titleLabel.TextSize = 20
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Font = Enum.Font.GothamBold
 titleLabel.Parent = titleBar
 
--- 缩小按钮
-local minimizeBtn = Instance.new("TextButton")
-minimizeBtn.Size = UDim2.new(0, 42, 0, 42)
-minimizeBtn.Position = UDim2.new(1, -50, 0, 3)
-minimizeBtn.BackgroundColor3 = Color3.fromRGB(255,100,100)
-minimizeBtn.BackgroundTransparency = 0.2
-minimizeBtn.Text = "−"
-minimizeBtn.TextColor3 = Color3.fromRGB(255,255,255)
-minimizeBtn.TextSize = 32
-minimizeBtn.Font = Enum.Font.GothamBold
-minimizeBtn.Parent = titleBar
-local minCorner = Instance.new("UICorner")
-minCorner.CornerRadius = UDim.new(0, 10)
-minCorner.Parent = minimizeBtn
+local minBtn = Instance.new("TextButton")
+minBtn.Size = UDim2.new(0,42,0,42)
+minBtn.Position = UDim2.new(1,-50,0,3)
+minBtn.BackgroundColor3 = Color3.fromRGB(255,100,100)
+minBtn.BackgroundTransparency = 0.2
+minBtn.Text = "−"
+minBtn.TextColor3 = Color3.new(1,1,1)
+minBtn.TextSize = 32
+minBtn.Font = Enum.Font.GothamBold
+minBtn.Parent = titleBar
+Instance.new("UICorner").CornerRadius = UDim.new(0,10); Instance.new("UICorner").Parent = minBtn
 
 -- 侧边栏
 local sideBar = Instance.new("Frame")
-sideBar.Size = UDim2.new(0, 120, 1, -48)
-sideBar.Position = UDim2.new(0, 0, 0, 48)
-sideBar.BackgroundColor3 = themes[1].sideBg
+sideBar.Size = UDim2.new(0,120,1,-48)
+sideBar.Position = UDim2.new(0,0,0,48)
+sideBar.BackgroundColor3 = themes[1].side
 sideBar.BackgroundTransparency = 0.2
 sideBar.BorderSizePixel = 0
 sideBar.Parent = mainFrame
-local sideCorner = Instance.new("UICorner")
-sideCorner.CornerRadius = UDim.new(0, 14)
-sideCorner.Parent = sideBar
+Instance.new("UICorner").CornerRadius = UDim.new(0,14); Instance.new("UICorner").Parent = sideBar
 
--- 侧边栏按钮容器
 local btnContainer = Instance.new("Frame")
-btnContainer.Size = UDim2.new(1, 0, 0, 120)
-btnContainer.Position = UDim2.new(0, 0, 0, 20)
+btnContainer.Size = UDim2.new(1,0,0,120)
+btnContainer.Position = UDim2.new(0,0,0,20)
 btnContainer.BackgroundTransparency = 1
 btnContainer.Parent = sideBar
 
-local sideBarButtons = {}
-local function createSideButton(name, icon, yPos, callback)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.9, 0, 0, 46)
-    btn.Position = UDim2.new(0.05, 0, 0, yPos)
-    btn.BackgroundColor3 = themes[1].sideBg
-    btn.BackgroundTransparency = 0.3
-    btn.Text = "  " .. icon .. "  " .. name
-    btn.TextColor3 = themes[1].text
-    btn.TextSize = 15
-    btn.TextXAlignment = Enum.TextXAlignment.Left
-    btn.Font = Enum.Font.Gotham
-    btn.BorderSizePixel = 0
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
-    corner.Parent = btn
-    btn.Parent = btnContainer
-    btn.MouseButton1Click:Connect(function()
-        for _, b in pairs(sideBarButtons) do
-            b.isSelected = false
-            b.BackgroundColor3 = themes[currentThemeIndex].sideBg
-        end
-        btn.isSelected = true
-        btn.BackgroundColor3 = themes[currentThemeIndex].accent
-        callback()
-        log("点击侧边栏: " .. name)
-    end)
-    btn.MouseEnter:Connect(function()
-        if not btn.isSelected then
-            TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundTransparency = 0.1}):Play()
-        end
-    end)
-    btn.MouseLeave:Connect(function()
-        if not btn.isSelected then
-            TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundTransparency = 0.3}):Play()
-        end
-    end)
-    table.insert(sideBarButtons, btn)
-    return btn
-end
-
 -- 内容区域
 local contentArea = Instance.new("Frame")
-contentArea.Size = UDim2.new(1, -120, 1, -48)
-contentArea.Position = UDim2.new(0, 120, 0, 48)
-contentArea.BackgroundColor3 = themes[1].mainBg
+contentArea.Size = UDim2.new(1,-120,1,-48)
+contentArea.Position = UDim2.new(0,120,0,48)
+contentArea.BackgroundColor3 = themes[1].main
 contentArea.BackgroundTransparency = 0.05
 contentArea.BorderSizePixel = 0
 contentArea.Parent = mainFrame
-local contentCorner = Instance.new("UICorner")
-contentCorner.CornerRadius = UDim.new(0, 14)
-contentCorner.Parent = contentArea
+Instance.new("UICorner").CornerRadius = UDim.new(0,14); Instance.new("UICorner").Parent = contentArea
 
--- 内容显示区域（动态填充）
 local contentDisplay = Instance.new("Frame")
-contentDisplay.Size = UDim2.new(1, -20, 1, -20)
-contentDisplay.Position = UDim2.new(0, 10, 0, 10)
+contentDisplay.Size = UDim2.new(1,-20,1,-20)
+contentDisplay.Position = UDim2.new(0,10,0,10)
 contentDisplay.BackgroundTransparency = 1
 contentDisplay.Parent = contentArea
 
--- ==================== 作者页面（靠左，每个信息独立框） ====================
-local function showAuthorPage()
-    -- 清空 contentDisplay
-    for _, child in pairs(contentDisplay:GetChildren()) do
-        child:Destroy()
-    end
-    
-    local infoList = {
-        { icon = "👤", label = "作者", value = "HaoChen" },
-        { icon = "💬", label = "QQ", value = "1626844714" },
-        { icon = "📅", label = "版本", value = "v4.0" },
-        { icon = "⚙️", label = "状态", value = "已激活" }
-    }
-    
-    local yOffset = 10
-    for _, info in ipairs(infoList) do
-        local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(0.9, 0, 0, 50)
-        frame.Position = UDim2.new(0.05, 0, 0, yOffset)
-        frame.BackgroundColor3 = Color3.fromRGB(255,255,255)
-        frame.BackgroundTransparency = 0.85
-        frame.BorderSizePixel = 0
-        frame.Parent = contentDisplay
-        local frameCorner = Instance.new("UICorner")
-        frameCorner.CornerRadius = UDim.new(0, 10)
-        frameCorner.Parent = frame
-        
-        local iconLabel = Instance.new("TextLabel")
-        iconLabel.Size = UDim2.new(0, 40, 1, 0)
-        iconLabel.BackgroundTransparency = 1
-        iconLabel.Text = info.icon
-        iconLabel.TextColor3 = themes[currentThemeIndex].accent
-        iconLabel.TextSize = 24
-        iconLabel.TextXAlignment = Enum.TextXAlignment.Center
-        iconLabel.Parent = frame
-        
-        local labelLabel = Instance.new("TextLabel")
-        labelLabel.Size = UDim2.new(0, 60, 1, 0)
-        labelLabel.Position = UDim2.new(0, 44, 0, 0)
-        labelLabel.BackgroundTransparency = 1
-        labelLabel.Text = info.label
-        labelLabel.TextColor3 = Color3.fromRGB(200,200,220)
-        labelLabel.TextSize = 14
-        labelLabel.TextXAlignment = Enum.TextXAlignment.Left
-        labelLabel.Font = Enum.Font.GothamBold
-        labelLabel.Parent = frame
-        
-        local valueLabel = Instance.new("TextLabel")
-        valueLabel.Size = UDim2.new(1, -104, 1, 0)
-        valueLabel.Position = UDim2.new(0, 104, 0, 0)
-        valueLabel.BackgroundTransparency = 1
-        valueLabel.Text = info.value
-        valueLabel.TextColor3 = Color3.fromRGB(255,255,255)
-        valueLabel.TextSize = 16
-        valueLabel.TextXAlignment = Enum.TextXAlignment.Left
-        valueLabel.Font = Enum.Font.Gotham
-        valueLabel.Parent = frame
-        
-        yOffset = yOffset + 60
-    end
+-- 辅助函数：清空显示区
+local function clearDisplay()
+	for _,v in pairs(contentDisplay:GetChildren()) do v:Destroy() end
 end
 
--- ==================== 主题页面（12个按钮） ====================
-local themeButtons = {}
-local function showThemePage()
-    -- 清空
-    for _, child in pairs(contentDisplay:GetChildren()) do
-        child:Destroy()
-    end
-    themeButtons = {}
-    
-    local container = Instance.new("ScrollingFrame")
-    container.Size = UDim2.new(1, 0, 1, 0)
-    container.BackgroundTransparency = 1
-    container.ScrollBarThickness = 6
-    container.CanvasSize = UDim2.new(0, 0, 0, 360)
-    container.Parent = contentDisplay
-    
-    local yOffset = 10
-    for i, theme in ipairs(themes) do
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0.9, 0, 0, 44)
-        btn.Position = UDim2.new(0.05, 0, 0, yOffset)
-        btn.BackgroundColor3 = theme.accent
-        btn.BackgroundTransparency = 0.2
-        btn.Text = theme.name
-        btn.TextColor3 = Color3.fromRGB(255,255,255)
-        btn.TextSize = 16
-        btn.Font = Enum.Font.GothamBold
-        local btnCorner = Instance.new("UICorner")
-        btnCorner.CornerRadius = UDim.new(0, 12)
-        btnCorner.Parent = btn
-        btn.Parent = container
-        
-        btn.MouseButton1Click:Connect(function()
-            currentThemeIndex = i
-            applyTheme(currentThemeIndex)
-            log("切换主题: " .. theme.name)
-        end)
-        table.insert(themeButtons, btn)
-        yOffset = yOffset + 52
-    end
-    container.CanvasSize = UDim2.new(0, 0, 0, yOffset + 20)
+-- 作者页面（靠左、独立框）
+local function showAuthor()
+	clearDisplay()
+	local items = {
+		{icon="👤", label="作者", value="HaoChen"},
+		{icon="💬", label="QQ", value="1626844714"},
+		{icon="📅", label="版本", value="v4.0"},
+		{icon="⚙️", label="状态", value="已激活"}
+	}
+	local y = 10
+	for _,it in ipairs(items) do
+		local frame = Instance.new("Frame")
+		frame.Size = UDim2.new(0.9,0,0,50)
+		frame.Position = UDim2.new(0.05,0,0,y)
+		frame.BackgroundColor3 = Color3.new(1,1,1)
+		frame.BackgroundTransparency = 0.85
+		frame.BorderSizePixel = 0
+		frame.Parent = contentDisplay
+		Instance.new("UICorner").CornerRadius = UDim.new(0,10); Instance.new("UICorner").Parent = frame
+		
+		local icon = Instance.new("TextLabel")
+		icon.Size = UDim2.new(0,40,1,0)
+		icon.BackgroundTransparency = 1
+		icon.Text = it.icon
+		icon.TextColor3 = themes[curTheme].accent
+		icon.TextSize = 24
+		icon.TextXAlignment = Enum.TextXAlignment.Center
+		icon.Parent = frame
+		
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.new(0,60,1,0)
+		label.Position = UDim2.new(0,44,0,0)
+		label.BackgroundTransparency = 1
+		label.Text = it.label
+		label.TextColor3 = Color3.fromRGB(200,200,220)
+		label.TextSize = 14
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.Font = Enum.Font.GothamBold
+		label.Parent = frame
+		
+		local value = Instance.new("TextLabel")
+		value.Size = UDim2.new(1,-104,1,0)
+		value.Position = UDim2.new(0,104,0,0)
+		value.BackgroundTransparency = 1
+		value.Text = it.value
+		value.TextColor3 = Color3.new(1,1,1)
+		value.TextSize = 16
+		value.TextXAlignment = Enum.TextXAlignment.Left
+		value.Font = Enum.Font.Gotham
+		value.Parent = frame
+		
+		y = y + 60
+	end
 end
 
--- 创建侧边栏按钮
-local authorBtn = createSideButton("作者", "📄", 20, showAuthorPage)
-local themeBtn = createSideButton("主题", "🎨", 76, showThemePage)
+-- 主题页面（12个按钮）
+local themeBtns = {}
+local function showTheme()
+	clearDisplay()
+	themeBtns = {}
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Size = UDim2.new(1,0,1,0)
+	scroll.BackgroundTransparency = 1
+	scroll.ScrollBarThickness = 6
+	scroll.Parent = contentDisplay
+	local y = 10
+	for i,t in ipairs(themes) do
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(0.9,0,0,44)
+		btn.Position = UDim2.new(0.05,0,0,y)
+		btn.BackgroundColor3 = t.accent
+		btn.BackgroundTransparency = 0.2
+		btn.Text = t.name
+		btn.TextColor3 = Color3.new(1,1,1)
+		btn.TextSize = 16
+		btn.Font = Enum.Font.GothamBold
+		btn.Parent = scroll
+		Instance.new("UICorner").CornerRadius = UDim.new(0,12); Instance.new("UICorner").Parent = btn
+		btn.MouseButton1Click:Connect(function()
+			curTheme = i
+			-- 更新窗口颜色
+			mainFrame.BackgroundColor3 = themes[i].main
+			sideBar.BackgroundColor3 = themes[i].side
+			titleBar.BackgroundColor3 = themes[i].side
+			contentArea.BackgroundColor3 = themes[i].main
+			-- 更新侧边栏按钮颜色
+			for _,b in pairs(sideBtns) do
+				b.TextColor3 = themes[i].text
+				if b.isSelected then
+					b.BackgroundColor3 = themes[i].accent
+				else
+					b.BackgroundColor3 = themes[i].side
+				end
+			end
+			-- 刷新当前显示的主题按钮（自身颜色）
+			for _,tb in pairs(themeBtns) do
+				tb.BackgroundColor3 = themes[i].accent
+			end
+		end)
+		table.insert(themeBtns, btn)
+		y = y + 52
+	end
+	scroll.CanvasSize = UDim2.new(0,0,0,y+20)
+end
 
--- 默认选中作者页面
+-- 侧边栏按钮
+local sideBtns = {}
+local function createSideBtn(name, icon, y, callback)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0.9,0,0,46)
+	btn.Position = UDim2.new(0.05,0,0,y)
+	btn.BackgroundColor3 = themes[1].side
+	btn.BackgroundTransparency = 0.3
+	btn.Text = "  "..icon.."  "..name
+	btn.TextColor3 = themes[1].text
+	btn.TextSize = 15
+	btn.TextXAlignment = Enum.TextXAlignment.Left
+	btn.Font = Enum.Font.Gotham
+	btn.BorderSizePixel = 0
+	btn.Parent = btnContainer
+	Instance.new("UICorner").CornerRadius = UDim.new(0,10); Instance.new("UICorner").Parent = btn
+	btn.MouseButton1Click:Connect(function()
+		for _,b in pairs(sideBtns) do
+			b.isSelected = false
+			b.BackgroundColor3 = themes[curTheme].side
+		end
+		btn.isSelected = true
+		btn.BackgroundColor3 = themes[curTheme].accent
+		callback()
+	end)
+	table.insert(sideBtns, btn)
+	return btn
+end
+
+local authorBtn = createSideBtn("作者", "📄", 20, showAuthor)
+local themeBtn  = createSideBtn("主题", "🎨", 76, showTheme)
 authorBtn.isSelected = true
-authorBtn.BackgroundColor3 = themes[currentThemeIndex].accent
-showAuthorPage()
+authorBtn.BackgroundColor3 = themes[1].accent
+showAuthor()
 
--- ==================== 悬浮窗拖动（通过 dragIcon） ====================
-local dragState = { dragging = false, startPos = nil, startMouse = nil }
-dragIcon.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragState.dragging = true
-        dragState.startPos = mainFrame.Position
-        dragState.startMouse = input.Position
-    end
+-- 悬浮窗拖动
+local drag = {active=false, startPos=nil, startMouse=nil}
+dragBtn.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		drag.active = true
+		drag.startPos = mainFrame.Position
+		drag.startMouse = input.Position
+	end
 end)
 UserInputService.InputChanged:Connect(function(input)
-    if dragState.dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragState.startMouse
-        mainFrame.Position = UDim2.new(0, dragState.startPos.X.Offset + delta.X, 0, dragState.startPos.Y.Offset + delta.Y)
-    end
+	if drag.active and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local delta = input.Position - drag.startMouse
+		mainFrame.Position = UDim2.new(0, drag.startPos.X.Offset + delta.X, 0, drag.startPos.Y.Offset + delta.Y)
+	end
 end)
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragState.dragging = false
-    end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then drag.active = false end
 end)
 
--- ==================== 缩小正方形功能 ====================
-local minimizedSquare = nil  -- 动态创建
-
-local function createMinimizedSquare(centerPos)
-    if minimizedSquare then minimizedSquare:Destroy() end
-    local square = Instance.new("Frame")
-    square.Size = UDim2.new(0, 56, 0, 56)
-    square.Position = UDim2.new(0, centerPos.X - 28, 0, centerPos.Y - 28)
-    square.BackgroundColor3 = themes[currentThemeIndex].accent
-    square.BackgroundTransparency = 0.1
-    square.BorderSizePixel = 0
-    square.Parent = screenGui
-    local sqCorner = Instance.new("UICorner")
-    sqCorner.CornerRadius = UDim.new(0, 14)
-    sqCorner.Parent = square
-    local inner = Instance.new("Frame")
-    inner.Size = UDim2.new(0.8, 0, 0.8, 0)
-    inner.Position = UDim2.new(0.1, 0, 0.1, 0)
-    inner.BackgroundColor3 = Color3.fromRGB(255,255,255)
-    inner.BackgroundTransparency = 0.6
-    inner.BorderSizePixel = 0
-    inner.Parent = square
-    local innerCorner = Instance.new("UICorner")
-    innerCorner.CornerRadius = UDim.new(0, 10)
-    innerCorner.Parent = inner
-    local xu = Instance.new("TextLabel")
-    xu.Size = UDim2.new(1,0,1,0)
-    xu.BackgroundTransparency = 1
-    xu.Text = "XU"
-    xu.TextColor3 = Color3.fromRGB(255,255,255)
-    xu.TextSize = 22
-    xu.Font = Enum.Font.GothamBold
-    xu.TextScaled = true
-    xu.Parent = square
-    return square
+-- 缩小为正方形（长按拖动，单击恢复）
+local square = nil
+local function minimize()
+	local center = mainFrame.AbsolutePosition + mainFrame.AbsoluteSize/2
+	square = Instance.new("Frame")
+	square.Size = UDim2.new(0,56,0,56)
+	square.Position = UDim2.new(0, center.X-28, 0, center.Y-28)
+	square.BackgroundColor3 = themes[curTheme].accent
+	square.BackgroundTransparency = 0.1
+	square.BorderSizePixel = 0
+	square.Parent = screenGui
+	Instance.new("UICorner").CornerRadius = UDim.new(0,14); Instance.new("UICorner").Parent = square
+	local inner = Instance.new("Frame")
+	inner.Size = UDim2.new(0.8,0,0.8,0)
+	inner.Position = UDim2.new(0.1,0,0.1,0)
+	inner.BackgroundColor3 = Color3.new(1,1,1)
+	inner.BackgroundTransparency = 0.6
+	inner.BorderSizePixel = 0
+	inner.Parent = square
+	Instance.new("UICorner").CornerRadius = UDim.new(0,10); Instance.new("UICorner").Parent = inner
+	local xu = Instance.new("TextLabel")
+	xu.Size = UDim2.new(1,0,1,0)
+	xu.BackgroundTransparency = 1
+	xu.Text = "XU"
+	xu.TextColor3 = Color3.new(1,1,1)
+	xu.TextSize = 22
+	xu.Font = Enum.Font.GothamBold
+	xu.TextScaled = true
+	xu.Parent = square
+	
+	mainFrame.Visible = false
+	
+	-- 正方形交互
+	local sqDrag = {active=false, dragging=false, startPos=nil, startMouse=nil, timer=nil}
+	local function clean()
+		if sqDrag.timer then task.cancel(sqDrag.timer) end
+		if sqDrag.connChanged then sqDrag.connChanged:Disconnect() end
+		if sqDrag.connEnded then sqDrag.connEnded:Disconnect() end
+		sqDrag.active = false
+	end
+	local function start(input)
+		if sqDrag.active then return end
+		sqDrag.active = true
+		sqDrag.dragging = false
+		sqDrag.startPos = square.Position
+		sqDrag.startMouse = input.Position
+		sqDrag.timer = task.delay(2, function()
+			if sqDrag.active and not sqDrag.dragging then
+				sqDrag.dragging = true
+				TweenService:Create(square, TweenInfo.new(0.2), {BackgroundTransparency = 0.3}):Play()
+			end
+		end)
+		sqDrag.connChanged = UserInputService.InputChanged:Connect(function(inp)
+			if not sqDrag.active then return end
+			if inp.UserInputType == Enum.UserInputType.MouseMovement then
+				local delta = inp.Position - sqDrag.startMouse
+				if not sqDrag.dragging and delta.Magnitude > 8 then
+					sqDrag.dragging = true
+					if sqDrag.timer then task.cancel(sqDrag.timer) end
+					TweenService:Create(square, TweenInfo.new(0.2), {BackgroundTransparency = 0.3}):Play()
+				end
+				if sqDrag.dragging then
+					square.Position = UDim2.new(0, sqDrag.startPos.X.Offset + delta.X, 0, sqDrag.startPos.Y.Offset + delta.Y)
+				end
+			end
+		end)
+		sqDrag.connEnded = UserInputService.InputEnded:Connect(function(inp)
+			if not sqDrag.active then return end
+			if inp.UserInputType == Enum.UserInputType.MouseButton1 then
+				local duration = tick() - sqDrag.startTime
+				if not sqDrag.dragging and duration < 2 then
+					mainFrame.Visible = true
+					square:Destroy()
+					square = nil
+				else
+					TweenService:Create(square, TweenInfo.new(0.2), {BackgroundTransparency = 0.1}):Play()
+				end
+				clean()
+			end
+		end)
+		sqDrag.startTime = tick()
+	end
+	square.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			start(input)
+		end
+	end)
 end
 
--- 缩小动作
-local function minimizeToSquare()
-    local center = mainFrame.AbsolutePosition + mainFrame.AbsoluteSize / 2
-    minimizedSquare = createMinimizedSquare(center)
-    mainFrame.Visible = false
-    log("窗口已缩小为正方形")
-    
-    -- 正方形拖动与恢复逻辑
-    local squareDrag = {
-        active = false,
-        dragging = false,
-        startPos = nil,
-        startMouse = nil,
-        pressTime = 0,
-        timer = nil
-    }
-    
-    local function cleanup()
-        if squareDrag.timer then task.cancel(squareDrag.timer) end
-        if squareDrag.connChanged then squareDrag.connChanged:Disconnect() end
-        if squareDrag.connEnded then squareDrag.connEnded:Disconnect() end
-        squareDrag.active = false
-    end
-    
-    local function startDrag(input)
-        if squareDrag.active then return end
-        squareDrag.active = true
-        squareDrag.dragging = false
-        squareDrag.startPos = minimizedSquare.Position
-        squareDrag.startMouse = input.Position
-        squareDrag.pressTime = tick()
-        
-        squareDrag.timer = task.delay(2, function()
-            if squareDrag.active and not squareDrag.dragging then
-                squareDrag.dragging = true
-                TweenService:Create(minimizedSquare, TweenInfo.new(0.2), {BackgroundTransparency = 0.3}):Play()
-                log("长按激活，现在可以拖动正方形")
-            end
-        end)
-        
-        squareDrag.connChanged = UserInputService.InputChanged:Connect(function(inp)
-            if not squareDrag.active then return end
-            if inp.UserInputType == Enum.UserInputType.MouseMovement then
-                local delta = inp.Position - squareDrag.startMouse
-                if not squareDrag.dragging and delta.Magnitude > 8 then
-                    squareDrag.dragging = true
-                    if squareDrag.timer then task.cancel(squareDrag.timer) end
-                    TweenService:Create(minimizedSquare, TweenInfo.new(0.2), {BackgroundTransparency = 0.3}):Play()
-                end
-                if squareDrag.dragging then
-                    minimizedSquare.Position = UDim2.new(0, squareDrag.startPos.X.Offset + delta.X, 0, squareDrag.startPos.Y.Offset + delta.Y)
-                end
-            end
-        end)
-        
-        squareDrag.connEnded = UserInputService.InputEnded:Connect(function(inp)
-            if not squareDrag.active then return end
-            if inp.UserInputType == Enum.UserInputType.MouseButton1 then
-                local duration = tick() - squareDrag.pressTime
-                if not squareDrag.dragging and duration < 2 then
-                    -- 单击恢复窗口
-                    mainFrame.Visible = true
-                    if minimizedSquare then minimizedSquare:Destroy() end
-                    cleanup()
-                    log("恢复悬浮窗")
-                else
-                    -- 拖动结束，保持正方形
-                    TweenService:Create(minimizedSquare, TweenInfo.new(0.2), {BackgroundTransparency = 0.1}):Play()
-                    cleanup()
-                end
-            end
-        end)
-    end
-    
-    minimizedSquare.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            startDrag(input)
-        end
-    end)
-end
+minBtn.MouseButton1Click:Connect(minimize)
 
--- 缩小按钮点击
-minimizeBtn.MouseButton1Click:Connect(function()
-    log("点击缩小按钮")
-    minimizeToSquare()
+-- 悬停美化
+minBtn.MouseEnter:Connect(function()
+	minBtn.BackgroundTransparency = 0
+	TweenService:Create(minBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,70,70)}):Play()
 end)
-
--- ==================== 按钮悬停效果 ====================
-minimizeBtn.MouseEnter:Connect(function()
-    minimizeBtn.BackgroundTransparency = 0
-    TweenService:Create(minimizeBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,70,70)}):Play()
+minBtn.MouseLeave:Connect(function()
+	minBtn.BackgroundTransparency = 0.2
+	TweenService:Create(minBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,100,100)}):Play()
 end)
-minimizeBtn.MouseLeave:Connect(function()
-    minimizeBtn.BackgroundTransparency = 0.2
-    TweenService:Create(minimizeBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,100,100)}):Play()
-end)
-
-log("脚本已启动，请尝试：点击侧边栏、缩小按钮、拖动正方形（长按2秒）")
