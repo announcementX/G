@@ -1,13 +1,33 @@
---// XU ULTIMATE UI SYSTEM
+--// XU ULTIMATE FINAL (NO BUG VERSION)
+
 local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
 local Player = game.Players.LocalPlayer
+local PG = Player:WaitForChild("PlayerGui")
+
+--====================
+-- 🔥 强制删除函数（核心）
+--====================
+local function FORCE_REMOVE(name)
+	for _,v in ipairs(PG:GetChildren()) do
+		if v.Name == name then
+			v.Enabled = false
+			v.Parent = nil
+			task.delay(0.1, function()
+				pcall(function()
+					v:Destroy()
+				end)
+			end)
+		end
+	end
+end
 
 --====================
 -- 🔥 终极加载动画
 --====================
-local load = Instance.new("ScreenGui", Player.PlayerGui)
+local load = Instance.new("ScreenGui", PG)
 load.Name = "XU_LOAD"
+load.IgnoreGuiInset = true
 
 local bg = Instance.new("Frame", load)
 bg.Size = UDim2.new(1,0,1,0)
@@ -31,28 +51,31 @@ local bar = Instance.new("Frame", barBG)
 bar.Size = UDim2.new(0,0,1,0)
 bar.BackgroundColor3 = Color3.fromRGB(0,170,255)
 
+-- 假加载
 for i=1,100 do
 	bar.Size = UDim2.new(i/100,0,1,0)
-	task.wait(0.02)
+	task.wait(0.015)
 end
 
--- 安全销毁
-task.wait(0.3)
-load.Enabled = false
-task.wait(0.2)
-load:Destroy()
+-- 🔥 强制删除加载（关键）
+FORCE_REMOVE("XU_LOAD")
+
+-- 再加一层保险
+task.delay(1, function()
+	FORCE_REMOVE("XU_LOAD")
+end)
 
 --====================
 -- 🧊 主UI
 --====================
-local gui = Instance.new("ScreenGui", Player.PlayerGui)
+local gui = Instance.new("ScreenGui", PG)
 gui.Name = "XU_UI"
 
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0,350,0,220)
-main.Position = UDim2.new(0.5,-175,0.5,-110)
+main.Size = UDim2.new(0,360,0,240)
+main.Position = UDim2.new(0.5,-180,0.5,-120)
 main.BackgroundColor3 = Color3.fromRGB(20,20,25)
-Instance.new("UICorner", main)
+Instance.new("UICorner", main).CornerRadius = UDim.new(0,12)
 
 -- 时间
 local timeLabel = Instance.new("TextLabel", main)
@@ -61,25 +84,26 @@ timeLabel.BackgroundTransparency = 1
 timeLabel.TextColor3 = Color3.new(1,1,1)
 timeLabel.TextScaled = true
 
-spawn(function()
+task.spawn(function()
 	while true do
 		timeLabel.Text = os.date("北京时间 %H:%M:%S")
 		task.wait(1)
 	end
 end)
 
--- 关闭按钮（缩小）
+-- 关闭按钮
 local close = Instance.new("TextButton", main)
 close.Size = UDim2.new(0,30,0,30)
 close.Position = UDim2.new(1,-30,0,0)
 close.Text = "X"
 
--- 缩小球
+-- 悬浮球
 local mini = Instance.new("TextButton", gui)
 mini.Size = UDim2.new(0,60,0,60)
 mini.Position = UDim2.new(0.1,0,0.5,0)
 mini.Text = "XU"
 mini.Visible = false
+Instance.new("UICorner", mini).CornerRadius = UDim.new(1,0)
 
 close.MouseButton1Click:Connect(function()
 	main.Visible = false
@@ -91,13 +115,15 @@ mini.MouseButton1Click:Connect(function()
 	mini.Visible = false
 end)
 
--- 拖拽（防误触）
+--====================
+-- 🧲 拖拽（带防误触）
+--====================
 local dragging = false
 local dragStart, startPos
 
 main.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		task.wait(0.15) -- 防误触
+		task.wait(0.15)
 		dragging = true
 		dragStart = input.Position
 		startPos = main.Position
@@ -146,7 +172,7 @@ local stylePage = infoPage:Clone()
 stylePage.Parent = main
 stylePage.Visible = false
 
--- 信息内容
+-- 信息
 local info = Instance.new("TextLabel", infoPage)
 info.Size = UDim2.new(1,0,1,0)
 info.Text = "Author: HaoChen\nQQ:1626844714"
@@ -165,11 +191,11 @@ styleBtn.MouseButton1Click:Connect(function()
 end)
 
 --====================
--- 🎨 样式系统
+-- 🎨 样式系统（多主题）
 --====================
 local function makeStyle(name,color,pos)
 	local btn = Instance.new("TextButton", stylePage)
-	btn.Size = UDim2.new(0,120,0,40)
+	btn.Size = UDim2.new(0,130,0,40)
 	btn.Position = pos
 	btn.Text = name
 	
@@ -181,3 +207,6 @@ end
 makeStyle("Dark", Color3.fromRGB(20,20,25), UDim2.new(0,10,0,10))
 makeStyle("Blue", Color3.fromRGB(0,120,255), UDim2.new(0,10,0,60))
 makeStyle("Purple", Color3.fromRGB(120,0,255), UDim2.new(0,10,0,110))
+makeStyle("Red", Color3.fromRGB(255,60,60), UDim2.new(0,150,0,10))
+makeStyle("Green", Color3.fromRGB(60,255,120), UDim2.new(0,150,0,60))
+makeStyle("Gold", Color3.fromRGB(255,200,0), UDim2.new(0,150,0,110))
