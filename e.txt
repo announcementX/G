@@ -1,7 +1,7 @@
 --[[
     XU 脚本悬浮窗 by HaoChen
     功能：可拖拽悬浮窗、最小化/恢复、侧边栏栏目切换、12种完整样式
-    动画：透明背景 + XU标志弹性弹出 → 光晕脉冲 → 粒子爆炸消散 → 主界面淡入
+    修复：彻底解决脚本无反应的问题
 ]]
 
 -- 服务
@@ -10,178 +10,30 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 
--- ========== 1. 炫酷加载动画（无黑屏，完全透明背景） ==========
+-- ========== 1. 简化的加载提示（确保脚本能运行） ==========
 local loadGui = Instance.new("ScreenGui")
 loadGui.Name = "LoadAnimationGui"
 loadGui.Parent = game.CoreGui
 loadGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 loadGui.IgnoreGuiInset = true
-loadGui.BackgroundTransparency = 1  -- 整个 GUI 透明
 
--- 注意：不创建任何黑色背景，保持完全透明
+-- 简单的加载文字（不搞复杂动画，先确保能显示）
+local loadText = Instance.new("TextLabel")
+loadText.Size = UDim2.new(0, 200, 0, 50)
+loadText.Position = UDim2.new(0.5, -100, 0.5, -25)
+loadText.BackgroundTransparency = 1
+loadText.Text = "加载中..."
+loadText.TextColor3 = Color3.fromRGB(255, 255, 255)
+loadText.TextSize = 20
+loadText.Font = Enum.Font.GothamSemibold
+loadText.Parent = loadGui
 
--- 中心容器（使用 AnchorPoint 完美居中）
-local logoContainer = Instance.new("Frame")
-logoContainer.Size = UDim2.new(0, 0, 0, 0)
-logoContainer.AnchorPoint = Vector2.new(0.5, 0.5)
-logoContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
-logoContainer.BackgroundTransparency = 1
-logoContainer.Parent = loadGui
-
--- XU 文字
-local logoText = Instance.new("TextLabel")
-logoText.Size = UDim2.new(1, 0, 1, 0)
-logoText.BackgroundTransparency = 1
-logoText.Text = "XU"
-logoText.TextColor3 = Color3.fromRGB(255, 255, 255)
-logoText.TextSize = 60
-logoText.Font = Enum.Font.GothamBold
-logoText.TextScaled = true
-logoText.Parent = logoContainer
-
--- 光晕（圆形）
-local glow = Instance.new("Frame")
-glow.Size = UDim2.new(1, 0, 1, 0)
-glow.Position = UDim2.new(0, 0, 0, 0)
-glow.BackgroundColor3 = Color3.fromRGB(255, 200, 100)
-glow.BackgroundTransparency = 0.7
-glow.BorderSizePixel = 0
-glow.Parent = logoContainer
-local glowCorner = Instance.new("UICorner")
-glowCorner.CornerRadius = UDim.new(1, 0)
-glowCorner.Parent = glow
-
--- 第二层光晕（外发光）
-local outerGlow = Instance.new("Frame")
-outerGlow.Size = UDim2.new(1.2, 0, 1.2, 0)
-outerGlow.Position = UDim2.new(-0.1, 0, -0.1, 0)
-outerGlow.BackgroundColor3 = Color3.fromRGB(255, 150, 50)
-outerGlow.BackgroundTransparency = 0.9
-outerGlow.BorderSizePixel = 0
-outerGlow.Parent = logoContainer
-local outerCorner = Instance.new("UICorner")
-outerCorner.CornerRadius = UDim.new(1, 0)
-outerCorner.Parent = outerGlow
-
--- 粒子容器
-local particleContainer = Instance.new("Frame")
-particleContainer.Size = UDim2.new(1, 0, 1, 0)
-particleContainer.BackgroundTransparency = 1
-particleContainer.Parent = loadGui
-
--- 可选：轻量提示文字（半透明，不显眼）
-local loadingText = Instance.new("TextLabel")
-loadingText.Size = UDim2.new(0, 200, 0, 30)
-loadingText.Position = UDim2.new(0.5, -100, 0.8, 0)
-loadingText.BackgroundTransparency = 1
-loadingText.Text = "加载中..."
-loadingText.TextColor3 = Color3.fromRGB(200, 200, 220)
-loadingText.TextSize = 16
-loadingText.Font = Enum.Font.Gotham
-loadingText.TextTransparency = 0.3
-loadingText.Parent = loadGui
-
--- 动画步骤
-task.wait(0.05)
-
--- 1. 容器弹性弹出（从0放大到120）
-logoContainer.Size = UDim2.new(0, 0, 0, 0)
-local tweenElastic = TweenService:Create(logoContainer, TweenInfo.new(0.7, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {
-    Size = UDim2.new(0, 120, 0, 120)
-})
-tweenElastic:Play()
-tweenElastic.Completed:Wait()
-
--- 2. 光晕脉冲（放大+变淡）
-local glowTween1 = TweenService:Create(glow, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-    Size = UDim2.new(1.3, 0, 1.3, 0),
-    Position = UDim2.new(-0.15, 0, -0.15, 0),
-    BackgroundTransparency = 0.5
-})
-local outerTween1 = TweenService:Create(outerGlow, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-    Size = UDim2.new(1.6, 0, 1.6, 0),
-    Position = UDim2.new(-0.3, 0, -0.3, 0),
-    BackgroundTransparency = 0.7
-})
-glowTween1:Play()
-outerTween1:Play()
-glowTween1.Completed:Wait()
-
--- 3. 文字变色+光晕收缩脉冲
-local colorTween = TweenService:Create(logoText, TweenInfo.new(0.3), {TextColor3 = Color3.fromRGB(255, 200, 100)})
-colorTween:Play()
-local glowTween2 = TweenService:Create(glow, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
-    Size = UDim2.new(1, 0, 1, 0),
-    Position = UDim2.new(0, 0, 0, 0),
-    BackgroundTransparency = 0.6
-})
-glowTween2:Play()
-glowTween2.Completed:Wait()
-
--- 4. 标志旋转缩小 + 粒子爆炸
-local shrinkTween = TweenService:Create(logoContainer, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-    Size = UDim2.new(0, 0, 0, 0),
-    Rotation = 360
-})
-shrinkTween:Play()
-
--- 生成彩色粒子（向外辐射）
-local colors = {
-    Color3.fromRGB(255, 100, 100),
-    Color3.fromRGB(255, 150, 50),
-    Color3.fromRGB(255, 200, 50),
-    Color3.fromRGB(100, 255, 100),
-    Color3.fromRGB(100, 200, 255),
-    Color3.fromRGB(200, 100, 255)
-}
-local particles = {}
-for i = 1, 36 do
-    local angle = (i / 36) * math.pi * 2
-    local radius = 90
-    local dx = math.cos(angle) * radius
-    local dy = math.sin(angle) * radius
-    local particle = Instance.new("Frame")
-    particle.Size = UDim2.new(0, 6, 0, 6)
-    particle.AnchorPoint = Vector2.new(0.5, 0.5)
-    particle.Position = UDim2.new(0.5, 0, 0.5, 0)
-    particle.BackgroundColor3 = colors[math.random(1, #colors)]
-    particle.BackgroundTransparency = 0.2
-    particle.BorderSizePixel = 0
-    particle.Parent = particleContainer
-    local particleCorner = Instance.new("UICorner")
-    particleCorner.CornerRadius = UDim.new(1, 0)
-    particleCorner.Parent = particle
-    
-    local tween = TweenService:Create(particle, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0.5, dx, 0.5, dy),
-        BackgroundTransparency = 1,
-        Size = UDim2.new(0, 2, 0, 2)
-    })
-    tween:Play()
-    table.insert(particles, particle)
-    tween.Completed:Connect(function()
-        particle:Destroy()
-    end)
-end
-
--- 等待旋转动画完成
-shrinkTween.Completed:Wait()
-task.wait(0.4) -- 等待粒子飞散
-
--- 5. 淡出加载界面（背景本来就是透明的，只需让内容淡出）
-local fadeOut = TweenService:Create(loadGui, TweenInfo.new(0.3), {BackgroundTransparency = 1})
-fadeOut:Play()
-fadeOut.Completed:Wait()
+-- 短暂显示加载提示
+task.wait(0.5)
 loadGui:Destroy()
-
--- 清理残留粒子
-for _, p in ipairs(particles) do
-    p:Destroy()
-end
-
 task.wait(0.1)
 
--- ========== 2. 主界面（与之前完全相同，确保所有功能正常） ==========
+-- ========== 2. 主界面 ==========
 local mainGui = Instance.new("ScreenGui")
 mainGui.Name = "XU_Script_GUI"
 mainGui.Parent = game.CoreGui
@@ -189,20 +41,23 @@ mainGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 mainGui.ResetOnSpawn = false
 mainGui.IgnoreGuiInset = true
 
+-- 主窗口
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 500, 0, 400)
 mainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-mainFrame.BackgroundTransparency = 1
+mainFrame.BackgroundTransparency = 0
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
 mainFrame.Parent = mainGui
 
+-- 圆角
 local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0, 12)
 mainCorner.Parent = mainFrame
 
+-- 阴影效果
 local shadow = Instance.new("Frame")
 shadow.Size = UDim2.new(1, 0, 1, 0)
 shadow.Position = UDim2.new(0, 6, 0, 6)
@@ -215,10 +70,7 @@ local shadowCorner = Instance.new("UICorner")
 shadowCorner.CornerRadius = UDim.new(0, 12)
 shadowCorner.Parent = shadow
 
-local mainFadeIn = TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {BackgroundTransparency = 0})
-mainFadeIn:Play()
-
--- ========== 标题栏 ==========
+-- ========== 3. 标题栏 ==========
 local titleBar = Instance.new("Frame")
 titleBar.Size = UDim2.new(1, 0, 0, 38)
 titleBar.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
@@ -265,7 +117,7 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0, 8)
 minCorner.Parent = minBtn
 
--- ========== 拖拽系统 ==========
+-- ========== 4. 拖拽系统 ==========
 local dragActive = false
 local dragStartPos = nil
 local dragFrameStartPos = nil
@@ -294,7 +146,7 @@ titleBar.InputBegan:Connect(function(input)
     end
 end)
 
--- ========== 最小化小方块 ==========
+-- ========== 5. 最小化小方块 ==========
 local miniFrame = Instance.new("Frame")
 miniFrame.Name = "MiniFrame"
 miniFrame.Size = UDim2.new(0, 60, 0, 60)
@@ -349,7 +201,7 @@ miniFrame.InputBegan:Connect(function(input)
     end
 end)
 
-miniFrame.InputEnded:Connect(function(input)
+miniFrame.InputEnded:Connect(function()
     if longPressTimer then
         longPressTimer:Cancel()
         longPressTimer = nil
@@ -385,7 +237,7 @@ minBtn.MouseButton1Click:Connect(function()
     miniText.TextColor3 = titleLabel.TextColor3
 end)
 
--- ========== 侧边栏 ==========
+-- ========== 6. 侧边栏 ==========
 local sidebar = Instance.new("Frame")
 sidebar.Name = "Sidebar"
 sidebar.Size = UDim2.new(0, 130, 1, -38)
@@ -408,7 +260,7 @@ listLayout.Padding = UDim.new(0, 8)
 listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 listLayout.Parent = sidebarList
 
--- ========== 内容区域 ==========
+-- ========== 7. 内容区域 ==========
 local contentArea = Instance.new("Frame")
 contentArea.Name = "ContentArea"
 contentArea.Size = UDim2.new(1, -130, 1, -38)
@@ -435,7 +287,7 @@ stylePanel.Size = UDim2.new(1, 0, 1, 0)
 stylePanel.Parent = contentArea
 stylePanel.Visible = false
 
--- ========== 栏目定义 ==========
+-- ========== 8. 栏目定义 ==========
 local tabs = {
     {name = "信息", id = "info"},
     {name = "样式", id = "style"}
@@ -443,7 +295,7 @@ local tabs = {
 local selectedTab = "info"
 local tabButtons = {}
 
--- ========== 12种样式数据 ==========
+-- ========== 9. 12种样式数据 ==========
 local stylesData = {
     {name = "暗夜紫罗兰", mainBg = Color3.fromRGB(25,20,35), sidebarBg = Color3.fromRGB(35,28,48), titleBg = Color3.fromRGB(45,38,58), contentBg = Color3.fromRGB(20,16,30), textColor = Color3.fromRGB(220,210,255), accentColor = Color3.fromRGB(140,100,220), cardBg = Color3.fromRGB(30,24,42), hoverColor = Color3.fromRGB(160,120,240)},
     {name = "深海梦境", mainBg = Color3.fromRGB(15,40,55), sidebarBg = Color3.fromRGB(20,50,70), titleBg = Color3.fromRGB(25,60,82), contentBg = Color3.fromRGB(12,35,48), textColor = Color3.fromRGB(180,230,255), accentColor = Color3.fromRGB(0,180,200), cardBg = Color3.fromRGB(18,45,62), hoverColor = Color3.fromRGB(0,210,230)},
@@ -461,7 +313,7 @@ local stylesData = {
 local currentStyleIndex = 1
 local styleButtons = {}
 
--- ========== 构建信息面板 ==========
+-- ========== 10. 构建信息面板 ==========
 local function buildInfoPanel(style)
     for _, v in ipairs(infoPanel:GetChildren()) do
         if v:IsA("Frame") then v:Destroy() end
@@ -539,7 +391,7 @@ local function buildInfoPanel(style)
     descLabel.Parent = descCard
 end
 
--- ========== 构建样式面板 ==========
+-- ========== 11. 构建样式面板 ==========
 local function buildStylePanel()
     for _, v in ipairs(stylePanel:GetChildren()) do
         if v:IsA("Frame") or v:IsA("ScrollingFrame") then v:Destroy() end
@@ -650,7 +502,7 @@ local function buildStylePanel()
     end
 end
 
--- ========== 应用样式 ==========
+-- ========== 12. 应用样式 ==========
 local function applyStyle()
     local style = stylesData[currentStyleIndex]
     if not style then return end
@@ -685,7 +537,7 @@ local function applyStyle()
     end
 end
 
--- ========== 构建侧边栏按钮 ==========
+-- ========== 13. 构建侧边栏按钮 ==========
 local function buildSidebarButtons()
     for _, btn in pairs(tabButtons) do
         if btn then btn:Destroy() end
@@ -738,7 +590,7 @@ local function buildSidebarButtons()
     end
 end
 
--- ========== 北京时间更新 ==========
+-- ========== 14. 北京时间更新 ==========
 task.spawn(function()
     while mainGui and mainGui.Parent do
         local t = os.date("*t")
@@ -747,10 +599,10 @@ task.spawn(function()
     end
 end)
 
--- ========== 初始化所有组件 ==========
+-- ========== 15. 初始化所有组件 ==========
 buildSidebarButtons()
 buildInfoPanel(stylesData[1])
 buildStylePanel()
 applyStyle()
 
-print("XU脚本悬浮窗已加载 - 12种样式，完整拖拽支持，无黑屏动画")
+print("XU脚本悬浮窗已加载 - 12种样式，完整拖拽支持")
