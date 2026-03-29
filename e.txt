@@ -1,13 +1,11 @@
 --[[
     自定义悬浮窗脚本 by HaoChen
-    功能：可移动悬浮窗，带最小化功能，侧边栏显示信息与样式切换，支持多种布局/颜色样式。
-    无卡密/白名单系统。
+    功能：可移动悬浮窗，最小化，侧边栏栏目切换内容，样式切换（颜色+排版）
+    无卡密/白名单系统
+    参考：Roblox开发者论坛拖拽GUI教程[citation:5]
 ]]
 
--- 等待游戏加载
-wait(1)
-
--- 显示加载提示
+-- 加载提示
 local loadGui = Instance.new("ScreenGui")
 local loadFrame = Instance.new("Frame")
 local loadText = Instance.new("TextLabel")
@@ -38,58 +36,83 @@ mainGui.Name = "XU_Script_GUI"
 mainGui.Parent = game.CoreGui
 mainGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- 主窗口
+-- ========== 主窗口 ==========
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 450, 0, 320)
-mainFrame.Position = UDim2.new(0.5, -225, 0.5, -160)
-mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+mainFrame.Size = UDim2.new(0, 480, 0, 340)
+mainFrame.Position = UDim2.new(0.5, -240, 0.5, -170)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
 mainFrame.Parent = mainGui
-mainFrame.Active = true
-mainFrame.Draggable = false -- 禁用自带拖动，使用自定义长按拖动
+mainFrame.BackgroundTransparency = 0
 
--- 圆角处理
+-- 圆角
 local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 8)
+mainCorner.CornerRadius = UDim.new(0, 10)
 mainCorner.Parent = mainFrame
 
--- 标题栏 (显示北京时间 + X按钮)
+-- 阴影效果
+local shadow = Instance.new("Frame")
+shadow.Name = "Shadow"
+shadow.Size = UDim2.new(1, 0, 1, 0)
+shadow.Position = UDim2.new(0, 5, 0, 5)
+shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+shadow.BackgroundTransparency = 0.6
+shadow.BorderSizePixel = 0
+shadow.ZIndex = -1
+shadow.Parent = mainFrame
+local shadowCorner = Instance.new("UICorner")
+shadowCorner.CornerRadius = UDim.new(0, 10)
+shadowCorner.Parent = shadow
+
+-- ========== 标题栏 ==========
 local titleBar = Instance.new("Frame")
 titleBar.Name = "TitleBar"
-titleBar.Size = UDim2.new(1, 0, 0, 35)
-titleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+titleBar.Size = UDim2.new(1, 0, 0, 38)
+titleBar.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
 titleBar.BackgroundTransparency = 0
 titleBar.BorderSizePixel = 0
 titleBar.Parent = mainFrame
 
 local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 8)
+titleCorner.CornerRadius = UDim.new(0, 10)
 titleCorner.Parent = titleBar
 
--- 北京时间文本
+-- 标题文字
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(0.7, 0, 1, 0)
+titleLabel.Position = UDim2.new(0, 15, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "XU 脚本工具"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Font = Enum.Font.GothamSemibold
+titleLabel.TextSize = 16
+titleLabel.Parent = titleBar
+
+-- 北京时间
 local clockLabel = Instance.new("TextLabel")
 clockLabel.Name = "ClockLabel"
-clockLabel.Size = UDim2.new(0.8, 0, 1, 0)
-clockLabel.Position = UDim2.new(0, 10, 0, 0)
+clockLabel.Size = UDim2.new(0, 120, 1, 0)
+clockLabel.Position = UDim2.new(0.5, -60, 0, 0)
 clockLabel.BackgroundTransparency = 1
-clockLabel.Text = "北京时间 --:--:--"
-clockLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-clockLabel.TextXAlignment = Enum.TextXAlignment.Left
-clockLabel.Font = Enum.Font.GothamSemibold
-clockLabel.TextSize = 16
+clockLabel.Text = "--:--:--"
+clockLabel.TextColor3 = Color3.fromRGB(220, 220, 255)
+clockLabel.TextXAlignment = Enum.TextXAlignment.Center
+clockLabel.Font = Enum.Font.Gotham
+clockLabel.TextSize = 13
 clockLabel.Parent = titleBar
 
--- 最小化按钮 (X)
+-- 最小化按钮
 local minBtn = Instance.new("TextButton")
 minBtn.Name = "MinimizeBtn"
-minBtn.Size = UDim2.new(0, 35, 1, 0)
-minBtn.Position = UDim2.new(1, -35, 0, 0)
-minBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-minBtn.Text = "✕"
+minBtn.Size = UDim2.new(0, 40, 1, 0)
+minBtn.Position = UDim2.new(1, -40, 0, 0)
+minBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 95)
+minBtn.Text = "—"
 minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-minBtn.TextSize = 20
+minBtn.TextSize = 24
 minBtn.Font = Enum.Font.GothamBold
 minBtn.AutoButtonColor = false
 minBtn.Parent = titleBar
@@ -98,50 +121,322 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0, 6)
 minCorner.Parent = minBtn
 
--- 侧边栏容器
-local sidebarContainer = Instance.new("Frame")
-sidebarContainer.Name = "SidebarContainer"
-sidebarContainer.Size = UDim2.new(0, 140, 1, -35)
-sidebarContainer.Position = UDim2.new(0, 0, 0, 35)
-sidebarContainer.BackgroundTransparency = 1
-sidebarContainer.Parent = mainFrame
+-- ========== 侧边栏 ==========
+local sidebar = Instance.new("Frame")
+sidebar.Name = "Sidebar"
+sidebar.Size = UDim2.new(0, 140, 1, -38)
+sidebar.Position = UDim2.new(0, 0, 0, 38)
+sidebar.BackgroundColor3 = Color3.fromRGB(40, 40, 58)
+sidebar.BackgroundTransparency = 0
+sidebar.BorderSizePixel = 0
+sidebar.Parent = mainFrame
 
--- 内容区域 (右侧显示作者信息)
+-- 侧边栏圆角（只底部）
+local sidebarCorner = Instance.new("UICorner")
+sidebarCorner.CornerRadius = UDim.new(0, 8)
+sidebarCorner.Parent = sidebar
+
+-- 侧边栏按钮容器
+local sidebarList = Instance.new("Frame")
+sidebarList.Name = "SidebarList"
+sidebarList.Size = UDim2.new(1, 0, 1, 0)
+sidebarList.BackgroundTransparency = 1
+sidebarList.Parent = sidebar
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.Padding = UDim.new(0, 5)
+listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+listLayout.Parent = sidebarList
+
+-- 栏目按钮数据
+local tabs = {
+    {name = "📋 信息", id = "info"},
+    {name = "🎨 样式", id = "style"}
+}
+local selectedTab = "info"
+local tabButtons = {}
+
+-- ========== 内容区域 ==========
 local contentArea = Instance.new("Frame")
 contentArea.Name = "ContentArea"
-contentArea.Size = UDim2.new(1, -140, 1, -35)
-contentArea.Position = UDim2.new(0, 140, 0, 35)
-contentArea.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+contentArea.Size = UDim2.new(1, -140, 1, -38)
+contentArea.Position = UDim2.new(0, 140, 0, 38)
+contentArea.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
 contentArea.BackgroundTransparency = 0
 contentArea.BorderSizePixel = 0
 contentArea.Parent = mainFrame
 
 local contentCorner = Instance.new("UICorner")
-contentCorner.CornerRadius = UDim.new(0, 6)
+contentCorner.CornerRadius = UDim.new(0, 8)
 contentCorner.Parent = contentArea
 
--- 内容区域的作者信息文本
-local authorText = Instance.new("TextLabel")
-authorText.Size = UDim2.new(1, -20, 1, -20)
-authorText.Position = UDim2.new(0, 10, 0, 10)
-authorText.BackgroundTransparency = 1
-authorText.Text = "作者: HaoChen\n\nQQ: 1626844714"
-authorText.TextColor3 = Color3.fromRGB(200, 200, 220)
-authorText.TextSize = 18
-authorText.TextWrapped = true
-authorText.Font = Enum.Font.Gotham
-authorText.Parent = contentArea
+-- 内容面板容器
+local infoPanel = Instance.new("Frame")
+infoPanel.Name = "InfoPanel"
+infoPanel.Size = UDim2.new(1, -20, 1, -20)
+infoPanel.Position = UDim2.new(0, 10, 0, 10)
+infoPanel.BackgroundTransparency = 1
+infoPanel.Parent = contentArea
+infoPanel.Visible = true
 
--- 最小化后的小方块窗口
+local stylePanel = Instance.new("Frame")
+stylePanel.Name = "StylePanel"
+stylePanel.Size = UDim2.new(1, -20, 1, -20)
+stylePanel.Position = UDim2.new(0, 10, 0, 10)
+stylePanel.BackgroundTransparency = 1
+stylePanel.Parent = contentArea
+stylePanel.Visible = false
+
+-- 信息面板内容
+local infoTitle = Instance.new("TextLabel")
+infoTitle.Size = UDim2.new(1, 0, 0, 40)
+infoTitle.Position = UDim2.new(0, 0, 0, 0)
+infoTitle.BackgroundTransparency = 1
+infoTitle.Text = "作者信息"
+infoTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+infoTitle.TextSize = 20
+infoTitle.Font = Enum.Font.GothamBold
+infoTitle.TextXAlignment = Enum.TextXAlignment.Left
+infoTitle.Parent = infoPanel
+
+local authorLine = Instance.new("TextLabel")
+authorLine.Size = UDim2.new(1, 0, 0, 30)
+authorLine.Position = UDim2.new(0, 0, 0, 50)
+authorLine.BackgroundTransparency = 1
+authorLine.Text = "作者：HaoChen"
+authorLine.TextColor3 = Color3.fromRGB(200, 200, 230)
+authorLine.TextSize = 16
+authorLine.Font = Enum.Font.Gotham
+authorLine.TextXAlignment = Enum.TextXAlignment.Left
+authorLine.Parent = infoPanel
+
+local qqLine = Instance.new("TextLabel")
+qqLine.Size = UDim2.new(1, 0, 0, 30)
+qqLine.Position = UDim2.new(0, 0, 0, 85)
+qqLine.BackgroundTransparency = 1
+qqLine.Text = "QQ：1626844714"
+qqLine.TextColor3 = Color3.fromRGB(200, 200, 230)
+qqLine.TextSize = 16
+qqLine.Font = Enum.Font.Gotham
+qqLine.TextXAlignment = Enum.TextXAlignment.Left
+qqLine.Parent = infoPanel
+
+local descLine = Instance.new("TextLabel")
+descLine.Size = UDim2.new(1, 0, 0, 60)
+descLine.Position = UDim2.new(0, 0, 0, 130)
+descLine.BackgroundTransparency = 1
+descLine.Text = "欢迎使用 XU 脚本工具\n本工具提供多种界面样式切换功能"
+descLine.TextColor3 = Color3.fromRGB(150, 150, 180)
+descLine.TextSize = 13
+descLine.Font = Enum.Font.Gotham
+descLine.TextXAlignment = Enum.TextXAlignment.Left
+descLine.TextWrapped = true
+descLine.Parent = infoPanel
+
+-- 样式面板内容
+local styleTitle = Instance.new("TextLabel")
+styleTitle.Size = UDim2.new(1, 0, 0, 40)
+styleTitle.Position = UDim2.new(0, 0, 0, 0)
+styleTitle.BackgroundTransparency = 1
+styleTitle.Text = "选择样式"
+styleTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+styleTitle.TextSize = 20
+styleTitle.Font = Enum.Font.GothamBold
+styleTitle.TextXAlignment = Enum.TextXAlignment.Left
+styleTitle.Parent = stylePanel
+
+local styleContainer = Instance.new("Frame")
+styleContainer.Size = UDim2.new(1, 0, 0, 120)
+styleContainer.Position = UDim2.new(0, 0, 0, 50)
+styleContainer.BackgroundTransparency = 1
+styleContainer.Parent = stylePanel
+
+local styleLayout = Instance.new("UIListLayout")
+styleLayout.FillDirection = Enum.FillDirection.Horizontal
+styleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+styleLayout.Padding = UDim.new(0, 15)
+styleLayout.Parent = styleContainer
+
+-- 样式配置
+local currentStyle = 1
+local styles = {
+    {   -- 默认样式（深蓝紫）
+        name = "默认",
+        mainBg = Color3.fromRGB(30, 30, 45),
+        sidebarBg = Color3.fromRGB(40, 40, 58),
+        titleBg = Color3.fromRGB(50, 50, 70),
+        contentBg = Color3.fromRGB(25, 25, 40),
+        textColor = Color3.fromRGB(255, 255, 255),
+        accentColor = Color3.fromRGB(100, 100, 220),
+        layout = "standard"
+    },
+    {   -- 深海样式（青绿）
+        name = "深海",
+        mainBg = Color3.fromRGB(20, 45, 60),
+        sidebarBg = Color3.fromRGB(25, 55, 75),
+        titleBg = Color3.fromRGB(30, 65, 85),
+        contentBg = Color3.fromRGB(18, 40, 55),
+        textColor = Color3.fromRGB(200, 240, 255),
+        accentColor = Color3.fromRGB(0, 180, 180),
+        layout = "standard"
+    },
+    {   -- 暖阳样式（橙棕）
+        name = "暖阳",
+        mainBg = Color3.fromRGB(65, 45, 35),
+        sidebarBg = Color3.fromRGB(80, 55, 45),
+        titleBg = Color3.fromRGB(95, 65, 55),
+        contentBg = Color3.fromRGB(55, 38, 30),
+        textColor = Color3.fromRGB(255, 235, 200),
+        accentColor = Color3.fromRGB(255, 150, 80),
+        layout = "standard"
+    }
+}
+
+-- 创建样式按钮
+local styleBtns = {}
+for i, style in ipairs(styles) do
+    local btn = Instance.new("TextButton")
+    btn.Name = "StyleBtn_" .. i
+    btn.Size = UDim2.new(0, 90, 0, 80)
+    btn.BackgroundColor3 = Color3.fromRGB(45, 45, 65)
+    btn.Text = style.name
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 14
+    btn.Font = Enum.Font.GothamSemibold
+    btn.BorderSizePixel = 0
+    btn.Parent = styleContainer
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 8)
+    btnCorner.Parent = btn
+    
+    -- 样式预览色块
+    local preview = Instance.new("Frame")
+    preview.Size = UDim2.new(0.7, 0, 0, 35)
+    preview.Position = UDim2.new(0.15, 0, 0.15, 0)
+    preview.BackgroundColor3 = style.accentColor
+    preview.BorderSizePixel = 0
+    preview.Parent = btn
+    local previewCorner = Instance.new("UICorner")
+    previewCorner.CornerRadius = UDim.new(0, 4)
+    previewCorner.Parent = preview
+    
+    styleBtns[i] = btn
+end
+
+-- 应用样式函数
+local function applyStyle(styleIndex)
+    local style = styles[styleIndex]
+    if not style then return end
+    
+    -- 应用颜色
+    mainFrame.BackgroundColor3 = style.mainBg
+    sidebar.BackgroundColor3 = style.sidebarBg
+    titleBar.BackgroundColor3 = style.titleBg
+    contentArea.BackgroundColor3 = style.contentBg
+    
+    -- 更新所有侧边栏按钮颜色
+    for _, btn in pairs(tabButtons) do
+        if btn then
+            btn.BackgroundColor3 = style.sidebarBg
+            btn.TextColor3 = style.textColor
+        end
+    end
+    
+    -- 更新标题栏文字颜色
+    titleLabel.TextColor3 = style.textColor
+    clockLabel.TextColor3 = style.textColor
+    
+    -- 更新信息面板文字颜色
+    infoTitle.TextColor3 = style.textColor
+    authorLine.TextColor3 = Color3.fromRGB(
+        style.textColor.R * 0.8,
+        style.textColor.G * 0.8,
+        style.textColor.B * 0.8
+    )
+    qqLine.TextColor3 = authorLine.TextColor3
+    descLine.TextColor3 = Color3.fromRGB(
+        style.textColor.R * 0.6,
+        style.textColor.G * 0.6,
+        style.textColor.B * 0.6
+    )
+    
+    -- 更新样式面板
+    styleTitle.TextColor3 = style.textColor
+    for i, btn in ipairs(styleBtns) do
+        if btn then
+            if i == styleIndex then
+                btn.BackgroundColor3 = style.accentColor
+                btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            else
+                btn.BackgroundColor3 = Color3.fromRGB(
+                    style.sidebarBg.R * 1.2,
+                    style.sidebarBg.G * 1.2,
+                    style.sidebarBg.B * 1.2
+                )
+                btn.TextColor3 = style.textColor
+            end
+        end
+    end
+    
+    currentStyle = styleIndex
+end
+
+-- 样式按钮点击事件
+for i, btn in ipairs(styleBtns) do
+    btn.MouseButton1Click:Connect(function()
+        applyStyle(i)
+    end)
+end
+
+-- 创建侧边栏栏目按钮
+for _, tab in ipairs(tabs) do
+    local btn = Instance.new("TextButton")
+    btn.Name = "TabBtn_" .. tab.id
+    btn.Size = UDim2.new(0.9, 0, 0, 45)
+    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 58)
+    btn.Text = tab.name
+    btn.TextColor3 = Color3.fromRGB(220, 220, 255)
+    btn.TextSize = 15
+    btn.Font = Enum.Font.Gotham
+    btn.BorderSizePixel = 0
+    btn.Parent = sidebarList
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 8)
+    btnCorner.Parent = btn
+    
+    tabButtons[tab.id] = btn
+    
+    btn.MouseButton1Click:Connect(function()
+        selectedTab = tab.id
+        -- 切换面板可见性
+        infoPanel.Visible = (tab.id == "info")
+        stylePanel.Visible = (tab.id == "style")
+        -- 高亮当前选中按钮
+        for _, otherBtn in pairs(tabButtons) do
+            if otherBtn == btn then
+                otherBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 100)
+            else
+                otherBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 58)
+            end
+        end
+    end)
+end
+
+-- 默认选中信息栏目
+tabButtons["info"].BackgroundColor3 = Color3.fromRGB(70, 70, 100)
+
+-- ========== 最小化小方块 ==========
 local miniFrame = Instance.new("Frame")
 miniFrame.Name = "MiniFrame"
-miniFrame.Size = UDim2.new(0, 60, 0, 60)
+miniFrame.Size = UDim2.new(0, 65, 0, 65)
 miniFrame.Position = UDim2.new(0.8, 0, 0.8, 0)
-miniFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+miniFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
 miniFrame.BorderSizePixel = 0
 miniFrame.Visible = false
 miniFrame.Parent = mainGui
-miniFrame.Active = true
+miniFrame.BackgroundTransparency = 0
 
 local miniCorner = Instance.new("UICorner")
 miniCorner.CornerRadius = UDim.new(0, 12)
@@ -152,29 +447,26 @@ miniText.Size = UDim2.new(1, 0, 1, 0)
 miniText.BackgroundTransparency = 1
 miniText.Text = "XU"
 miniText.TextColor3 = Color3.fromRGB(255, 255, 255)
-miniText.TextSize = 20
+miniText.TextSize = 18
 miniText.Font = Enum.Font.GothamBold
 miniText.Parent = miniFrame
 
--- 长按拖动逻辑 (通用)
+-- ========== 拖拽系统（参考Roblox开发者论坛拖拽GUI教程[citation:5]）==========
 local dragging = false
-local dragStartPos = nil
 local dragFrame = nil
+local dragStart = nil
+local startPos = nil
 local longPressTimer = nil
 local isLongPressing = false
-local longPressThreshold = 0.5
+local LONG_PRESS_TIME = 0.3
 
-local function startDrag(frame, input)
-    if dragging then return end
-    dragging = true
-    dragFrame = frame
-    dragStartPos = Vector2.new(input.Position.X - frame.AbsolutePosition.X, input.Position.Y - frame.AbsolutePosition.Y)
-end
-
+-- 更新拖拽位置
 local function updateDrag(input)
     if not dragging or not dragFrame then return end
-    local newX = input.Position.X - dragStartPos.X
-    local newY = input.Position.Y - dragStartPos.Y
+    local delta = input.Position - dragStart
+    local newX = startPos.X.Offset + delta.X
+    local newY = startPos.Y.Offset + delta.Y
+    -- 边界限制
     local maxX = game.CoreGui.AbsoluteSize.X - dragFrame.AbsoluteSize.X
     local maxY = game.CoreGui.AbsoluteSize.Y - dragFrame.AbsoluteSize.Y
     newX = math.clamp(newX, 0, maxX)
@@ -182,259 +474,95 @@ local function updateDrag(input)
     dragFrame.Position = UDim2.new(0, newX, 0, newY)
 end
 
-local function stopDrag()
-    dragging = false
-    dragFrame = nil
-    dragStartPos = nil
+-- 开始拖拽
+local function beginDrag(frame, input)
+    if dragging then return end
+    dragging = true
+    dragFrame = frame
+    dragStart = input.Position
+    startPos = frame.Position
 end
 
--- 输入事件处理
-local function onInputBegan(input, gameProcessed)
-    if gameProcessed then return end
-    
-    -- 检查是否点击了可拖动区域 (标题栏 或 小方块)
-    local hitFrame = nil
-    if mainFrame.Visible and input.UserInputType == Enum.UserInputType.MouseButton1 then
-        local mousePos = input.Position
-        if mousePos.X >= titleBar.AbsolutePosition.X and mousePos.X <= titleBar.AbsolutePosition.X + titleBar.AbsoluteSize.X and
-           mousePos.Y >= titleBar.AbsolutePosition.Y and mousePos.Y <= titleBar.AbsolutePosition.Y + titleBar.AbsoluteSize.Y then
-            hitFrame = mainFrame
-        end
-    elseif miniFrame.Visible then
-        local mousePos = input.Position
-        if mousePos.X >= miniFrame.AbsolutePosition.X and mousePos.X <= miniFrame.AbsolutePosition.X + miniFrame.AbsoluteSize.X and
-           mousePos.Y >= miniFrame.AbsolutePosition.Y and mousePos.Y <= miniFrame.AbsolutePosition.Y + miniFrame.AbsoluteSize.Y then
-            hitFrame = miniFrame
-        end
+-- 结束拖拽
+local function endDrag()
+    dragging = false
+    dragFrame = nil
+    dragStart = nil
+    startPos = nil
+end
+
+-- 标题栏拖拽（普通点击拖拽）
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        beginDrag(mainFrame, input)
     end
-    
-    if hitFrame then
+end)
+
+-- 小方块长按拖拽
+local miniLongPressActive = false
+miniFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         longPressTimer = tick()
         isLongPressing = true
         task.spawn(function()
-            while isLongPressing and (tick() - longPressTimer) < longPressThreshold do
+            while isLongPressing and (tick() - longPressTimer) < LONG_PRESS_TIME do
                 task.wait()
             end
-            if isLongPressing and (tick() - longPressTimer) >= longPressThreshold then
-                startDrag(hitFrame, input)
+            if isLongPressing and (tick() - longPressTimer) >= LONG_PRESS_TIME then
+                miniLongPressActive = true
+                beginDrag(miniFrame, input)
             end
         end)
     end
-end
+end)
 
-local function onInputEnded(input, gameProcessed)
+miniFrame.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         isLongPressing = false
-        stopDrag()
+        -- 如果不是长按拖拽，则视为单击恢复窗口
+        if not miniLongPressActive and miniFrame.Visible then
+            mainFrame.Visible = true
+            miniFrame.Visible = false
+            mainFrame.Position = UDim2.new(0, miniFrame.AbsolutePosition.X, 0, miniFrame.AbsolutePosition.Y)
+        end
+        miniLongPressActive = false
+        endDrag()
     end
-end
+end)
 
-local function onInputChanged(input, gameProcessed)
-    if gameProcessed then return end
+-- 全局拖拽更新
+UserInputService.InputChanged:Connect(function(input)
     if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         updateDrag(input)
     end
-end
+end)
 
-UserInputService.InputBegan:Connect(onInputBegan)
-UserInputService.InputEnded:Connect(onInputEnded)
-UserInputService.InputChanged:Connect(onInputChanged)
+-- 确保松手时结束拖拽
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        endDrag()
+    end
+end)
 
--- 最小化/恢复功能 (修复小方块无法触碰的问题)
+-- 最小化按钮功能
 minBtn.MouseButton1Click:Connect(function()
     mainFrame.Visible = false
     miniFrame.Visible = true
     miniFrame.Position = UDim2.new(0, mainFrame.AbsolutePosition.X, 0, mainFrame.AbsolutePosition.Y)
 end)
 
--- 点击小方块恢复窗口
-miniFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        -- 等待一小段时间，如果是长按则不恢复（让长按逻辑处理移动）
-        task.wait(0.15)
-        if not dragging and miniFrame.Visible then
-            mainFrame.Visible = true
-            miniFrame.Visible = false
-            mainFrame.Position = UDim2.new(0, miniFrame.AbsolutePosition.X, 0, miniFrame.AbsolutePosition.Y)
-        end
-    end
-end)
-
--- 更新时间
+-- ========== 北京时间更新 ==========
 local function updateClock()
-    while true do
+    while mainGui and mainGui.Parent do
         local t = os.date("*t")
-        local timeStr = string.format("北京时间 %02d:%02d:%02d", t.hour, t.min, t.sec)
+        local timeStr = string.format("%02d:%02d:%02d", t.hour, t.min, t.sec)
         clockLabel.Text = timeStr
         task.wait(0.2)
     end
 end
 task.spawn(updateClock)
 
--- ========== 样式系统 (侧边栏栏目现在会正确显示) ==========
-local currentStyle = 1
-
-local styles = {}
-
-local function clearSidebar()
-    for _, child in ipairs(sidebarContainer:GetChildren()) do
-        if child:IsA("GuiObject") then
-            child:Destroy()
-        end
-    end
-end
-
-local function buildSidebarContent(styleConfig)
-    clearSidebar()
-    
-    -- 使用 UIListLayout 自动排列栏目，避免位置计算问题
-    local listLayout = Instance.new("UIListLayout")
-    listLayout.Padding = UDim.new(0, 8)
-    listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    listLayout.Parent = sidebarContainer
-    
-    -- 1. 信息栏目
-    local infoFrame = Instance.new("Frame")
-    infoFrame.Name = "InfoFrame"
-    infoFrame.Size = UDim2.new(0.9, 0, 0, 80)
-    infoFrame.BackgroundColor3 = styleConfig.sidebarBg or Color3.fromRGB(35, 35, 45)
-    infoFrame.BorderSizePixel = 0
-    infoFrame.Parent = sidebarContainer
-    
-    local infoCorner = Instance.new("UICorner")
-    infoCorner.CornerRadius = UDim.new(0, 6)
-    infoCorner.Parent = infoFrame
-    
-    local infoTitle = Instance.new("TextLabel")
-    infoTitle.Text = "📌 信息"
-    infoTitle.Size = UDim2.new(1, 0, 0, 25)
-    infoTitle.Position = UDim2.new(0, 0, 0, 0)
-    infoTitle.BackgroundTransparency = 1
-    infoTitle.TextColor3 = styleConfig.textColor or Color3.fromRGB(255, 255, 255)
-    infoTitle.TextSize = 14
-    infoTitle.Font = Enum.Font.GothamBold
-    infoTitle.Parent = infoFrame
-    
-    local authorLabel = Instance.new("TextLabel")
-    authorLabel.Text = "作者: HaoChen\nQQ: 1626844714"
-    authorLabel.Size = UDim2.new(1, -10, 0, 50)
-    authorLabel.Position = UDim2.new(0, 5, 0, 25)
-    authorLabel.BackgroundTransparency = 1
-    authorLabel.TextColor3 = styleConfig.textColor or Color3.fromRGB(200, 200, 220)
-    authorLabel.TextSize = 12
-    authorLabel.TextWrapped = true
-    authorLabel.Font = Enum.Font.Gotham
-    authorLabel.Parent = infoFrame
-    
-    -- 2. 样式栏目
-    local styleFrame = Instance.new("Frame")
-    styleFrame.Name = "StyleFrame"
-    styleFrame.Size = UDim2.new(0.9, 0, 0, 130)
-    styleFrame.BackgroundColor3 = styleConfig.sidebarBg or Color3.fromRGB(35, 35, 45)
-    styleFrame.BorderSizePixel = 0
-    styleFrame.Parent = sidebarContainer
-    
-    local styleCorner = Instance.new("UICorner")
-    styleCorner.CornerRadius = UDim.new(0, 6)
-    styleCorner.Parent = styleFrame
-    
-    local styleTitle = Instance.new("TextLabel")
-    styleTitle.Text = "🎨 样式"
-    styleTitle.Size = UDim2.new(1, 0, 0, 25)
-    styleTitle.Position = UDim2.new(0, 0, 0, 0)
-    styleTitle.BackgroundTransparency = 1
-    styleTitle.TextColor3 = styleConfig.textColor or Color3.fromRGB(255, 255, 255)
-    styleTitle.TextSize = 14
-    styleTitle.Font = Enum.Font.GothamBold
-    styleTitle.Parent = styleFrame
-    
-    -- 样式按钮容器 (使用 UIListLayout 水平排列)
-    local btnContainer = Instance.new("Frame")
-    btnContainer.Name = "ButtonContainer"
-    btnContainer.Size = UDim2.new(1, -10, 0, 80)
-    btnContainer.Position = UDim2.new(0, 5, 0, 30)
-    btnContainer.BackgroundTransparency = 1
-    btnContainer.Parent = styleFrame
-    
-    local btnLayout = Instance.new("UIListLayout")
-    btnLayout.FillDirection = Enum.FillDirection.Horizontal
-    btnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    btnLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    btnLayout.Padding = UDim.new(0, 8)
-    btnLayout.Parent = btnContainer
-    
-    local btnNames = {"默认", "深海", "暖阳"}
-    for i, name in ipairs(btnNames) do
-        local btn = Instance.new("TextButton")
-        btn.Name = "StyleBtn_" .. i
-        btn.Size = UDim2.new(0, 60, 0, 35)
-        btn.Text = name
-        btn.TextColor3 = styleConfig.buttonTextColor or Color3.fromRGB(255, 255, 255)
-        btn.BackgroundColor3 = styleConfig.buttonBg or Color3.fromRGB(80, 80, 100)
-        btn.BorderSizePixel = 0
-        btn.Font = Enum.Font.Gotham
-        btn.TextSize = 13
-        local btnCorner = Instance.new("UICorner")
-        btnCorner.CornerRadius = UDim.new(0, 4)
-        btnCorner.Parent = btn
-        
-        btn.MouseButton1Click:Connect(function()
-            currentStyle = i
-            applyStyle(currentStyle)
-        end)
-        
-        btn.Parent = btnContainer
-    end
-end
-
--- 样式配置
-styles[1] = { -- 默认样式
-    mainBg = Color3.fromRGB(25, 25, 45),
-    titleBg = Color3.fromRGB(40, 40, 65),
-    sidebarBg = Color3.fromRGB(35, 35, 55),
-    contentBg = Color3.fromRGB(20, 20, 40),
-    textColor = Color3.fromRGB(220, 220, 255),
-    buttonBg = Color3.fromRGB(70, 70, 110),
-    buttonTextColor = Color3.fromRGB(255, 255, 255),
-}
-
-styles[2] = { -- 深海样式
-    mainBg = Color3.fromRGB(20, 40, 50),
-    titleBg = Color3.fromRGB(30, 60, 75),
-    sidebarBg = Color3.fromRGB(25, 55, 70),
-    contentBg = Color3.fromRGB(15, 35, 45),
-    textColor = Color3.fromRGB(200, 240, 255),
-    buttonBg = Color3.fromRGB(50, 100, 130),
-    buttonTextColor = Color3.fromRGB(255, 255, 200),
-}
-
-styles[3] = { -- 暖阳样式
-    mainBg = Color3.fromRGB(60, 40, 30),
-    titleBg = Color3.fromRGB(90, 65, 50),
-    sidebarBg = Color3.fromRGB(75, 55, 45),
-    contentBg = Color3.fromRGB(50, 35, 28),
-    textColor = Color3.fromRGB(255, 240, 200),
-    buttonBg = Color3.fromRGB(150, 100, 70),
-    buttonTextColor = Color3.fromRGB(255, 255, 200),
-}
-
-local function applyStyle(styleIdx)
-    local cfg = styles[styleIdx]
-    if not cfg then return end
-    
-    mainFrame.BackgroundColor3 = cfg.mainBg
-    titleBar.BackgroundColor3 = cfg.titleBg
-    minBtn.BackgroundColor3 = cfg.buttonBg
-    minBtn.TextColor3 = cfg.buttonTextColor
-    contentArea.BackgroundColor3 = cfg.contentBg
-    authorText.TextColor3 = cfg.textColor
-    miniFrame.BackgroundColor3 = cfg.mainBg
-    miniText.TextColor3 = cfg.textColor
-    
-    buildSidebarContent(cfg)
-end
-
--- 初始化
+-- ========== 初始化样式 ==========
 applyStyle(1)
 
-print("XU脚本悬浮窗已加载")
+print("XU脚本悬浮窗已加载 - 侧边栏点击切换内容，样式按钮可点击")
