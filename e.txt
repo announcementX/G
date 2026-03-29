@@ -1,40 +1,31 @@
 --[[
     XU 脚本悬浮窗 by HaoChen
     功能：可拖拽悬浮窗、最小化/恢复、侧边栏栏目切换、12种完整样式
-    参考：Roblox Developer Forum、Roblox官方文档、Roblox中文社区
-    拖拽实现：基于UIDragDetector（Roblox官方推荐方案）
-    样式切换：基于StyleSheet系统（官方Styling API）
+    修复：加载动画卡住导致白屏的问题
 ]]
 
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local ReplicatedFirst = game:GetService("ReplicatedFirst")
-local player = Players.LocalPlayer
-
--- ========== 炫酷加载动画 ==========
--- 创建加载GUI
+-- 加载提示 - 修复版
 local loadGui = Instance.new("ScreenGui")
 loadGui.Name = "LoadAnimationGui"
 loadGui.Parent = game.CoreGui
 loadGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 loadGui.IgnoreGuiInset = true
 
--- 创建全屏黑色背景（用于光效对比）
+-- 全屏黑色背景
 local bg = Instance.new("Frame")
 bg.Size = UDim2.new(1, 0, 1, 0)
 bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 bg.BackgroundTransparency = 1
 bg.Parent = loadGui
 
--- 创建XU标志的容器
+-- XU标志容器
 local logoContainer = Instance.new("Frame")
-logoContainer.Size = UDim2.new(0, 120, 0, 120)
+logoContainer.Size = UDim2.new(0, 0, 0, 0)
 logoContainer.Position = UDim2.new(0.5, -60, 0.5, -60)
 logoContainer.BackgroundTransparency = 1
 logoContainer.Parent = loadGui
 
--- XU文字（使用TextLabel显示）
+-- XU文字
 local logoText = Instance.new("TextLabel")
 logoText.Size = UDim2.new(1, 0, 1, 0)
 logoText.BackgroundTransparency = 1
@@ -45,10 +36,10 @@ logoText.Font = Enum.Font.GothamBold
 logoText.TextScaled = true
 logoText.Parent = logoContainer
 
--- 光晕效果（圆角框）
+-- 光晕效果（圆角框）- 修复：正确设置Size为UDim2
 local glow = Instance.new("Frame")
-glow.Size = UDim2.new(1.4, 0, 1.4, 0)
-glow.Position = UDim2.new(-0.2, 0, -0.2, 0)
+glow.Size = UDim2.new(1, 0, 1, 0)
+glow.Position = UDim2.new(0, 0, 0, 0)
 glow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 glow.BackgroundTransparency = 0.8
 glow.BorderSizePixel = 0
@@ -56,18 +47,6 @@ glow.Parent = logoContainer
 local glowCorner = Instance.new("UICorner")
 glowCorner.CornerRadius = UDim.new(1, 0)
 glowCorner.Parent = glow
-
--- 动画序列
-local loadAnim = TweenService:Create(logoContainer, TweenInfo.new(0.8, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {
-    Size = UDim2.new(0, 120, 0, 120),
-    Position = UDim2.new(0.5, -60, 0.5, -60)
-})
-logoContainer.Size = UDim2.new(0, 0, 0, 0)
-
--- 光晕动画
-local glowAnim = TweenService:Create(glow, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-    BackgroundTransparency = 0.6
-})
 
 -- 白色闪光效果
 local whiteFlash = Instance.new("Frame")
@@ -77,27 +56,49 @@ whiteFlash.BackgroundTransparency = 1
 whiteFlash.Parent = loadGui
 
 -- 执行加载动画
-loadAnim:Play()
-glowAnim:Play()
-task.wait(0.6)
+local TweenService = game:GetService("TweenService")
 
--- 爆发白光
-local flashAnim = TweenService:Create(whiteFlash, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+-- 1. 容器弹性弹出
+local tweenInfoElastic = TweenInfo.new(0.8, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out)
+local tweenElastic = TweenService:Create(logoContainer, tweenInfoElastic, {
+    Size = UDim2.new(0, 120, 0, 120),
+    Position = UDim2.new(0.5, -60, 0.5, -60)
+})
+tweenElastic:Play()
+
+-- 2. 光晕动画：让glow变大并变淡
+local tweenInfoGlow = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local tweenGlow = TweenService:Create(glow, tweenInfoGlow, {
+    Size = UDim2.new(1.4, 0, 1.4, 0),
+    Position = UDim2.new(-0.2, 0, -0.2, 0),
+    BackgroundTransparency = 0.6
+})
+tweenGlow:Play()
+
+-- 等待容器动画完成
+tweenElastic.Completed:Wait()
+
+-- 3. 爆发白光
+local tweenFlashIn = TweenService:Create(whiteFlash, TweenInfo.new(0.3), {
     BackgroundTransparency = 0
 })
-flashAnim:Play()
+tweenFlashIn:Play()
 task.wait(0.25)
 
--- 淡出加载界面
-local fadeOut = TweenService:Create(loadGui, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+-- 4. 淡出加载界面
+local tweenFadeOut = TweenService:Create(loadGui, TweenInfo.new(0.3), {
     BackgroundTransparency = 1
 })
-fadeOut:Play()
+tweenFadeOut:Play()
 task.wait(0.3)
 loadGui:Destroy()
 
 -- ========== 主界面开始 ==========
--- 主GUI
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local player = Players.LocalPlayer
+
 local mainGui = Instance.new("ScreenGui")
 mainGui.Name = "XU_Script_GUI"
 mainGui.Parent = game.CoreGui
@@ -184,16 +185,13 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0, 8)
 minCorner.Parent = minBtn
 
--- ========== 拖拽系统（基于UIDragDetector - Roblox官方推荐方案）==========
--- 参考：https://devforum.roblox.com/t/dragmodule-make-draggable-ui/3786654
--- 官方推荐使用UIDragDetector，但为了兼容性，这里实现标准拖拽逻辑
+-- ========== 拖拽系统 ==========
 local dragActive = false
 local dragStartPos = nil
 local dragFrameStartPos = nil
 local longPressTimer = nil
 local isLongPressing = false
 
--- 主窗口拖拽
 local function startMainDrag(input)
     dragActive = true
     dragStartPos = input.Position
@@ -210,7 +208,6 @@ local function updateMainDrag(input)
     mainFrame.Position = UDim2.new(0, math.clamp(newX, 0, maxX), 0, math.clamp(newY, 0, maxY))
 end
 
--- 标题栏拖拽
 titleBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         startMainDrag(input)
@@ -262,7 +259,6 @@ local function updateMiniDrag(input)
     miniFrame.Position = UDim2.new(0, math.clamp(newX, 0, maxX), 0, math.clamp(newY, 0, maxY))
 end
 
--- 小方块长按拖拽逻辑
 miniFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         isLongPressing = true
@@ -289,7 +285,6 @@ miniFrame.InputEnded:Connect(function(input)
     isLongPressing = false
 end)
 
--- 全局拖拽更新
 UserInputService.InputChanged:Connect(function(input)
     if dragActive and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         updateMainDrag(input)
@@ -303,7 +298,6 @@ UserInputService.InputEnded:Connect(function()
     miniDragActive = false
 end)
 
--- 最小化功能
 minBtn.MouseButton1Click:Connect(function()
     mainFrame.Visible = false
     miniFrame.Visible = true
@@ -325,7 +319,6 @@ local sidebarCorner = Instance.new("UICorner")
 sidebarCorner.CornerRadius = UDim.new(0, 10)
 sidebarCorner.Parent = sidebar
 
--- 侧边栏按钮容器
 local sidebarList = Instance.new("Frame")
 sidebarList.BackgroundTransparency = 1
 sidebarList.Size = UDim2.new(1, 0, 1, 0)
@@ -349,7 +342,6 @@ local contentCorner = Instance.new("UICorner")
 contentCorner.CornerRadius = UDim.new(0, 10)
 contentCorner.Parent = contentArea
 
--- 内容面板
 local infoPanel = Instance.new("Frame")
 infoPanel.Name = "InfoPanel"
 infoPanel.BackgroundTransparency = 1
