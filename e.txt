@@ -1,6 +1,6 @@
 --[[
-    XU 脚本中心 v2.0
-    功能：侧边栏选项卡 | 主题切换 | 可移动悬浮窗 | 缩小为可移动小方块
+    XU 脚本中心 v3.0
+    功能：侧边栏选项卡 | 6种主题切换 | 可移动悬浮窗 | 缩小为可移动圆角正方形
     作者：HaoChen | QQ：1626844714
 ]]
 
@@ -18,18 +18,18 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
 -- ==================== 参数配置 ====================
-local windowSize = UDim2.new(0, 420, 0, 300)
-local sideBarWidth = 110
-local minimizedSize = 52                     -- 缩小后的小方块尺寸（正方形）
+local windowSize = UDim2.new(0, 440, 0, 320)
+local sideBarWidth = 120
+local minimizedSize = 56                     -- 缩小后的小正方形尺寸
 local longPressDuration = 2.0               -- 长按2秒才可移动
-local dragThreshold = 10                    -- 拖动阈值
+local dragThreshold = 10
 
--- ==================== 主题颜色预设 ====================
+-- ==================== 主题颜色预设（6种） ====================
 local themes = {
     Ocean = {
         name = "深海蓝",
-        mainBg = Color3.fromRGB(15, 25, 45),
-        sideBg = Color3.fromRGB(25, 35, 60),
+        mainBg = Color3.fromRGB(12, 22, 42),
+        sideBg = Color3.fromRGB(22, 32, 55),
         accent = Color3.fromRGB(0, 160, 255),
         text = Color3.fromRGB(230, 240, 255),
         button = Color3.fromRGB(0, 120, 200),
@@ -37,8 +37,8 @@ local themes = {
     },
     Violet = {
         name = "暗夜紫",
-        mainBg = Color3.fromRGB(30, 20, 45),
-        sideBg = Color3.fromRGB(45, 30, 65),
+        mainBg = Color3.fromRGB(28, 18, 48),
+        sideBg = Color3.fromRGB(42, 28, 68),
         accent = Color3.fromRGB(180, 100, 255),
         text = Color3.fromRGB(240, 220, 255),
         button = Color3.fromRGB(140, 70, 210),
@@ -46,39 +46,60 @@ local themes = {
     },
     Emerald = {
         name = "墨玉绿",
-        mainBg = Color3.fromRGB(20, 35, 30),
-        sideBg = Color3.fromRGB(30, 50, 40),
+        mainBg = Color3.fromRGB(18, 38, 28),
+        sideBg = Color3.fromRGB(28, 52, 38),
         accent = Color3.fromRGB(80, 210, 140),
         text = Color3.fromRGB(220, 255, 230),
         button = Color3.fromRGB(50, 160, 100),
         glow = Color3.fromRGB(100, 230, 160),
+    },
+    Crimson = {
+        name = "炽热红",
+        mainBg = Color3.fromRGB(45, 18, 25),
+        sideBg = Color3.fromRGB(65, 28, 38),
+        accent = Color3.fromRGB(255, 80, 100),
+        text = Color3.fromRGB(255, 220, 220),
+        button = Color3.fromRGB(210, 60, 80),
+        glow = Color3.fromRGB(255, 120, 140),
+    },
+    Amber = {
+        name = "琥珀橙",
+        mainBg = Color3.fromRGB(45, 28, 12),
+        sideBg = Color3.fromRGB(65, 42, 20),
+        accent = Color3.fromRGB(255, 160, 60),
+        text = Color3.fromRGB(255, 240, 210),
+        button = Color3.fromRGB(220, 120, 40),
+        glow = Color3.fromRGB(255, 190, 100),
+    },
+    Sakura = {
+        name = "樱花粉",
+        mainBg = Color3.fromRGB(50, 25, 40),
+        sideBg = Color3.fromRGB(70, 38, 58),
+        accent = Color3.fromRGB(255, 140, 180),
+        text = Color3.fromRGB(255, 230, 240),
+        button = Color3.fromRGB(230, 100, 150),
+        glow = Color3.fromRGB(255, 170, 210),
     }
 }
-local currentTheme = "Ocean"   -- 默认主题
+local currentTheme = "Ocean"
 
 -- 应用主题函数
 local function applyTheme(themeName)
     local theme = themes[themeName]
     if not theme then return end
-    -- 主窗口背景
     floatingWindow.BackgroundColor3 = theme.mainBg
-    -- 侧边栏背景
     sideBar.BackgroundColor3 = theme.sideBg
-    -- 标题栏背景
     titleBar.BackgroundColor3 = theme.sideBg
-    -- 选项卡按钮颜色
     for _, btn in pairs(sideBarButtons) do
         if btn.isSelected then
             btn.BackgroundColor3 = theme.accent
         else
             btn.BackgroundColor3 = theme.sideBg
         end
+        btn.TextColor3 = theme.text
     end
-    -- 内容区域文字颜色
     if contentText then contentText.TextColor3 = theme.text end
-    -- 缩小方块背景
     minimizedSquare.BackgroundColor3 = theme.accent
-    -- 外发光
     glowBorder.BackgroundColor3 = theme.glow
 end
 
@@ -95,20 +116,18 @@ local function setPositionFromCenter(guiObject, centerPos)
     guiObject.Position = UDim2.new(0, newPos.X, 0, newPos.Y)
 end
 
--- ==================== 右下角提示 ====================
+-- 右下角通知
 local function showNotification(message, duration)
     local notification = Instance.new("Frame")
-    notification.Size = UDim2.new(0, 240, 0, 50)
-    notification.Position = UDim2.new(1, -260, 1, -70)
+    notification.Size = UDim2.new(0, 260, 0, 48)
+    notification.Position = UDim2.new(1, -280, 1, -68)
     notification.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
     notification.BackgroundTransparency = 0.1
     notification.BorderSizePixel = 0
     notification.Parent = screenGui
-
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 12)
     corner.Parent = notification
-
     local text = Instance.new("TextLabel")
     text.Size = UDim2.new(1, -20, 1, 0)
     text.Position = UDim2.new(0, 10, 0, 0)
@@ -116,11 +135,9 @@ local function showNotification(message, duration)
     text.Text = message
     text.TextColor3 = Color3.fromRGB(255, 255, 255)
     text.TextSize = 14
-    text.TextXAlignment = Enum.TextXAlignment.Left
     text.Font = Enum.Font.Gotham
     text.Parent = notification
-
-    TweenService:Create(notification, TweenInfo.new(0.3), {Position = UDim2.new(1, -250, 1, -70)}):Play()
+    TweenService:Create(notification, TweenInfo.new(0.3), {Position = UDim2.new(1, -270, 1, -68)}):Play()
     task.wait(duration)
     TweenService:Create(notification, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
     task.wait(0.3)
@@ -135,14 +152,13 @@ end)
 local floatingWindow = Instance.new("Frame")
 floatingWindow.Name = "FloatingWindow"
 floatingWindow.Size = windowSize
-floatingWindow.Position = UDim2.new(0.5, -210, 0.5, -150)
+floatingWindow.Position = UDim2.new(0.5, -220, 0.5, -160)
 floatingWindow.BackgroundColor3 = themes.Ocean.mainBg
 floatingWindow.BackgroundTransparency = 0.05
 floatingWindow.BorderSizePixel = 0
 floatingWindow.ClipsDescendants = true
 floatingWindow.Parent = screenGui
 
--- 圆角
 local windowCorner = Instance.new("UICorner")
 windowCorner.CornerRadius = UDim.new(0, 16)
 windowCorner.Parent = floatingWindow
@@ -184,34 +200,31 @@ local sideCorner = Instance.new("UICorner")
 sideCorner.CornerRadius = UDim.new(0, 16)
 sideCorner.Parent = sideBar
 
--- 侧边栏按钮容器
 local sideButtonContainer = Instance.new("Frame")
-sideButtonContainer.Size = UDim2.new(1, 0, 0, 120)
+sideButtonContainer.Size = UDim2.new(1, 0, 0, 180)
 sideButtonContainer.Position = UDim2.new(0, 0, 0, 20)
 sideButtonContainer.BackgroundTransparency = 1
 sideButtonContainer.Parent = sideBar
 
-local sideBarButtons = {}  -- 存储按钮对象
+local sideBarButtons = {}
 
--- 创建选项卡按钮
 local function createSideButton(name, icon, yPos, onClick)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.9, 0, 0, 44)
+    btn.Size = UDim2.new(0.9, 0, 0, 46)
     btn.Position = UDim2.new(0.05, 0, 0, yPos)
     btn.BackgroundColor3 = themes.Ocean.sideBg
     btn.BackgroundTransparency = 0.3
     btn.Text = "  " .. icon .. "  " .. name
     btn.TextColor3 = themes.Ocean.text
-    btn.TextSize = 14
+    btn.TextSize = 15
     btn.TextXAlignment = Enum.TextXAlignment.Left
     btn.Font = Enum.Font.Gotham
     btn.BorderSizePixel = 0
     btn.AutoButtonColor = false
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
+    corner.CornerRadius = UDim.new(0, 10)
     corner.Parent = btn
     btn.Parent = sideButtonContainer
-    
     btn.MouseButton1Click:Connect(onClick)
     btn.MouseEnter:Connect(function()
         if not btn.isSelected then
@@ -236,7 +249,7 @@ contentArea.Parent = floatingWindow
 
 -- 标题栏（左上角可拖动区域）
 local titleBar = Instance.new("Frame")
-titleBar.Size = UDim2.new(1, 0, 0, 48)
+titleBar.Size = UDim2.new(1, 0, 0, 52)
 titleBar.BackgroundColor3 = themes.Ocean.sideBg
 titleBar.BackgroundTransparency = 0.3
 titleBar.BorderSizePixel = 0
@@ -245,50 +258,47 @@ local titleCorner = Instance.new("UICorner")
 titleCorner.CornerRadius = UDim.new(0, 16)
 titleCorner.Parent = titleBar
 
--- 左上角拖动把手图标
 local dragHandle = Instance.new("TextButton")
-dragHandle.Size = UDim2.new(0, 40, 0, 40)
+dragHandle.Size = UDim2.new(0, 44, 0, 44)
 dragHandle.Position = UDim2.new(0, 8, 0, 4)
 dragHandle.BackgroundTransparency = 1
 dragHandle.Text = "☰"
 dragHandle.TextColor3 = Color3.fromRGB(220, 220, 255)
-dragHandle.TextSize = 24
+dragHandle.TextSize = 28
 dragHandle.Font = Enum.Font.GothamBold
 dragHandle.AutoButtonColor = false
 dragHandle.Parent = titleBar
 
--- 标题文字
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(0, 120, 1, 0)
-titleLabel.Position = UDim2.new(0, 52, 0, 0)
+titleLabel.Size = UDim2.new(0, 140, 1, 0)
+titleLabel.Position = UDim2.new(0, 56, 0, 0)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "XU 脚本中心"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.TextSize = 18
+titleLabel.TextSize = 20
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Font = Enum.Font.GothamBold
 titleLabel.Parent = titleBar
 
--- 缩小按钮
 local minimizeButton = Instance.new("TextButton")
-minimizeButton.Size = UDim2.new(0, 36, 0, 36)
-minimizeButton.Position = UDim2.new(1, -48, 0, 6)
+minimizeButton.Size = UDim2.new(0, 40, 0, 40)
+minimizeButton.Position = UDim2.new(1, -52, 0, 6)
 minimizeButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
 minimizeButton.BackgroundTransparency = 0.2
 minimizeButton.Text = "−"
 minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-minimizeButton.TextSize = 28
+minimizeButton.TextSize = 32
 minimizeButton.Font = Enum.Font.GothamBold
 minimizeButton.AutoButtonColor = false
 minimizeButton.Parent = titleBar
 local minCorner = Instance.new("UICorner")
-minCorner.CornerRadius = UDim.new(0, 10)
+minCorner.CornerRadius = UDim.new(0, 12)
 minCorner.Parent = minimizeButton
 
--- 主内容显示区（动态更新）
+-- 主内容显示区
 local contentDisplay = Instance.new("Frame")
-contentDisplay.Size = UDim2.new(1, -24, 1, -64)
-contentDisplay.Position = UDim2.new(0, 12, 0, 56)
+contentDisplay.Size = UDim2.new(1, -24, 1, -68)
+contentDisplay.Position = UDim2.new(0, 12, 0, 60)
 contentDisplay.BackgroundTransparency = 1
 contentDisplay.Parent = contentArea
 
@@ -296,29 +306,28 @@ local contentText = Instance.new("TextLabel")
 contentText.Size = UDim2.new(1, 0, 1, 0)
 contentText.BackgroundTransparency = 1
 contentText.TextColor3 = themes.Ocean.text
-contentText.TextSize = 14
+contentText.TextSize = 15
 contentText.TextXAlignment = Enum.TextXAlignment.Center
 contentText.TextYAlignment = Enum.TextYAlignment.Top
 contentText.Font = Enum.Font.Gotham
 contentText.LineHeight = 1.5
 contentText.Parent = contentDisplay
 
--- ==================== 侧边栏内容切换 ====================
--- 页面1：作者信息
+-- ==================== 页面内容 ====================
+-- 作者页面
 local function showAuthorPage()
-    contentText.Text = "作者：HaoChen\n\nQQ：1626844714\n\n感谢使用 XU 脚本中心\n更多功能敬请期待"
+    contentText.Text = "【作者信息】\n\n姓名：HaoChen\n\nQQ：1626844714\n\n感谢使用 XU 脚本中心\n更多精彩功能敬请期待"
 end
 
--- 页面2：主题切换
-local themeButtons = {}  -- 存储主题选项按钮
+-- 主题页面（动态生成主题按钮）
+local themeButtons = {}
 local function showThemePage()
-    -- 清空之前内容（但保留contentText，重新设置）
-    contentText.Text = ""  -- 清空文字，改用按钮
-    -- 移除旧的themeButtons
+    -- 清空原有内容
     for _, btn in pairs(themeButtons) do
         btn:Destroy()
     end
     themeButtons = {}
+    contentText.Visible = false  -- 隐藏文字，改用按钮
     
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, 0, 1, 0)
@@ -328,8 +337,8 @@ local function showThemePage()
     local yOffset = 10
     for themeName, themeData in pairs(themes) do
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0.8, 0, 0, 40)
-        btn.Position = UDim2.new(0.1, 0, 0, yOffset)
+        btn.Size = UDim2.new(0.85, 0, 0, 44)
+        btn.Position = UDim2.new(0.075, 0, 0, yOffset)
         btn.BackgroundColor3 = themeData.button
         btn.BackgroundTransparency = 0.2
         btn.Text = themeData.name
@@ -344,32 +353,25 @@ local function showThemePage()
         btn.MouseButton1Click:Connect(function()
             currentTheme = themeName
             applyTheme(currentTheme)
-            showNotification("主题已切换为 " .. themeData.name, 1)
+            showNotification("已切换至 " .. themeData.name, 1.2)
         end)
         table.insert(themeButtons, btn)
         yOffset = yOffset + 52
     end
-    -- 同时清空旧的contentText（防止残留）
-    contentText.Visible = false
-    -- 但需要确保重新显示作者页面时恢复contentText可见
-    local function restoreContentText()
+    -- 保存恢复函数
+    window.restoreThemePage = function()
         contentText.Visible = true
         for _, btn in pairs(themeButtons) do btn:Destroy() end
         themeButtons = {}
     end
-    -- 暂时存储恢复函数，在切换页面时调用
-    if window.restoreThemePage then window.restoreThemePage() end
-    window.restoreThemePage = restoreContentText
 end
 
--- 选项卡点击事件
+-- ==================== 侧边栏按钮事件 ====================
 local authorBtn = createSideButton("作者", "📄", 20, function()
     for _, btn in pairs(sideBarButtons) do btn.isSelected = false end
     authorBtn.isSelected = true
-    applyTheme(currentTheme)  -- 刷新选中样式
-    -- 清除主题页面残留
+    applyTheme(currentTheme)
     if window.restoreThemePage then window.restoreThemePage() end
-    contentText.Visible = true
     showAuthorPage()
 end)
 
@@ -424,10 +426,9 @@ minimizedSquare.Visible = false
 minimizedSquare.Parent = screenGui
 
 local squareCorner = Instance.new("UICorner")
-squareCorner.CornerRadius = UDim.new(0, 12)   -- 圆角正方形
+squareCorner.CornerRadius = UDim.new(0, 14)
 squareCorner.Parent = minimizedSquare
 
--- 内发光效果
 local innerGlow = Instance.new("Frame")
 innerGlow.Size = UDim2.new(0.8, 0, 0.8, 0)
 innerGlow.Position = UDim2.new(0.1, 0, 0.1, 0)
@@ -436,21 +437,20 @@ innerGlow.BackgroundTransparency = 0.6
 innerGlow.BorderSizePixel = 0
 innerGlow.Parent = minimizedSquare
 local innerCorner = Instance.new("UICorner")
-innerCorner.CornerRadius = UDim.new(0, 8)
+innerCorner.CornerRadius = UDim.new(0, 10)
 innerCorner.Parent = innerGlow
 
--- XU 文字标志
 local xuLabel = Instance.new("TextLabel")
 xuLabel.Size = UDim2.new(1, 0, 1, 0)
 xuLabel.BackgroundTransparency = 1
 xuLabel.Text = "XU"
 xuLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-xuLabel.TextSize = 20
+xuLabel.TextSize = 22
 xuLabel.Font = Enum.Font.GothamBold
 xuLabel.TextScaled = true
 xuLabel.Parent = minimizedSquare
 
--- ==================== 小方块长按拖动与单击恢复 ====================
+-- ==================== 小正方形长按拖动与单击恢复 ====================
 local squareDrag = {
     active = false,
     isDragging = false,
@@ -478,7 +478,6 @@ local function startSquareDragProcess(startInput)
     squareDrag.startMouse = startInput.Position
     squareDrag.pressTime = tick()
 
-    -- 长按定时器：2秒后进入拖动模式
     squareDrag.longPressTimer = task.delay(longPressDuration, function()
         if squareDrag.active and not squareDrag.isDragging then
             squareDrag.isDragging = true
@@ -492,7 +491,6 @@ local function startSquareDragProcess(startInput)
             local delta = input.Position - squareDrag.startMouse
             local distance = math.sqrt(delta.X^2 + delta.Y^2)
             if not squareDrag.isDragging and distance >= dragThreshold then
-                -- 如果移动超过阈值且还未进入拖动模式，直接进入（无需等待2秒）
                 squareDrag.isDragging = true
                 if squareDrag.longPressTimer then task.cancel(squareDrag.longPressTimer) end
                 TweenService:Create(minimizedSquare, TweenInfo.new(0.2), {BackgroundTransparency = 0.3}):Play()
@@ -509,7 +507,6 @@ local function startSquareDragProcess(startInput)
         if not squareDrag.active then return end
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             local pressDuration = tick() - squareDrag.pressTime
-            -- 如果没有进入拖动模式且按下时间小于长按阈值，视为单击 -> 恢复窗口
             if not squareDrag.isDragging and pressDuration < longPressDuration then
                 restoreWindowFromSquare()
             end
@@ -531,8 +528,8 @@ local function minimizeToSquare()
     floatingWindow.Visible = false
     minimizedSquare.Visible = true
     setPositionFromCenter(minimizedSquare, windowCenter)
-    -- 脉冲动画
-    TweenService:Create(minimizedSquare, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+    -- 呼吸脉冲
+    TweenService:Create(minimizedSquare, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
         {BackgroundTransparency = 0.25}):Play()
 end
 
@@ -541,17 +538,15 @@ local function restoreWindowFromSquare()
     floatingWindow.Visible = true
     minimizedSquare.Visible = false
     setPositionFromCenter(floatingWindow, squareCenter)
-    -- 停止脉冲
     TweenService:Create(minimizedSquare, TweenInfo.new(0), {BackgroundTransparency = 0.1}):Cancel()
     minimizedSquare.BackgroundTransparency = 0.1
 end
 
--- 缩小按钮点击
 minimizeButton.MouseButton1Click:Connect(function()
     minimizeToSquare()
 end)
 
--- ==================== 悬停效果美化 ====================
+-- ==================== 悬停美化 ====================
 minimizeButton.MouseEnter:Connect(function()
     minimizeButton.BackgroundTransparency = 0
     TweenService:Create(minimizeButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 70, 70)}):Play()
@@ -572,4 +567,4 @@ end)
 floatingWindow.Visible = true
 minimizedSquare.Visible = false
 
-print("XU 脚本中心 v2.0 已加载 - 长按小方块2秒可移动")
+print("XU 脚本中心 v3.0 已加载 - 长按小方块2秒可移动")
