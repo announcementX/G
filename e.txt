@@ -1,232 +1,186 @@
 --[[
     XU 脚本悬浮窗 by HaoChen
-    功能：可拖拽悬浮窗、最小化/恢复、侧边栏栏目切换、12种完整样式
-    修复：彻底解决脚本无反应的问题
+    功能：可拖拽、最小化、侧边栏切换、12种样式（颜色+布局）
+    修复：样式按钮现在能正常切换颜色和侧边栏位置
 ]]
 
--- 服务
-local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local player = Players.LocalPlayer
 
--- ========== 1. 简化的加载提示（确保脚本能运行） ==========
+-- 加载提示
 local loadGui = Instance.new("ScreenGui")
-loadGui.Name = "LoadAnimationGui"
 loadGui.Parent = game.CoreGui
-loadGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-loadGui.IgnoreGuiInset = true
-
--- 简单的加载文字（不搞复杂动画，先确保能显示）
 local loadText = Instance.new("TextLabel")
 loadText.Size = UDim2.new(0, 200, 0, 50)
 loadText.Position = UDim2.new(0.5, -100, 0.5, -25)
 loadText.BackgroundTransparency = 1
 loadText.Text = "加载中..."
-loadText.TextColor3 = Color3.fromRGB(255, 255, 255)
+loadText.TextColor3 = Color3.new(1,1,1)
 loadText.TextSize = 20
 loadText.Font = Enum.Font.GothamSemibold
 loadText.Parent = loadGui
-
--- 短暂显示加载提示
 task.wait(0.5)
 loadGui:Destroy()
-task.wait(0.1)
 
--- ========== 2. 主界面 ==========
+-- 主GUI
 local mainGui = Instance.new("ScreenGui")
 mainGui.Name = "XU_Script_GUI"
 mainGui.Parent = game.CoreGui
-mainGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 mainGui.ResetOnSpawn = false
-mainGui.IgnoreGuiInset = true
 
--- 主窗口
+-- 主窗口 (350x280)
 local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 500, 0, 400)
-mainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+mainFrame.Size = UDim2.new(0, 350, 0, 280)
+mainFrame.Position = UDim2.new(0.5, -175, 0.5, -140)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30,30,45)
 mainFrame.BackgroundTransparency = 0
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
 mainFrame.Parent = mainGui
-
--- 圆角
 local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.CornerRadius = UDim.new(0,10)
 mainCorner.Parent = mainFrame
 
--- 阴影效果
+-- 阴影
 local shadow = Instance.new("Frame")
-shadow.Size = UDim2.new(1, 0, 1, 0)
-shadow.Position = UDim2.new(0, 6, 0, 6)
-shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+shadow.Size = UDim2.new(1,0,1,0)
+shadow.Position = UDim2.new(0,5,0,5)
+shadow.BackgroundColor3 = Color3.new(0,0,0)
 shadow.BackgroundTransparency = 0.6
 shadow.BorderSizePixel = 0
 shadow.ZIndex = -1
 shadow.Parent = mainFrame
 local shadowCorner = Instance.new("UICorner")
-shadowCorner.CornerRadius = UDim.new(0, 12)
+shadowCorner.CornerRadius = UDim.new(0,10)
 shadowCorner.Parent = shadow
 
--- ========== 3. 标题栏 ==========
+-- 标题栏
 local titleBar = Instance.new("Frame")
-titleBar.Size = UDim2.new(1, 0, 0, 38)
-titleBar.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+titleBar.Size = UDim2.new(1,0,0,32)
+titleBar.BackgroundColor3 = Color3.fromRGB(50,50,70)
 titleBar.BorderSizePixel = 0
 titleBar.Parent = mainFrame
-
 local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 12)
+titleCorner.CornerRadius = UDim.new(0,10)
 titleCorner.Parent = titleBar
 
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(0.5, 0, 1, 0)
-titleLabel.Position = UDim2.new(0, 15, 0, 0)
+titleLabel.Size = UDim2.new(0.5,0,1,0)
+titleLabel.Position = UDim2.new(0,10,0,0)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "XU 脚本工具"
-titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextColor3 = Color3.new(1,1,1)
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Font = Enum.Font.GothamSemibold
-titleLabel.TextSize = 16
+titleLabel.TextSize = 15
 titleLabel.Parent = titleBar
 
+-- 北京时间
 local clockLabel = Instance.new("TextLabel")
-clockLabel.Size = UDim2.new(0, 130, 1, 0)
-clockLabel.Position = UDim2.new(0.5, -65, 0, 0)
+clockLabel.Size = UDim2.new(0,120,1,0)
+clockLabel.Position = UDim2.new(0.5,-60,0,0)
 clockLabel.BackgroundTransparency = 1
 clockLabel.Text = "--:--:--"
-clockLabel.TextColor3 = Color3.fromRGB(220, 220, 255)
+clockLabel.TextColor3 = Color3.fromRGB(220,220,255)
 clockLabel.TextXAlignment = Enum.TextXAlignment.Center
 clockLabel.Font = Enum.Font.Gotham
-clockLabel.TextSize = 14
+clockLabel.TextSize = 13
 clockLabel.Parent = titleBar
 
+-- 最小化按钮
 local minBtn = Instance.new("TextButton")
-minBtn.Size = UDim2.new(0, 40, 1, 0)
-minBtn.Position = UDim2.new(1, -40, 0, 0)
-minBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 95)
+minBtn.Size = UDim2.new(0,35,1,0)
+minBtn.Position = UDim2.new(1,-35,0,0)
+minBtn.BackgroundColor3 = Color3.fromRGB(70,70,95)
 minBtn.Text = "—"
-minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minBtn.TextColor3 = Color3.new(1,1,1)
 minBtn.TextSize = 24
 minBtn.Font = Enum.Font.GothamBold
 minBtn.AutoButtonColor = false
 minBtn.Parent = titleBar
 local minCorner = Instance.new("UICorner")
-minCorner.CornerRadius = UDim.new(0, 8)
+minCorner.CornerRadius = UDim.new(0,6)
 minCorner.Parent = minBtn
 
--- ========== 4. 拖拽系统 ==========
+-- 拖拽系统
 local dragActive = false
-local dragStartPos = nil
-local dragFrameStartPos = nil
-local longPressTimer = nil
-local isLongPressing = false
-
-local function startMainDrag(input)
-    dragActive = true
-    dragStartPos = input.Position
-    dragFrameStartPos = mainFrame.Position
-end
-
-local function updateMainDrag(input)
-    if not dragActive then return end
-    local delta = input.Position - dragStartPos
-    local newX = dragFrameStartPos.X.Offset + delta.X
-    local newY = dragFrameStartPos.Y.Offset + delta.Y
-    local maxX = game.CoreGui.AbsoluteSize.X - mainFrame.AbsoluteSize.X
-    local maxY = game.CoreGui.AbsoluteSize.Y - mainFrame.AbsoluteSize.Y
-    mainFrame.Position = UDim2.new(0, math.clamp(newX, 0, maxX), 0, math.clamp(newY, 0, maxY))
-end
-
+local dragStart = nil
+local startPos = nil
 titleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        startMainDrag(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragActive = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if dragActive and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        local newX = startPos.X.Offset + delta.X
+        local newY = startPos.Y.Offset + delta.Y
+        local maxX = game.CoreGui.AbsoluteSize.X - mainFrame.AbsoluteSize.X
+        local maxY = game.CoreGui.AbsoluteSize.Y - mainFrame.AbsoluteSize.Y
+        mainFrame.Position = UDim2.new(0, math.clamp(newX,0,maxX), 0, math.clamp(newY,0,maxY))
+    end
+end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragActive = false
     end
 end)
 
--- ========== 5. 最小化小方块 ==========
+-- 小方块
 local miniFrame = Instance.new("Frame")
-miniFrame.Name = "MiniFrame"
-miniFrame.Size = UDim2.new(0, 60, 0, 60)
-miniFrame.Position = UDim2.new(0.85, 0, 0.85, 0)
-miniFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-miniFrame.BackgroundTransparency = 0
+miniFrame.Size = UDim2.new(0,55,0,55)
+miniFrame.Position = UDim2.new(0.85,0,0.85,0)
+miniFrame.BackgroundColor3 = Color3.fromRGB(50,50,70)
 miniFrame.BorderSizePixel = 0
 miniFrame.Visible = false
 miniFrame.Parent = mainGui
-
 local miniCorner = Instance.new("UICorner")
-miniCorner.CornerRadius = UDim.new(0, 12)
+miniCorner.CornerRadius = UDim.new(0,12)
 miniCorner.Parent = miniFrame
-
 local miniText = Instance.new("TextLabel")
-miniText.Size = UDim2.new(1, 0, 1, 0)
+miniText.Size = UDim2.new(1,0,1,0)
 miniText.BackgroundTransparency = 1
 miniText.Text = "XU"
-miniText.TextColor3 = Color3.fromRGB(255, 255, 255)
-miniText.TextSize = 18
+miniText.TextColor3 = Color3.new(1,1,1)
+miniText.TextSize = 16
 miniText.Font = Enum.Font.GothamBold
 miniText.Parent = miniFrame
 
 local miniDragActive = false
-local miniDragStartPos = nil
-local miniDragFrameStartPos = nil
-
-local function startMiniDrag(input)
-    miniDragActive = true
-    miniDragStartPos = input.Position
-    miniDragFrameStartPos = miniFrame.Position
-end
-
-local function updateMiniDrag(input)
-    if not miniDragActive then return end
-    local delta = input.Position - miniDragStartPos
-    local newX = miniDragFrameStartPos.X.Offset + delta.X
-    local newY = miniDragFrameStartPos.Y.Offset + delta.Y
-    local maxX = game.CoreGui.AbsoluteSize.X - miniFrame.AbsoluteSize.X
-    local maxY = game.CoreGui.AbsoluteSize.Y - miniFrame.AbsoluteSize.Y
-    miniFrame.Position = UDim2.new(0, math.clamp(newX, 0, maxX), 0, math.clamp(newY, 0, maxY))
-end
-
+local miniDragStart = nil
+local miniStartPos = nil
+local longPress = nil
 miniFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        isLongPressing = true
-        longPressTimer = task.delay(0.35, function()
-            if isLongPressing then
-                startMiniDrag(input)
-            end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        longPress = task.delay(0.35, function()
+            miniDragActive = true
+            miniDragStart = input.Position
+            miniStartPos = miniFrame.Position
         end)
     end
 end)
-
-miniFrame.InputEnded:Connect(function()
-    if longPressTimer then
-        longPressTimer:Cancel()
-        longPressTimer = nil
-    end
+miniFrame.InputEnded:Connect(function(input)
+    if longPress then longPress:Cancel() end
     if miniDragActive then
         miniDragActive = false
-    elseif isLongPressing and miniFrame.Visible then
+    elseif miniFrame.Visible then
         mainFrame.Visible = true
         miniFrame.Visible = false
         mainFrame.Position = UDim2.new(0, miniFrame.AbsolutePosition.X, 0, miniFrame.AbsolutePosition.Y)
     end
-    isLongPressing = false
 end)
-
 UserInputService.InputChanged:Connect(function(input)
-    if dragActive and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        updateMainDrag(input)
-    elseif miniDragActive and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        updateMiniDrag(input)
+    if miniDragActive and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - miniDragStart
+        local newX = miniStartPos.X.Offset + delta.X
+        local newY = miniStartPos.Y.Offset + delta.Y
+        local maxX = game.CoreGui.AbsoluteSize.X - miniFrame.AbsoluteSize.X
+        local maxY = game.CoreGui.AbsoluteSize.Y - miniFrame.AbsoluteSize.Y
+        miniFrame.Position = UDim2.new(0, math.clamp(newX,0,maxX), 0, math.clamp(newY,0,maxY))
     end
-end)
-
-UserInputService.InputEnded:Connect(function()
-    dragActive = false
-    miniDragActive = false
 end)
 
 minBtn.MouseButton1Click:Connect(function()
@@ -234,267 +188,251 @@ minBtn.MouseButton1Click:Connect(function()
     miniFrame.Visible = true
     miniFrame.Position = UDim2.new(0, mainFrame.AbsolutePosition.X, 0, mainFrame.AbsolutePosition.Y)
     miniFrame.BackgroundColor3 = mainFrame.BackgroundColor3
-    miniText.TextColor3 = titleLabel.TextColor3
 end)
 
--- ========== 6. 侧边栏 ==========
+-- 侧边栏容器（位置会动态改变）
 local sidebar = Instance.new("Frame")
 sidebar.Name = "Sidebar"
-sidebar.Size = UDim2.new(0, 130, 1, -38)
-sidebar.Position = UDim2.new(0, 0, 0, 38)
-sidebar.BackgroundColor3 = Color3.fromRGB(40, 40, 58)
+sidebar.BackgroundColor3 = Color3.fromRGB(40,40,58)
 sidebar.BorderSizePixel = 0
 sidebar.Parent = mainFrame
-
 local sidebarCorner = Instance.new("UICorner")
-sidebarCorner.CornerRadius = UDim.new(0, 10)
+sidebarCorner.CornerRadius = UDim.new(0,8)
 sidebarCorner.Parent = sidebar
 
 local sidebarList = Instance.new("Frame")
 sidebarList.BackgroundTransparency = 1
-sidebarList.Size = UDim2.new(1, 0, 1, 0)
 sidebarList.Parent = sidebar
-
 local listLayout = Instance.new("UIListLayout")
-listLayout.Padding = UDim.new(0, 8)
+listLayout.Padding = UDim.new(0,6)
 listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 listLayout.Parent = sidebarList
 
--- ========== 7. 内容区域 ==========
+-- 内容区域
 local contentArea = Instance.new("Frame")
 contentArea.Name = "ContentArea"
-contentArea.Size = UDim2.new(1, -130, 1, -38)
-contentArea.Position = UDim2.new(0, 130, 0, 38)
-contentArea.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
+contentArea.BackgroundColor3 = Color3.fromRGB(25,25,40)
 contentArea.BorderSizePixel = 0
 contentArea.Parent = mainFrame
-
 local contentCorner = Instance.new("UICorner")
-contentCorner.CornerRadius = UDim.new(0, 10)
+contentCorner.CornerRadius = UDim.new(0,8)
 contentCorner.Parent = contentArea
 
+-- 面板
 local infoPanel = Instance.new("Frame")
-infoPanel.Name = "InfoPanel"
 infoPanel.BackgroundTransparency = 1
-infoPanel.Size = UDim2.new(1, 0, 1, 0)
 infoPanel.Parent = contentArea
 infoPanel.Visible = true
-
 local stylePanel = Instance.new("Frame")
-stylePanel.Name = "StylePanel"
 stylePanel.BackgroundTransparency = 1
-stylePanel.Size = UDim2.new(1, 0, 1, 0)
 stylePanel.Parent = contentArea
 stylePanel.Visible = false
 
--- ========== 8. 栏目定义 ==========
-local tabs = {
-    {name = "信息", id = "info"},
-    {name = "样式", id = "style"}
-}
+-- 栏目
+local tabs = {{name="信息", id="info"},{name="样式", id="style"}}
 local selectedTab = "info"
 local tabButtons = {}
 
--- ========== 9. 12种样式数据 ==========
+-- 样式数据（12种）
 local stylesData = {
-    {name = "暗夜紫罗兰", mainBg = Color3.fromRGB(25,20,35), sidebarBg = Color3.fromRGB(35,28,48), titleBg = Color3.fromRGB(45,38,58), contentBg = Color3.fromRGB(20,16,30), textColor = Color3.fromRGB(220,210,255), accentColor = Color3.fromRGB(140,100,220), cardBg = Color3.fromRGB(30,24,42), hoverColor = Color3.fromRGB(160,120,240)},
-    {name = "深海梦境", mainBg = Color3.fromRGB(15,40,55), sidebarBg = Color3.fromRGB(20,50,70), titleBg = Color3.fromRGB(25,60,82), contentBg = Color3.fromRGB(12,35,48), textColor = Color3.fromRGB(180,230,255), accentColor = Color3.fromRGB(0,180,200), cardBg = Color3.fromRGB(18,45,62), hoverColor = Color3.fromRGB(0,210,230)},
-    {name = "暖阳橙韵", mainBg = Color3.fromRGB(70,45,30), sidebarBg = Color3.fromRGB(85,55,40), titleBg = Color3.fromRGB(100,65,48), contentBg = Color3.fromRGB(60,38,25), textColor = Color3.fromRGB(255,235,200), accentColor = Color3.fromRGB(255,150,80), cardBg = Color3.fromRGB(78,52,38), hoverColor = Color3.fromRGB(255,180,100)},
-    {name = "赛博霓虹", mainBg = Color3.fromRGB(10,8,20), sidebarBg = Color3.fromRGB(18,14,35), titleBg = Color3.fromRGB(25,20,48), contentBg = Color3.fromRGB(8,6,18), textColor = Color3.fromRGB(0,255,200), accentColor = Color3.fromRGB(255,0,150), cardBg = Color3.fromRGB(15,12,28), hoverColor = Color3.fromRGB(255,50,180)},
-    {name = "樱花粉甜", mainBg = Color3.fromRGB(55,35,50), sidebarBg = Color3.fromRGB(70,45,65), titleBg = Color3.fromRGB(85,55,78), contentBg = Color3.fromRGB(48,30,44), textColor = Color3.fromRGB(255,220,240), accentColor = Color3.fromRGB(255,120,160), cardBg = Color3.fromRGB(62,40,58), hoverColor = Color3.fromRGB(255,150,190)},
-    {name = "森林秘境", mainBg = Color3.fromRGB(25,45,30), sidebarBg = Color3.fromRGB(35,60,42), titleBg = Color3.fromRGB(45,75,55), contentBg = Color3.fromRGB(20,38,25), textColor = Color3.fromRGB(200,255,210), accentColor = Color3.fromRGB(80,200,100), cardBg = Color3.fromRGB(30,52,38), hoverColor = Color3.fromRGB(100,230,120)},
-    {name = "极简黑白", mainBg = Color3.fromRGB(20,20,20), sidebarBg = Color3.fromRGB(35,35,35), titleBg = Color3.fromRGB(50,50,50), contentBg = Color3.fromRGB(15,15,15), textColor = Color3.fromRGB(255,255,255), accentColor = Color3.fromRGB(100,100,100), cardBg = Color3.fromRGB(30,30,30), hoverColor = Color3.fromRGB(130,130,130)},
-    {name = "日落海岸", mainBg = Color3.fromRGB(80,45,35), sidebarBg = Color3.fromRGB(100,55,45), titleBg = Color3.fromRGB(120,65,55), contentBg = Color3.fromRGB(70,38,28), textColor = Color3.fromRGB(255,210,150), accentColor = Color3.fromRGB(255,100,50), cardBg = Color3.fromRGB(90,50,40), hoverColor = Color3.fromRGB(255,130,80)},
-    {name = "冰霜极地", mainBg = Color3.fromRGB(40,55,65), sidebarBg = Color3.fromRGB(55,70,82), titleBg = Color3.fromRGB(70,85,98), contentBg = Color3.fromRGB(35,48,58), textColor = Color3.fromRGB(210,240,255), accentColor = Color3.fromRGB(100,200,230), cardBg = Color3.fromRGB(48,62,74), hoverColor = Color3.fromRGB(130,220,250)},
-    {name = "暗金奢华", mainBg = Color3.fromRGB(20,18,22), sidebarBg = Color3.fromRGB(35,30,38), titleBg = Color3.fromRGB(50,42,55), contentBg = Color3.fromRGB(16,14,18), textColor = Color3.fromRGB(255,220,120), accentColor = Color3.fromRGB(212,175,55), cardBg = Color3.fromRGB(28,24,32), hoverColor = Color3.fromRGB(230,195,80)},
-    {name = "糖果乐园", mainBg = Color3.fromRGB(65,40,70), sidebarBg = Color3.fromRGB(85,50,92), titleBg = Color3.fromRGB(105,60,115), contentBg = Color3.fromRGB(58,35,62), textColor = Color3.fromRGB(255,230,150), accentColor = Color3.fromRGB(255,100,200), cardBg = Color3.fromRGB(75,45,82), hoverColor = Color3.fromRGB(255,130,220)},
-    {name = "午夜蓝调", mainBg = Color3.fromRGB(10,12,30), sidebarBg = Color3.fromRGB(18,20,45), titleBg = Color3.fromRGB(28,30,58), contentBg = Color3.fromRGB(8,10,25), textColor = Color3.fromRGB(150,180,255), accentColor = Color3.fromRGB(50,100,220), cardBg = Color3.fromRGB(14,16,38), hoverColor = Color3.fromRGB(80,130,250)}
+    {name="暗夜紫罗兰", mainBg=Color3.fromRGB(25,20,35), sidebarBg=Color3.fromRGB(35,28,48), titleBg=Color3.fromRGB(45,38,58), contentBg=Color3.fromRGB(20,16,30), textColor=Color3.fromRGB(220,210,255), accent=Color3.fromRGB(140,100,220), cardBg=Color3.fromRGB(30,24,42), hover=Color3.fromRGB(160,120,240), layout="left"},
+    {name="深海梦境", mainBg=Color3.fromRGB(15,40,55), sidebarBg=Color3.fromRGB(20,50,70), titleBg=Color3.fromRGB(25,60,82), contentBg=Color3.fromRGB(12,35,48), textColor=Color3.fromRGB(180,230,255), accent=Color3.fromRGB(0,180,200), cardBg=Color3.fromRGB(18,45,62), hover=Color3.fromRGB(0,210,230), layout="right"},
+    {name="暖阳橙韵", mainBg=Color3.fromRGB(70,45,30), sidebarBg=Color3.fromRGB(85,55,40), titleBg=Color3.fromRGB(100,65,48), contentBg=Color3.fromRGB(60,38,25), textColor=Color3.fromRGB(255,235,200), accent=Color3.fromRGB(255,150,80), cardBg=Color3.fromRGB(78,52,38), hover=Color3.fromRGB(255,180,100), layout="top"},
+    {name="赛博霓虹", mainBg=Color3.fromRGB(10,8,20), sidebarBg=Color3.fromRGB(18,14,35), titleBg=Color3.fromRGB(25,20,48), contentBg=Color3.fromRGB(8,6,18), textColor=Color3.fromRGB(0,255,200), accent=Color3.fromRGB(255,0,150), cardBg=Color3.fromRGB(15,12,28), hover=Color3.fromRGB(255,50,180), layout="left"},
+    {name="樱花粉甜", mainBg=Color3.fromRGB(55,35,50), sidebarBg=Color3.fromRGB(70,45,65), titleBg=Color3.fromRGB(85,55,78), contentBg=Color3.fromRGB(48,30,44), textColor=Color3.fromRGB(255,220,240), accent=Color3.fromRGB(255,120,160), cardBg=Color3.fromRGB(62,40,58), hover=Color3.fromRGB(255,150,190), layout="right"},
+    {name="森林秘境", mainBg=Color3.fromRGB(25,45,30), sidebarBg=Color3.fromRGB(35,60,42), titleBg=Color3.fromRGB(45,75,55), contentBg=Color3.fromRGB(20,38,25), textColor=Color3.fromRGB(200,255,210), accent=Color3.fromRGB(80,200,100), cardBg=Color3.fromRGB(30,52,38), hover=Color3.fromRGB(100,230,120), layout="top"},
+    {name="极简黑白", mainBg=Color3.fromRGB(20,20,20), sidebarBg=Color3.fromRGB(35,35,35), titleBg=Color3.fromRGB(50,50,50), contentBg=Color3.fromRGB(15,15,15), textColor=Color3.fromRGB(255,255,255), accent=Color3.fromRGB(100,100,100), cardBg=Color3.fromRGB(30,30,30), hover=Color3.fromRGB(130,130,130), layout="left"},
+    {name="日落海岸", mainBg=Color3.fromRGB(80,45,35), sidebarBg=Color3.fromRGB(100,55,45), titleBg=Color3.fromRGB(120,65,55), contentBg=Color3.fromRGB(70,38,28), textColor=Color3.fromRGB(255,210,150), accent=Color3.fromRGB(255,100,50), cardBg=Color3.fromRGB(90,50,40), hover=Color3.fromRGB(255,130,80), layout="right"},
+    {name="冰霜极地", mainBg=Color3.fromRGB(40,55,65), sidebarBg=Color3.fromRGB(55,70,82), titleBg=Color3.fromRGB(70,85,98), contentBg=Color3.fromRGB(35,48,58), textColor=Color3.fromRGB(210,240,255), accent=Color3.fromRGB(100,200,230), cardBg=Color3.fromRGB(48,62,74), hover=Color3.fromRGB(130,220,250), layout="top"},
+    {name="暗金奢华", mainBg=Color3.fromRGB(20,18,22), sidebarBg=Color3.fromRGB(35,30,38), titleBg=Color3.fromRGB(50,42,55), contentBg=Color3.fromRGB(16,14,18), textColor=Color3.fromRGB(255,220,120), accent=Color3.fromRGB(212,175,55), cardBg=Color3.fromRGB(28,24,32), hover=Color3.fromRGB(230,195,80), layout="left"},
+    {name="糖果乐园", mainBg=Color3.fromRGB(65,40,70), sidebarBg=Color3.fromRGB(85,50,92), titleBg=Color3.fromRGB(105,60,115), contentBg=Color3.fromRGB(58,35,62), textColor=Color3.fromRGB(255,230,150), accent=Color3.fromRGB(255,100,200), cardBg=Color3.fromRGB(75,45,82), hover=Color3.fromRGB(255,130,220), layout="right"},
+    {name="午夜蓝调", mainBg=Color3.fromRGB(10,12,30), sidebarBg=Color3.fromRGB(18,20,45), titleBg=Color3.fromRGB(28,30,58), contentBg=Color3.fromRGB(8,10,25), textColor=Color3.fromRGB(150,180,255), accent=Color3.fromRGB(50,100,220), cardBg=Color3.fromRGB(14,16,38), hover=Color3.fromRGB(80,130,250), layout="top"}
 }
-local currentStyleIndex = 1
-local styleButtons = {}
+local currentStyle = 1
 
--- ========== 10. 构建信息面板 ==========
+-- 构建信息面板
 local function buildInfoPanel(style)
-    for _, v in ipairs(infoPanel:GetChildren()) do
-        if v:IsA("Frame") then v:Destroy() end
-    end
-    
+    for _,v in ipairs(infoPanel:GetChildren()) do if v:IsA("Frame") then v:Destroy() end end
     local cardColor = style.cardBg
     local textColor = style.textColor
     local subColor = Color3.new(textColor.R*0.8, textColor.G*0.8, textColor.B*0.8)
     
-    local function addCard(y, height, text)
-        local card = Instance.new("Frame")
-        card.Size = UDim2.new(1, -24, 0, height)
-        card.Position = UDim2.new(0, 12, 0, y)
-        card.BackgroundColor3 = cardColor
-        card.BorderSizePixel = 0
-        card.Parent = infoPanel
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 8)
-        corner.Parent = card
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, -20, 1, 0)
-        label.Position = UDim2.new(0, 10, 0, 0)
-        label.BackgroundTransparency = 1
-        label.Text = text
-        label.TextColor3 = subColor
-        label.TextSize = 16
-        label.Font = Enum.Font.Gotham
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.TextYAlignment = Enum.TextYAlignment.Center
-        label.Parent = card
-    end
-    
     local titleCard = Instance.new("Frame")
-    titleCard.Size = UDim2.new(1, -24, 0, 45)
-    titleCard.Position = UDim2.new(0, 12, 0, 12)
+    titleCard.Size = UDim2.new(1,-20,0,40)
+    titleCard.Position = UDim2.new(0,10,0,10)
     titleCard.BackgroundColor3 = cardColor
     titleCard.BorderSizePixel = 0
     titleCard.Parent = infoPanel
-    local tCorner = Instance.new("UICorner")
-    tCorner.CornerRadius = UDim.new(0, 8)
-    tCorner.Parent = titleCard
+    local tc = Instance.new("UICorner")
+    tc.CornerRadius = UDim.new(0,6)
+    tc.Parent = titleCard
     local titleText = Instance.new("TextLabel")
-    titleText.Size = UDim2.new(1, -20, 1, 0)
-    titleText.Position = UDim2.new(0, 10, 0, 0)
+    titleText.Size = UDim2.new(1,-15,1,0)
+    titleText.Position = UDim2.new(0,8,0,0)
     titleText.BackgroundTransparency = 1
     titleText.Text = "作者信息"
     titleText.TextColor3 = textColor
-    titleText.TextSize = 18
+    titleText.TextSize = 16
     titleText.Font = Enum.Font.GothamBold
     titleText.TextXAlignment = Enum.TextXAlignment.Left
     titleText.Parent = titleCard
     
-    addCard(67, 50, "作者：HaoChen")
-    addCard(127, 50, "QQ：1626844714")
-    
+    local function addCard(y, h, txt)
+        local card = Instance.new("Frame")
+        card.Size = UDim2.new(1,-20,0,h)
+        card.Position = UDim2.new(0,10,0,y)
+        card.BackgroundColor3 = cardColor
+        card.BorderSizePixel = 0
+        card.Parent = infoPanel
+        local c = Instance.new("UICorner")
+        c.CornerRadius = UDim.new(0,6)
+        c.Parent = card
+        local lbl = Instance.new("TextLabel")
+        lbl.Size = UDim2.new(1,-15,1,0)
+        lbl.Position = UDim2.new(0,8,0,0)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = txt
+        lbl.TextColor3 = subColor
+        lbl.TextSize = 14
+        lbl.Font = Enum.Font.Gotham
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+        lbl.TextYAlignment = Enum.TextYAlignment.Center
+        lbl.Parent = card
+    end
+    addCard(60, 45, "作者：HaoChen")
+    addCard(115, 45, "QQ：1626844714")
     local descCard = Instance.new("Frame")
-    descCard.Size = UDim2.new(1, -24, 0, 80)
-    descCard.Position = UDim2.new(0, 12, 0, 187)
+    descCard.Size = UDim2.new(1,-20,0,70)
+    descCard.Position = UDim2.new(0,10,0,170)
     descCard.BackgroundColor3 = cardColor
     descCard.BorderSizePixel = 0
     descCard.Parent = infoPanel
-    local dCorner = Instance.new("UICorner")
-    dCorner.CornerRadius = UDim.new(0, 8)
-    dCorner.Parent = descCard
-    local descLabel = Instance.new("TextLabel")
-    descLabel.Size = UDim2.new(1, -20, 1, -10)
-    descLabel.Position = UDim2.new(0, 10, 0, 5)
-    descLabel.BackgroundTransparency = 1
-    descLabel.Text = "欢迎使用 XU 脚本工具\n本工具提供12种精美界面样式"
-    descLabel.TextColor3 = Color3.new(textColor.R*0.6, textColor.G*0.6, textColor.B*0.6)
-    descLabel.TextSize = 13
-    descLabel.Font = Enum.Font.Gotham
-    descLabel.TextXAlignment = Enum.TextXAlignment.Left
-    descLabel.TextWrapped = true
-    descLabel.Parent = descCard
+    local dc = Instance.new("UICorner")
+    dc.CornerRadius = UDim.new(0,6)
+    dc.Parent = descCard
+    local descLbl = Instance.new("TextLabel")
+    descLbl.Size = UDim2.new(1,-15,1,-5)
+    descLbl.Position = UDim2.new(0,8,0,5)
+    descLbl.BackgroundTransparency = 1
+    descLbl.Text = "欢迎使用 XU 脚本工具\n本工具提供12种样式"
+    descLbl.TextColor3 = Color3.new(textColor.R*0.6, textColor.G*0.6, textColor.B*0.6)
+    descLbl.TextSize = 12
+    descLbl.Font = Enum.Font.Gotham
+    descLbl.TextXAlignment = Enum.TextXAlignment.Left
+    descLbl.TextWrapped = true
+    descLbl.Parent = descCard
 end
 
--- ========== 11. 构建样式面板 ==========
+-- 构建样式面板
+local styleBtns = {}
 local function buildStylePanel()
-    for _, v in ipairs(stylePanel:GetChildren()) do
-        if v:IsA("Frame") or v:IsA("ScrollingFrame") then v:Destroy() end
-    end
-    
-    local currentStyle = stylesData[currentStyleIndex]
-    local cardColor = currentStyle.cardBg
-    local textColor = currentStyle.textColor
+    for _,v in ipairs(stylePanel:GetChildren()) do if v:IsA("Frame") or v:IsA("ScrollingFrame") then v:Destroy() end end
+    local curStyle = stylesData[currentStyle]
+    local cardColor = curStyle.cardBg
+    local textColor = curStyle.textColor
     
     local titleCard = Instance.new("Frame")
-    titleCard.Size = UDim2.new(1, -24, 0, 45)
-    titleCard.Position = UDim2.new(0, 12, 0, 12)
+    titleCard.Size = UDim2.new(1,-20,0,40)
+    titleCard.Position = UDim2.new(0,10,0,10)
     titleCard.BackgroundColor3 = cardColor
     titleCard.BorderSizePixel = 0
     titleCard.Parent = stylePanel
-    local tCorner = Instance.new("UICorner")
-    tCorner.CornerRadius = UDim.new(0, 8)
-    tCorner.Parent = titleCard
+    local tc = Instance.new("UICorner")
+    tc.CornerRadius = UDim.new(0,6)
+    tc.Parent = titleCard
     local titleText = Instance.new("TextLabel")
-    titleText.Size = UDim2.new(1, -20, 1, 0)
-    titleText.Position = UDim2.new(0, 10, 0, 0)
+    titleText.Size = UDim2.new(1,-15,1,0)
+    titleText.Position = UDim2.new(0,8,0,0)
     titleText.BackgroundTransparency = 1
     titleText.Text = "选择样式"
     titleText.TextColor3 = textColor
-    titleText.TextSize = 18
+    titleText.TextSize = 16
     titleText.Font = Enum.Font.GothamBold
     titleText.TextXAlignment = Enum.TextXAlignment.Left
     titleText.Parent = titleCard
     
     local scroll = Instance.new("ScrollingFrame")
-    scroll.Size = UDim2.new(1, -24, 0, 290)
-    scroll.Position = UDim2.new(0, 12, 0, 67)
+    scroll.Size = UDim2.new(1,-20,0,200)
+    scroll.Position = UDim2.new(0,10,0,60)
     scroll.BackgroundTransparency = 1
-    scroll.ScrollBarThickness = 4
+    scroll.ScrollBarThickness = 3
     scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
     scroll.Parent = stylePanel
-    
     local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, 0, 0, 0)
+    container.Size = UDim2.new(1,0,0,0)
     container.BackgroundTransparency = 1
     container.AutomaticSize = Enum.AutomaticSize.Y
     container.Parent = scroll
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0,8)
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.Parent = container
     
-    local gridLayout = Instance.new("UIListLayout")
-    gridLayout.Padding = UDim.new(0, 10)
-    gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    gridLayout.Parent = container
-    
-    styleButtons = {}
-    for i, style in ipairs(stylesData) do
+    styleBtns = {}
+    for i,style in ipairs(stylesData) do
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0.9, 0, 0, 75)
+        btn.Size = UDim2.new(0.9,0,0,60)
         btn.BackgroundColor3 = cardColor
         btn.Text = ""
         btn.BorderSizePixel = 0
         btn.Parent = container
         local btnCorner = Instance.new("UICorner")
-        btnCorner.CornerRadius = UDim.new(0, 8)
+        btnCorner.CornerRadius = UDim.new(0,6)
         btnCorner.Parent = btn
         
         local preview = Instance.new("Frame")
-        preview.Size = UDim2.new(0, 55, 1, -10)
-        preview.Position = UDim2.new(0, 5, 0, 5)
+        preview.Size = UDim2.new(0,50,1,-10)
+        preview.Position = UDim2.new(0,5,0,5)
         preview.BackgroundTransparency = 1
         preview.Parent = btn
         local pMain = Instance.new("Frame")
-        pMain.Size = UDim2.new(1, 0, 0.5, -2)
+        pMain.Size = UDim2.new(1,0,0.5,-2)
         pMain.BackgroundColor3 = style.mainBg
         pMain.BorderSizePixel = 0
         pMain.Parent = preview
         local pMainCorner = Instance.new("UICorner")
-        pMainCorner.CornerRadius = UDim.new(0, 4)
+        pMainCorner.CornerRadius = UDim.new(0,4)
         pMainCorner.Parent = pMain
         local pAccent = Instance.new("Frame")
-        pAccent.Size = UDim2.new(1, 0, 0.5, -2)
-        pAccent.Position = UDim2.new(0, 0, 0.5, 2)
-        pAccent.BackgroundColor3 = style.accentColor
+        pAccent.Size = UDim2.new(1,0,0.5,-2)
+        pAccent.Position = UDim2.new(0,0,0.5,2)
+        pAccent.BackgroundColor3 = style.accent
         pAccent.BorderSizePixel = 0
         pAccent.Parent = preview
         local pAccentCorner = Instance.new("UICorner")
-        pAccentCorner.CornerRadius = UDim.new(0, 4)
+        pAccentCorner.CornerRadius = UDim.new(0,4)
         pAccentCorner.Parent = pAccent
         
         local nameLabel = Instance.new("TextLabel")
-        nameLabel.Size = UDim2.new(1, -65, 0, 30)
-        nameLabel.Position = UDim2.new(0, 65, 0, 8)
+        nameLabel.Size = UDim2.new(1,-60,0,25)
+        nameLabel.Position = UDim2.new(0,60,0,8)
         nameLabel.BackgroundTransparency = 1
         nameLabel.Text = style.name
         nameLabel.TextColor3 = textColor
-        nameLabel.TextSize = 15
+        nameLabel.TextSize = 14
         nameLabel.Font = Enum.Font.GothamSemibold
         nameLabel.TextXAlignment = Enum.TextXAlignment.Left
         nameLabel.Parent = btn
         
-        styleButtons[i] = btn
+        local layoutLabel = Instance.new("TextLabel")
+        layoutLabel.Size = UDim2.new(1,-60,0,20)
+        layoutLabel.Position = UDim2.new(0,60,0,33)
+        layoutLabel.BackgroundTransparency = 1
+        local layoutTxt = style.layout == "left" and "侧边栏:左" or (style.layout == "right" and "侧边栏:右" or "侧边栏:上")
+        layoutLabel.Text = layoutTxt
+        layoutLabel.TextColor3 = Color3.new(textColor.R*0.7, textColor.G*0.7, textColor.B*0.7)
+        layoutLabel.TextSize = 11
+        layoutLabel.Font = Enum.Font.Gotham
+        layoutLabel.TextXAlignment = Enum.TextXAlignment.Left
+        layoutLabel.Parent = btn
         
+        styleBtns[i] = btn
         btn.MouseButton1Click:Connect(function()
-            currentStyleIndex = i
-            applyStyle()
+            currentStyle = i
+            applyFullStyle()
         end)
-        
         btn.MouseEnter:Connect(function()
-            TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = style.hoverColor}):Play()
+            TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = style.hover}):Play()
         end)
         btn.MouseLeave:Connect(function()
             TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = cardColor}):Play()
@@ -502,11 +440,11 @@ local function buildStylePanel()
     end
 end
 
--- ========== 12. 应用样式 ==========
-local function applyStyle()
-    local style = stylesData[currentStyleIndex]
+-- 应用完整样式（颜色+布局）
+local function applyFullStyle()
+    local style = stylesData[currentStyle]
     if not style then return end
-    
+    -- 颜色
     mainFrame.BackgroundColor3 = style.mainBg
     sidebar.BackgroundColor3 = style.sidebarBg
     titleBar.BackgroundColor3 = style.titleBg
@@ -514,68 +452,95 @@ local function applyStyle()
     minBtn.BackgroundColor3 = style.sidebarBg
     titleLabel.TextColor3 = style.textColor
     clockLabel.TextColor3 = style.textColor
-    
+    -- 重建面板（颜色跟随）
     buildInfoPanel(style)
     buildStylePanel()
-    
-    for id, btn in pairs(tabButtons) do
+    -- 布局
+    local sidebarWidth = 95
+    if style.layout == "left" then
+        sidebar.Size = UDim2.new(0, sidebarWidth, 1, -32)
+        sidebar.Position = UDim2.new(0, 0, 0, 32)
+        sidebarList.Size = UDim2.new(1,0,1,0)
+        listLayout.FillDirection = Enum.FillDirection.Vertical
+        listLayout.Padding = UDim.new(0,6)
+        contentArea.Size = UDim2.new(1, -sidebarWidth, 1, -32)
+        contentArea.Position = UDim2.new(0, sidebarWidth, 0, 32)
+        infoPanel.Size = UDim2.new(1,0,1,0)
+        stylePanel.Size = UDim2.new(1,0,1,0)
+    elseif style.layout == "right" then
+        sidebar.Size = UDim2.new(0, sidebarWidth, 1, -32)
+        sidebar.Position = UDim2.new(1, -sidebarWidth, 0, 32)
+        sidebarList.Size = UDim2.new(1,0,1,0)
+        listLayout.FillDirection = Enum.FillDirection.Vertical
+        listLayout.Padding = UDim.new(0,6)
+        contentArea.Size = UDim2.new(1, -sidebarWidth, 1, -32)
+        contentArea.Position = UDim2.new(0, 0, 0, 32)
+        infoPanel.Size = UDim2.new(1,0,1,0)
+        stylePanel.Size = UDim2.new(1,0,1,0)
+    elseif style.layout == "top" then
+        sidebar.Size = UDim2.new(1,0,0,50)
+        sidebar.Position = UDim2.new(0,0,0,32)
+        sidebarList.Size = UDim2.new(1,0,1,0)
+        listLayout.FillDirection = Enum.FillDirection.Horizontal
+        listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        listLayout.Padding = UDim.new(0,15)
+        contentArea.Size = UDim2.new(1,0,1,-82)
+        contentArea.Position = UDim2.new(0,0,0,82)
+        infoPanel.Size = UDim2.new(1,0,1,0)
+        stylePanel.Size = UDim2.new(1,0,1,0)
+    end
+    -- 更新侧边栏按钮样式
+    for id,btn in pairs(tabButtons) do
         if btn then
             btn.BackgroundColor3 = style.sidebarBg
             btn.TextColor3 = style.textColor
             if selectedTab == id then
-                btn.BackgroundColor3 = style.accentColor
+                btn.BackgroundColor3 = style.accent
             end
         end
     end
-    
-    for i, btn in ipairs(styleButtons) do
+    -- 高亮当前样式按钮
+    for i,btn in ipairs(styleBtns) do
         if btn then
             TweenService:Create(btn, TweenInfo.new(0.2), {
-                BackgroundColor3 = (i == currentStyleIndex) and style.accentColor or style.cardBg
+                BackgroundColor3 = (i == currentStyle) and style.accent or style.cardBg
             }):Play()
         end
     end
 end
 
--- ========== 13. 构建侧边栏按钮 ==========
+-- 构建侧边栏按钮
 local function buildSidebarButtons()
-    for _, btn in pairs(tabButtons) do
-        if btn then btn:Destroy() end
-    end
+    for _,btn in pairs(tabButtons) do if btn then btn:Destroy() end end
     tabButtons = {}
-    
-    local style = stylesData[currentStyleIndex]
-    
-    for _, tab in ipairs(tabs) do
+    local style = stylesData[currentStyle]
+    for _,tab in ipairs(tabs) do
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0.85, 0, 0, 45)
+        btn.Size = UDim2.new(0.85,0,0,38)
         btn.BackgroundColor3 = style.sidebarBg
         btn.Text = tab.name
         btn.TextColor3 = style.textColor
-        btn.TextSize = 15
+        btn.TextSize = 14
         btn.Font = Enum.Font.Gotham
         btn.BorderSizePixel = 0
         btn.Parent = sidebarList
         local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 8)
+        corner.CornerRadius = UDim.new(0,6)
         corner.Parent = btn
-        
         tabButtons[tab.id] = btn
-        
         btn.MouseButton1Click:Connect(function()
             selectedTab = tab.id
             infoPanel.Visible = (tab.id == "info")
             stylePanel.Visible = (tab.id == "style")
-            for id, b in pairs(tabButtons) do
+            for id,b in pairs(tabButtons) do
                 if b then
-                    b.BackgroundColor3 = (id == selectedTab) and style.accentColor or style.sidebarBg
+                    b.BackgroundColor3 = (id == selectedTab) and style.accent or style.sidebarBg
                 end
             end
         end)
-        
         btn.MouseEnter:Connect(function()
             if selectedTab ~= tab.id then
-                TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = style.hoverColor}):Play()
+                TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = style.hover}):Play()
             end
         end)
         btn.MouseLeave:Connect(function()
@@ -584,13 +549,12 @@ local function buildSidebarButtons()
             end
         end)
     end
-    
     if tabButtons["info"] then
-        tabButtons["info"].BackgroundColor3 = style.accentColor
+        tabButtons["info"].BackgroundColor3 = style.accent
     end
 end
 
--- ========== 14. 北京时间更新 ==========
+-- 北京时间更新
 task.spawn(function()
     while mainGui and mainGui.Parent do
         local t = os.date("*t")
@@ -599,10 +563,10 @@ task.spawn(function()
     end
 end)
 
--- ========== 15. 初始化所有组件 ==========
+-- 初始化
 buildSidebarButtons()
 buildInfoPanel(stylesData[1])
 buildStylePanel()
-applyStyle()
+applyFullStyle()
 
-print("XU脚本悬浮窗已加载 - 12种样式，完整拖拽支持")
+print("XU脚本悬浮窗已加载 - 样式切换功能正常")
