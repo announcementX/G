@@ -30,7 +30,6 @@ loadGui:Destroy()
 
 -- 服务
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 -- 全局变量
@@ -48,8 +47,10 @@ mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
 mainFrame.Parent = mainGui
+mainFrame.Active = true
+mainFrame.Draggable = false -- 禁用自带拖动，使用自定义长按拖动
 
--- 圆角处理 (使用UICorner)
+-- 圆角处理
 local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0, 8)
 mainCorner.Parent = mainFrame
@@ -97,7 +98,7 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0, 6)
 minCorner.Parent = minBtn
 
--- 侧边栏容器 (用于切换样式时重建)
+-- 侧边栏容器
 local sidebarContainer = Instance.new("Frame")
 sidebarContainer.Name = "SidebarContainer"
 sidebarContainer.Size = UDim2.new(0, 140, 1, -35)
@@ -105,7 +106,7 @@ sidebarContainer.Position = UDim2.new(0, 0, 0, 35)
 sidebarContainer.BackgroundTransparency = 1
 sidebarContainer.Parent = mainFrame
 
--- 内容区域 (右侧留白或显示欢迎信息)
+-- 内容区域 (右侧显示作者信息)
 local contentArea = Instance.new("Frame")
 contentArea.Name = "ContentArea"
 contentArea.Size = UDim2.new(1, -140, 1, -35)
@@ -119,17 +120,17 @@ local contentCorner = Instance.new("UICorner")
 contentCorner.CornerRadius = UDim.new(0, 6)
 contentCorner.Parent = contentArea
 
--- 内容欢迎文本
-local welcomeText = Instance.new("TextLabel")
-welcomeText.Size = UDim2.new(1, -20, 1, -20)
-welcomeText.Position = UDim2.new(0, 10, 0, 10)
-welcomeText.BackgroundTransparency = 1
-welcomeText.Text = "欢迎使用 XU 脚本\n\n作者: HaoChen\nQQ: 1626844714"
-welcomeText.TextColor3 = Color3.fromRGB(200, 200, 220)
-welcomeText.TextSize = 18
-welcomeText.TextWrapped = true
-welcomeText.Font = Enum.Font.Gotham
-welcomeText.Parent = contentArea
+-- 内容区域的作者信息文本
+local authorText = Instance.new("TextLabel")
+authorText.Size = UDim2.new(1, -20, 1, -20)
+authorText.Position = UDim2.new(0, 10, 0, 10)
+authorText.BackgroundTransparency = 1
+authorText.Text = "作者: HaoChen\n\nQQ: 1626844714"
+authorText.TextColor3 = Color3.fromRGB(200, 200, 220)
+authorText.TextSize = 18
+authorText.TextWrapped = true
+authorText.Font = Enum.Font.Gotham
+authorText.Parent = contentArea
 
 -- 最小化后的小方块窗口
 local miniFrame = Instance.new("Frame")
@@ -140,6 +141,7 @@ miniFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
 miniFrame.BorderSizePixel = 0
 miniFrame.Visible = false
 miniFrame.Parent = mainGui
+miniFrame.Active = true
 
 local miniCorner = Instance.new("UICorner")
 miniCorner.CornerRadius = UDim.new(0, 12)
@@ -160,7 +162,7 @@ local dragStartPos = nil
 local dragFrame = nil
 local longPressTimer = nil
 local isLongPressing = false
-local longPressThreshold = 0.5  -- 0.5秒长按
+local longPressThreshold = 0.5
 
 local function startDrag(frame, input)
     if dragging then return end
@@ -173,7 +175,6 @@ local function updateDrag(input)
     if not dragging or not dragFrame then return end
     local newX = input.Position.X - dragStartPos.X
     local newY = input.Position.Y - dragStartPos.Y
-    -- 边界限制 (防止拖出屏幕)
     local maxX = game.CoreGui.AbsoluteSize.X - dragFrame.AbsoluteSize.X
     local maxY = game.CoreGui.AbsoluteSize.Y - dragFrame.AbsoluteSize.Y
     newX = math.clamp(newX, 0, maxX)
@@ -187,39 +188,37 @@ local function stopDrag()
     dragStartPos = nil
 end
 
--- 长按检测
+-- 输入事件处理
 local function onInputBegan(input, gameProcessed)
     if gameProcessed then return end
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        -- 检查点击是否在可拖动区域内 (标题栏 或 小方块)
-        local hitFrame = nil
-        if mainFrame.Visible and input.UserInputType == Enum.UserInputType.MouseButton1 then
-            local mousePos = input.Position
-            if mousePos.X >= titleBar.AbsolutePosition.X and mousePos.X <= titleBar.AbsolutePosition.X + titleBar.AbsoluteSize.X and
-               mousePos.Y >= titleBar.AbsolutePosition.Y and mousePos.Y <= titleBar.AbsolutePosition.Y + titleBar.AbsoluteSize.Y then
-                hitFrame = mainFrame
-            end
-        elseif miniFrame.Visible then
-            local mousePos = input.Position
-            if mousePos.X >= miniFrame.AbsolutePosition.X and mousePos.X <= miniFrame.AbsolutePosition.X + miniFrame.AbsoluteSize.X and
-               mousePos.Y >= miniFrame.AbsolutePosition.Y and mousePos.Y <= miniFrame.AbsolutePosition.Y + miniFrame.AbsoluteSize.Y then
-                hitFrame = miniFrame
-            end
+    
+    -- 检查是否点击了可拖动区域 (标题栏 或 小方块)
+    local hitFrame = nil
+    if mainFrame.Visible and input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local mousePos = input.Position
+        if mousePos.X >= titleBar.AbsolutePosition.X and mousePos.X <= titleBar.AbsolutePosition.X + titleBar.AbsoluteSize.X and
+           mousePos.Y >= titleBar.AbsolutePosition.Y and mousePos.Y <= titleBar.AbsolutePosition.Y + titleBar.AbsoluteSize.Y then
+            hitFrame = mainFrame
         end
-        
-        if hitFrame then
-            longPressTimer = tick()
-            isLongPressing = true
-            -- 等待长按触发
-            spawn(function()
-                while isLongPressing and (tick() - longPressTimer) < longPressThreshold do
-                    wait()
-                end
-                if isLongPressing and (tick() - longPressTimer) >= longPressThreshold then
-                    startDrag(hitFrame, input)
-                end
-            end)
+    elseif miniFrame.Visible then
+        local mousePos = input.Position
+        if mousePos.X >= miniFrame.AbsolutePosition.X and mousePos.X <= miniFrame.AbsolutePosition.X + miniFrame.AbsoluteSize.X and
+           mousePos.Y >= miniFrame.AbsolutePosition.Y and mousePos.Y <= miniFrame.AbsolutePosition.Y + miniFrame.AbsoluteSize.Y then
+            hitFrame = miniFrame
         end
+    end
+    
+    if hitFrame then
+        longPressTimer = tick()
+        isLongPressing = true
+        task.spawn(function()
+            while isLongPressing and (tick() - longPressTimer) < longPressThreshold do
+                task.wait()
+            end
+            if isLongPressing and (tick() - longPressTimer) >= longPressThreshold then
+                startDrag(hitFrame, input)
+            end
+        end)
     end
 end
 
@@ -241,42 +240,42 @@ UserInputService.InputBegan:Connect(onInputBegan)
 UserInputService.InputEnded:Connect(onInputEnded)
 UserInputService.InputChanged:Connect(onInputChanged)
 
--- 最小化/恢复功能
+-- 最小化/恢复功能 (修复小方块无法触碰的问题)
 minBtn.MouseButton1Click:Connect(function()
     mainFrame.Visible = false
     miniFrame.Visible = true
-    -- 将小方块移到主窗口相同位置
     miniFrame.Position = UDim2.new(0, mainFrame.AbsolutePosition.X, 0, mainFrame.AbsolutePosition.Y)
 end)
 
-miniFrame.MouseButton1Click:Connect(function()
-    mainFrame.Visible = true
-    miniFrame.Visible = false
-    -- 恢复主窗口位置 (保持原来位置)
-    mainFrame.Position = UDim2.new(0, miniFrame.AbsolutePosition.X, 0, miniFrame.AbsolutePosition.Y)
+-- 点击小方块恢复窗口
+miniFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        -- 等待一小段时间，如果是长按则不恢复（让长按逻辑处理移动）
+        task.wait(0.15)
+        if not dragging and miniFrame.Visible then
+            mainFrame.Visible = true
+            miniFrame.Visible = false
+            mainFrame.Position = UDim2.new(0, miniFrame.AbsolutePosition.X, 0, miniFrame.AbsolutePosition.Y)
+        end
+    end
 end)
 
--- 更新时间 (实时刷新)
+-- 更新时间
 local function updateClock()
     while true do
         local t = os.date("*t")
         local timeStr = string.format("北京时间 %02d:%02d:%02d", t.hour, t.min, t.sec)
         clockLabel.Text = timeStr
-        wait(0.2)
+        task.wait(0.2)
     end
 end
-spawn(updateClock)
+task.spawn(updateClock)
 
--- ========== 样式系统 ==========
--- 样式定义：每个样式包含侧边栏布局方向、颜色配置、以及侧边栏内控件的重建函数
-
--- 当前样式索引
+-- ========== 样式系统 (侧边栏栏目现在会正确显示) ==========
 local currentStyle = 1
 
--- 样式列表
 local styles = {}
 
--- 辅助函数：清除侧边栏内所有子控件 (保留容器本身)
 local function clearSidebar()
     for _, child in ipairs(sidebarContainer:GetChildren()) do
         if child:IsA("GuiObject") then
@@ -285,13 +284,19 @@ local function clearSidebar()
     end
 end
 
--- 辅助函数：重建侧边栏内容 (信息区域 + 样式按钮区域)
 local function buildSidebarContent(styleConfig)
     clearSidebar()
     
-    -- 信息区域
+    -- 使用 UIListLayout 自动排列栏目，避免位置计算问题
+    local listLayout = Instance.new("UIListLayout")
+    listLayout.Padding = UDim.new(0, 8)
+    listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    listLayout.Parent = sidebarContainer
+    
+    -- 1. 信息栏目
     local infoFrame = Instance.new("Frame")
     infoFrame.Name = "InfoFrame"
+    infoFrame.Size = UDim2.new(0.9, 0, 0, 80)
     infoFrame.BackgroundColor3 = styleConfig.sidebarBg or Color3.fromRGB(35, 35, 45)
     infoFrame.BorderSizePixel = 0
     infoFrame.Parent = sidebarContainer
@@ -300,18 +305,31 @@ local function buildSidebarContent(styleConfig)
     infoCorner.CornerRadius = UDim.new(0, 6)
     infoCorner.Parent = infoFrame
     
+    local infoTitle = Instance.new("TextLabel")
+    infoTitle.Text = "📌 信息"
+    infoTitle.Size = UDim2.new(1, 0, 0, 25)
+    infoTitle.Position = UDim2.new(0, 0, 0, 0)
+    infoTitle.BackgroundTransparency = 1
+    infoTitle.TextColor3 = styleConfig.textColor or Color3.fromRGB(255, 255, 255)
+    infoTitle.TextSize = 14
+    infoTitle.Font = Enum.Font.GothamBold
+    infoTitle.Parent = infoFrame
+    
     local authorLabel = Instance.new("TextLabel")
     authorLabel.Text = "作者: HaoChen\nQQ: 1626844714"
-    authorLabel.TextColor3 = styleConfig.textColor or Color3.fromRGB(255, 255, 255)
+    authorLabel.Size = UDim2.new(1, -10, 0, 50)
+    authorLabel.Position = UDim2.new(0, 5, 0, 25)
     authorLabel.BackgroundTransparency = 1
-    authorLabel.TextSize = 14
+    authorLabel.TextColor3 = styleConfig.textColor or Color3.fromRGB(200, 200, 220)
+    authorLabel.TextSize = 12
     authorLabel.TextWrapped = true
     authorLabel.Font = Enum.Font.Gotham
     authorLabel.Parent = infoFrame
     
-    -- 样式按钮区域
+    -- 2. 样式栏目
     local styleFrame = Instance.new("Frame")
     styleFrame.Name = "StyleFrame"
+    styleFrame.Size = UDim2.new(0.9, 0, 0, 130)
     styleFrame.BackgroundColor3 = styleConfig.sidebarBg or Color3.fromRGB(35, 35, 45)
     styleFrame.BorderSizePixel = 0
     styleFrame.Parent = sidebarContainer
@@ -321,27 +339,41 @@ local function buildSidebarContent(styleConfig)
     styleCorner.Parent = styleFrame
     
     local styleTitle = Instance.new("TextLabel")
-    styleTitle.Text = "样式切换"
-    styleTitle.TextColor3 = styleConfig.textColor or Color3.fromRGB(255, 255, 255)
+    styleTitle.Text = "🎨 样式"
+    styleTitle.Size = UDim2.new(1, 0, 0, 25)
+    styleTitle.Position = UDim2.new(0, 0, 0, 0)
     styleTitle.BackgroundTransparency = 1
+    styleTitle.TextColor3 = styleConfig.textColor or Color3.fromRGB(255, 255, 255)
     styleTitle.TextSize = 14
     styleTitle.Font = Enum.Font.GothamBold
     styleTitle.Parent = styleFrame
     
-    -- 样式按钮列表
+    -- 样式按钮容器 (使用 UIListLayout 水平排列)
+    local btnContainer = Instance.new("Frame")
+    btnContainer.Name = "ButtonContainer"
+    btnContainer.Size = UDim2.new(1, -10, 0, 80)
+    btnContainer.Position = UDim2.new(0, 5, 0, 30)
+    btnContainer.BackgroundTransparency = 1
+    btnContainer.Parent = styleFrame
+    
+    local btnLayout = Instance.new("UIListLayout")
+    btnLayout.FillDirection = Enum.FillDirection.Horizontal
+    btnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    btnLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    btnLayout.Padding = UDim.new(0, 8)
+    btnLayout.Parent = btnContainer
+    
     local btnNames = {"默认", "深海", "暖阳"}
-    local btnY = 25
     for i, name in ipairs(btnNames) do
         local btn = Instance.new("TextButton")
         btn.Name = "StyleBtn_" .. i
-        btn.Size = UDim2.new(0.8, 0, 0, 30)
-        btn.Position = UDim2.new(0.1, 0, 0, btnY)
+        btn.Size = UDim2.new(0, 60, 0, 35)
         btn.Text = name
         btn.TextColor3 = styleConfig.buttonTextColor or Color3.fromRGB(255, 255, 255)
         btn.BackgroundColor3 = styleConfig.buttonBg or Color3.fromRGB(80, 80, 100)
         btn.BorderSizePixel = 0
         btn.Font = Enum.Font.Gotham
-        btn.TextSize = 14
+        btn.TextSize = 13
         local btnCorner = Instance.new("UICorner")
         btnCorner.CornerRadius = UDim.new(0, 4)
         btnCorner.Parent = btn
@@ -351,72 +383,12 @@ local function buildSidebarContent(styleConfig)
             applyStyle(currentStyle)
         end)
         
-        btn.Parent = styleFrame
-        btnY = btnY + 38
-    end
-    
-    -- 根据布局类型设置容器位置和大小
-    if styleConfig.layout == "left" then
-        sidebarContainer.Size = UDim2.new(0, 140, 1, -35)
-        sidebarContainer.Position = UDim2.new(0, 0, 0, 35)
-        contentArea.Size = UDim2.new(1, -140, 1, -35)
-        contentArea.Position = UDim2.new(0, 140, 0, 35)
-        -- 设置infoFrame和styleFrame的尺寸
-        infoFrame.Size = UDim2.new(1, -10, 0, 80)
-        infoFrame.Position = UDim2.new(0, 5, 0, 5)
-        authorLabel.Size = UDim2.new(1, -10, 1, -10)
-        authorLabel.Position = UDim2.new(0, 5, 0, 5)
-        
-        styleFrame.Size = UDim2.new(1, -10, 0, 160)
-        styleFrame.Position = UDim2.new(0, 5, 0, 90)
-        styleTitle.Size = UDim2.new(1, -10, 0, 20)
-        styleTitle.Position = UDim2.new(0, 5, 0, 5)
-    elseif styleConfig.layout == "right" then
-        sidebarContainer.Size = UDim2.new(0, 140, 1, -35)
-        sidebarContainer.Position = UDim2.new(1, -140, 0, 35)
-        contentArea.Size = UDim2.new(1, -140, 1, -35)
-        contentArea.Position = UDim2.new(0, 0, 0, 35)
-        infoFrame.Size = UDim2.new(1, -10, 0, 80)
-        infoFrame.Position = UDim2.new(0, 5, 0, 5)
-        authorLabel.Size = UDim2.new(1, -10, 1, -10)
-        authorLabel.Position = UDim2.new(0, 5, 0, 5)
-        
-        styleFrame.Size = UDim2.new(1, -10, 0, 160)
-        styleFrame.Position = UDim2.new(0, 5, 0, 90)
-        styleTitle.Size = UDim2.new(1, -10, 0, 20)
-        styleTitle.Position = UDim2.new(0, 5, 0, 5)
-    elseif styleConfig.layout == "top" then
-        -- 侧边栏在顶部 (水平排列)
-        sidebarContainer.Size = UDim2.new(1, 0, 0, 100)
-        sidebarContainer.Position = UDim2.new(0, 0, 0, 35)
-        contentArea.Size = UDim2.new(1, 0, 1, -135)
-        contentArea.Position = UDim2.new(0, 0, 0, 135)
-        -- 水平布局: infoFrame在左, styleFrame在右
-        infoFrame.Size = UDim2.new(0, 200, 1, -10)
-        infoFrame.Position = UDim2.new(0, 5, 0, 5)
-        authorLabel.Size = UDim2.new(1, -10, 1, -10)
-        authorLabel.Position = UDim2.new(0, 5, 0, 5)
-        
-        styleFrame.Size = UDim2.new(0, 200, 1, -10)
-        styleFrame.Position = UDim2.new(1, -205, 0, 5)
-        styleTitle.Size = UDim2.new(1, -10, 0, 20)
-        styleTitle.Position = UDim2.new(0, 5, 0, 5)
-        -- 重新调整按钮位置为水平排列
-        for i, btn in ipairs(styleFrame:GetChildren()) do
-            if btn:IsA("TextButton") then
-                local idx = tonumber(btn.Name:match("%d+"))
-                if idx then
-                    btn.Size = UDim2.new(0, 60, 0, 30)
-                    btn.Position = UDim2.new(0, 10 + (idx-1)*70, 0, 40)
-                end
-            end
-        end
+        btn.Parent = btnContainer
     end
 end
 
 -- 样式配置
-styles[1] = { -- 默认样式 (左侧深蓝)
-    layout = "left",
+styles[1] = { -- 默认样式
     mainBg = Color3.fromRGB(25, 25, 45),
     titleBg = Color3.fromRGB(40, 40, 65),
     sidebarBg = Color3.fromRGB(35, 35, 55),
@@ -424,11 +396,9 @@ styles[1] = { -- 默认样式 (左侧深蓝)
     textColor = Color3.fromRGB(220, 220, 255),
     buttonBg = Color3.fromRGB(70, 70, 110),
     buttonTextColor = Color3.fromRGB(255, 255, 255),
-    accentColor = Color3.fromRGB(80, 120, 255)
 }
 
-styles[2] = { -- 深海样式 (右侧 深绿)
-    layout = "right",
+styles[2] = { -- 深海样式
     mainBg = Color3.fromRGB(20, 40, 50),
     titleBg = Color3.fromRGB(30, 60, 75),
     sidebarBg = Color3.fromRGB(25, 55, 70),
@@ -436,11 +406,9 @@ styles[2] = { -- 深海样式 (右侧 深绿)
     textColor = Color3.fromRGB(200, 240, 255),
     buttonBg = Color3.fromRGB(50, 100, 130),
     buttonTextColor = Color3.fromRGB(255, 255, 200),
-    accentColor = Color3.fromRGB(0, 200, 200)
 }
 
-styles[3] = { -- 暖阳样式 (顶部 暖橙)
-    layout = "top",
+styles[3] = { -- 暖阳样式
     mainBg = Color3.fromRGB(60, 40, 30),
     titleBg = Color3.fromRGB(90, 65, 50),
     sidebarBg = Color3.fromRGB(75, 55, 45),
@@ -448,39 +416,25 @@ styles[3] = { -- 暖阳样式 (顶部 暖橙)
     textColor = Color3.fromRGB(255, 240, 200),
     buttonBg = Color3.fromRGB(150, 100, 70),
     buttonTextColor = Color3.fromRGB(255, 255, 200),
-    accentColor = Color3.fromRGB(255, 150, 50)
 }
 
 local function applyStyle(styleIdx)
     local cfg = styles[styleIdx]
     if not cfg then return end
     
-    -- 应用主窗口颜色
     mainFrame.BackgroundColor3 = cfg.mainBg
     titleBar.BackgroundColor3 = cfg.titleBg
     minBtn.BackgroundColor3 = cfg.buttonBg
     minBtn.TextColor3 = cfg.buttonTextColor
     contentArea.BackgroundColor3 = cfg.contentBg
-    welcomeText.TextColor3 = cfg.textColor
-    
-    -- 重建侧边栏内容 (会使用样式内的配色)
-    buildSidebarContent(cfg)
-    
-    -- 更新小方块颜色
+    authorText.TextColor3 = cfg.textColor
     miniFrame.BackgroundColor3 = cfg.mainBg
     miniText.TextColor3 = cfg.textColor
+    
+    buildSidebarContent(cfg)
 end
 
--- 初始化默认样式
+-- 初始化
 applyStyle(1)
-
--- 额外：防止X按钮误触移动 (X按钮本身不触发拖动)
-minBtn.AutoButtonColor = false
-minBtn.MouseButton1Click:Connect(function()
-    -- 已定义
-end)
-
--- 确保悬浮窗始终在最前
-mainGui.Enabled = true
 
 print("XU脚本悬浮窗已加载")
