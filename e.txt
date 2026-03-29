@@ -1,283 +1,183 @@
---// XU ULTIMATE COMPLETE BUILD
-
-local Players = game:GetService("Players")
+--// XU ULTIMATE UI SYSTEM
 local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
-local SoundService = game:GetService("SoundService")
+local Player = game.Players.LocalPlayer
 
-local player = Players.LocalPlayer
-local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "XU_COMPLETE"
-gui.IgnoreGuiInset = true
+--====================
+-- 🔥 终极加载动画
+--====================
+local load = Instance.new("ScreenGui", Player.PlayerGui)
+load.Name = "XU_LOAD"
 
---------------------------------------------------
--- 🔊 音效
---------------------------------------------------
-local click = Instance.new("Sound", SoundService)
-click.SoundId = "rbxassetid://12222216"
-click.Volume = 0.4
-local function play() click:Play() end
+local bg = Instance.new("Frame", load)
+bg.Size = UDim2.new(1,0,1,0)
+bg.BackgroundColor3 = Color3.fromRGB(0,0,0)
 
---------------------------------------------------
--- 🔥 加载动画（终极）
---------------------------------------------------
-local load = Instance.new("Frame", gui)
-load.Size = UDim2.new(1,0,1,0)
-load.BackgroundColor3 = Color3.new(0,0,0)
+local logo = Instance.new("TextLabel", bg)
+logo.Size = UDim2.new(1,0,0,100)
+logo.Position = UDim2.new(0,0,0.4,0)
+logo.Text = "XU"
+logo.TextScaled = true
+logo.Font = Enum.Font.GothamBlack
+logo.TextColor3 = Color3.fromRGB(0,170,255)
+logo.BackgroundTransparency = 1
 
-local ring = Instance.new("Frame", load)
-ring.Size = UDim2.new(0,120,0,120)
-ring.Position = UDim2.new(0.5,-60,0.4,-60)
-ring.BackgroundTransparency = 1
-local stroke = Instance.new("UIStroke", ring)
-stroke.Thickness = 3
-stroke.Color = Color3.fromRGB(0,170,255)
-
-task.spawn(function()
-	while load.Parent do
-		ring.Rotation += 4
-		task.wait()
-	end
-end)
-
-local log = Instance.new("TextLabel", load)
-log.Size = UDim2.new(1,0,0,40)
-log.Position = UDim2.new(0,0,0.7,0)
-log.BackgroundTransparency = 1
-log.TextColor3 = Color3.new(1,1,1)
-log.Font = Enum.Font.Code
-
-local barBG = Instance.new("Frame", load)
-barBG.Size = UDim2.new(0.6,0,0,10)
-barBG.Position = UDim2.new(0.2,0,0.6,0)
+local barBG = Instance.new("Frame", bg)
+barBG.Size = UDim2.new(0.4,0,0,10)
+barBG.Position = UDim2.new(0.3,0,0.6,0)
 barBG.BackgroundColor3 = Color3.fromRGB(40,40,40)
-Instance.new("UICorner", barBG)
 
 local bar = Instance.new("Frame", barBG)
 bar.Size = UDim2.new(0,0,1,0)
 bar.BackgroundColor3 = Color3.fromRGB(0,170,255)
-Instance.new("UICorner", bar)
 
-local steps = {"Init","Load UI","Theme","Done"}
-
-for i,v in ipairs(steps) do
-	log.Text = "[XU] "..v
-	TweenService:Create(bar, TweenInfo.new(0.4), {
-		Size = UDim2.new(i/#steps,0,1,0)
-	}):Play()
-	task.wait(0.5)
+for i=1,100 do
+	bar.Size = UDim2.new(i/100,0,1,0)
+	task.wait(0.02)
 end
 
--- 淡出
-for _,v in ipairs(load:GetDescendants()) do
-	if v:IsA("GuiObject") then
-		TweenService:Create(v, TweenInfo.new(0.3), {
-			BackgroundTransparency = 1,
-			TextTransparency = 1
-		}):Play()
-	end
-	if v:IsA("UIStroke") then
-		TweenService:Create(v, TweenInfo.new(0.3), {
-			Transparency = 1
-		}):Play()
-	end
-end
-
-task.wait(0.4)
+-- 安全销毁
+task.wait(0.3)
+load.Enabled = false
+task.wait(0.2)
 load:Destroy()
 
---------------------------------------------------
--- 🧊 主窗口
---------------------------------------------------
+--====================
+-- 🧊 主UI
+--====================
+local gui = Instance.new("ScreenGui", Player.PlayerGui)
+gui.Name = "XU_UI"
+
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0,460,0,320)
-main.Position = UDim2.new(0.5,-230,0.5,-160)
+main.Size = UDim2.new(0,350,0,220)
+main.Position = UDim2.new(0.5,-175,0.5,-110)
 main.BackgroundColor3 = Color3.fromRGB(20,20,25)
-main.Active = true
-main.Draggable = true
 Instance.new("UICorner", main)
 
---------------------------------------------------
--- 🌊 动态流光
---------------------------------------------------
-local grad = Instance.new("UIGradient", main)
-grad.Color = ColorSequence.new{
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(0,170,255)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(0,0,60))
-}
-
-task.spawn(function()
-	while true do
-		grad.Rotation += 0.3
-		task.wait()
-	end
-end)
-
---------------------------------------------------
--- 🕒 北京时间
---------------------------------------------------
+-- 时间
 local timeLabel = Instance.new("TextLabel", main)
 timeLabel.Size = UDim2.new(1,0,0,30)
 timeLabel.BackgroundTransparency = 1
+timeLabel.TextColor3 = Color3.new(1,1,1)
+timeLabel.TextScaled = true
 
-task.spawn(function()
+spawn(function()
 	while true do
-		local t=os.date("!*t")
-		timeLabel.Text=string.format("%02d:%02d:%02d",(t.hour+8)%24,t.min,t.sec)
+		timeLabel.Text = os.date("北京时间 %H:%M:%S")
 		task.wait(1)
 	end
 end)
 
---------------------------------------------------
--- 📑 TAB系统
---------------------------------------------------
-local tab = Instance.new("Frame", main)
-tab.Size = UDim2.new(0,120,1,0)
-tab.BackgroundColor3 = Color3.fromRGB(15,15,20)
+-- 关闭按钮（缩小）
+local close = Instance.new("TextButton", main)
+close.Size = UDim2.new(0,30,0,30)
+close.Position = UDim2.new(1,-30,0,0)
+close.Text = "X"
 
-local pages = Instance.new("Frame", main)
-pages.Size = UDim2.new(1,-120,1,0)
-pages.Position = UDim2.new(0,120,0,0)
+-- 缩小球
+local mini = Instance.new("TextButton", gui)
+mini.Size = UDim2.new(0,60,0,60)
+mini.Position = UDim2.new(0.1,0,0.5,0)
+mini.Text = "XU"
+mini.Visible = false
 
-local function newPage(name,order)
-	local b = Instance.new("TextButton", tab)
-	b.Size = UDim2.new(1,0,0,40)
-	b.Position = UDim2.new(0,0,0,(order-1)*45)
-	b.Text = name
-	
-	local p = Instance.new("Frame", pages)
-	p.Size = UDim2.new(1,0,1,0)
-	p.Visible = false
-	
-	b.MouseButton1Click:Connect(function()
-		play()
-		for _,v in pairs(pages:GetChildren()) do v.Visible=false end
-		p.Visible=true
-	end)
-	
-	return p
-end
-
-local infoPage = newPage("Info",1)
-local stylePage = newPage("Style",2)
-infoPage.Visible = true
-
---------------------------------------------------
--- 📚 信息
---------------------------------------------------
-local info = Instance.new("TextLabel", infoPage)
-info.Size = UDim2.new(1,0,1,0)
-info.Text = "Author: HaoChen\nQQ:1626844714"
-info.BackgroundTransparency = 1
-
---------------------------------------------------
--- 🎨 主题 + 布局
---------------------------------------------------
-local function layoutA()
-	main.Size = UDim2.new(0,460,0,320)
-end
-
-local function layoutB()
-	main.Size = UDim2.new(0,520,0,260)
-end
-
-local function themeDark()
-	main.BackgroundColor3 = Color3.fromRGB(20,20,25)
-end
-
-local function themeBlue()
-	main.BackgroundColor3 = Color3.fromRGB(0,60,120)
-end
-
-local function themePurple()
-	main.BackgroundColor3 = Color3.fromRGB(80,0,120)
-end
-
-local function themeGreen()
-	main.BackgroundColor3 = Color3.fromRGB(0,80,40)
-end
-
-local actions = {
-	{"Dark",themeDark},
-	{"Blue",themeBlue},
-	{"Purple",themePurple},
-	{"Green",themeGreen},
-	{"Layout A",layoutA},
-	{"Layout B",layoutB},
-}
-
-for i,v in ipairs(actions) do
-	local b=Instance.new("TextButton",stylePage)
-	b.Size=UDim2.new(1,0,0,40)
-	b.Position=UDim2.new(0,0,0,(i-1)*45)
-	b.Text=v[1]
-	
-	b.MouseButton1Click:Connect(function()
-		play()
-		v[2]()
-	end)
-end
-
---------------------------------------------------
--- 🧲 磁吸
---------------------------------------------------
-main:GetPropertyChangedSignal("Position"):Connect(function()
-	local pos=main.Position
-	if pos.X.Offset<10 then
-		main.Position=UDim2.new(0,0,pos.Y.Scale,pos.Y.Offset)
-	end
-end)
-
---------------------------------------------------
--- ❌ 悬浮系统
---------------------------------------------------
-local mini=Instance.new("TextButton",gui)
-mini.Size=UDim2.new(0,60,0,60)
-mini.Text="XU"
-mini.Visible=false
-Instance.new("UICorner",mini)
-
-local btn=Instance.new("TextButton",main)
-btn.Text="-"
-btn.Size=UDim2.new(0,30,0,30)
-btn.Position=UDim2.new(1,-35,0,5)
-
-btn.MouseButton1Click:Connect(function()
-	play()
-	main.Visible=false
-	mini.Visible=true
+close.MouseButton1Click:Connect(function()
+	main.Visible = false
+	mini.Visible = true
 end)
 
 mini.MouseButton1Click:Connect(function()
-	play()
-	main.Visible=true
-	mini.Visible=false
+	main.Visible = true
+	mini.Visible = false
 end)
 
---------------------------------------------------
--- 🧲 防误触拖动
---------------------------------------------------
-local dragging=false
-local startPos,startMouse
+-- 拖拽（防误触）
+local dragging = false
+local dragStart, startPos
 
-mini.InputBegan:Connect(function(input)
-	if input.UserInputType==Enum.UserInputType.MouseButton1 then
-		startMouse=input.Position
-		startPos=mini.Position
-		
-		task.delay(0.2,function()
-			dragging=true
-		end)
+main.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		task.wait(0.15) -- 防误触
+		dragging = true
+		dragStart = input.Position
+		startPos = main.Position
 	end
 end)
 
-mini.InputChanged:Connect(function(input)
-	if dragging and input.UserInputType==Enum.UserInputType.MouseMovement then
-		local delta=input.Position-startMouse
-		mini.Position=startPos+UDim2.new(0,delta.X,0,delta.Y)
+UIS.InputChanged:Connect(function(input)
+	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local delta = input.Position - dragStart
+		main.Position = UDim2.new(
+			startPos.X.Scale, startPos.X.Offset + delta.X,
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y
+		)
 	end
 end)
 
-mini.InputEnded:Connect(function()
-	dragging=false
+UIS.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
 end)
+
+--====================
+-- 📑 侧边栏
+--====================
+local sidebar = Instance.new("Frame", main)
+sidebar.Size = UDim2.new(0,80,1,0)
+sidebar.BackgroundColor3 = Color3.fromRGB(30,30,35)
+
+local infoBtn = Instance.new("TextButton", sidebar)
+infoBtn.Size = UDim2.new(1,0,0,40)
+infoBtn.Text = "Info"
+
+local styleBtn = Instance.new("TextButton", sidebar)
+styleBtn.Position = UDim2.new(0,0,0,40)
+styleBtn.Size = UDim2.new(1,0,0,40)
+styleBtn.Text = "Style"
+
+-- 页面
+local infoPage = Instance.new("Frame", main)
+infoPage.Position = UDim2.new(0,80,0,30)
+infoPage.Size = UDim2.new(1,-80,1,-30)
+infoPage.BackgroundTransparency = 1
+
+local stylePage = infoPage:Clone()
+stylePage.Parent = main
+stylePage.Visible = false
+
+-- 信息内容
+local info = Instance.new("TextLabel", infoPage)
+info.Size = UDim2.new(1,0,1,0)
+info.Text = "Author: HaoChen\nQQ:1626844714"
+info.TextScaled = true
+info.BackgroundTransparency = 1
+
+-- 切换
+infoBtn.MouseButton1Click:Connect(function()
+	infoPage.Visible = true
+	stylePage.Visible = false
+end)
+
+styleBtn.MouseButton1Click:Connect(function()
+	infoPage.Visible = false
+	stylePage.Visible = true
+end)
+
+--====================
+-- 🎨 样式系统
+--====================
+local function makeStyle(name,color,pos)
+	local btn = Instance.new("TextButton", stylePage)
+	btn.Size = UDim2.new(0,120,0,40)
+	btn.Position = pos
+	btn.Text = name
+	
+	btn.MouseButton1Click:Connect(function()
+		main.BackgroundColor3 = color
+	end)
+end
+
+makeStyle("Dark", Color3.fromRGB(20,20,25), UDim2.new(0,10,0,10))
+makeStyle("Blue", Color3.fromRGB(0,120,255), UDim2.new(0,10,0,60))
+makeStyle("Purple", Color3.fromRGB(120,0,255), UDim2.new(0,10,0,110))
