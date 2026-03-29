@@ -12,7 +12,7 @@ local LocalPlayer = Players.LocalPlayer
 local CurrentCamera = Workspace.CurrentCamera
 
 -- 加载 UI 库
-local UI_Library_URL = "https://raw.githubusercontent.com/114514lzkill/ui/refs/heads/main/ui.lua"
+local UI_Library_URL = "https://raw.githubusercontent.com/announcementX/G/main/ui.lua"
 local Library = loadstring(game:HttpGet(UI_Library_URL))()
 
 -- 创建窗口
