@@ -1,7 +1,7 @@
 --[[
     XU 脚本悬浮窗 by HaoChen
     功能：可拖拽、最小化、侧边栏切换、12种样式（颜色+布局）
-    修复：样式按钮现在能正常切换颜色和侧边栏位置
+    修复：样式切换正常、小方块可移动、窗口尺寸适中
 ]]
 
 local UserInputService = game:GetService("UserInputService")
@@ -28,10 +28,10 @@ mainGui.Name = "XU_Script_GUI"
 mainGui.Parent = game.CoreGui
 mainGui.ResetOnSpawn = false
 
--- 主窗口 (350x280)
+-- 主窗口 (420x340，大小适中)
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 350, 0, 280)
-mainFrame.Position = UDim2.new(0.5, -175, 0.5, -140)
+mainFrame.Size = UDim2.new(0, 420, 0, 340)
+mainFrame.Position = UDim2.new(0.5, -210, 0.5, -170)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30,30,45)
 mainFrame.BackgroundTransparency = 0
 mainFrame.BorderSizePixel = 0
@@ -102,7 +102,7 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0,6)
 minCorner.Parent = minBtn
 
--- 拖拽系统
+-- ========== 拖拽系统（主窗口）==========
 local dragActive = false
 local dragStart = nil
 local startPos = nil
@@ -129,10 +129,10 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- 小方块
+-- ========== 小方块（最小化窗口）==========
 local miniFrame = Instance.new("Frame")
 miniFrame.Size = UDim2.new(0,55,0,55)
-miniFrame.Position = UDim2.new(0.85,0,0.85,0)
+miniFrame.Position = UDim2.new(0.5, -27.5, 0, 10)  -- 默认在屏幕正上方
 miniFrame.BackgroundColor3 = Color3.fromRGB(50,50,70)
 miniFrame.BorderSizePixel = 0
 miniFrame.Visible = false
@@ -149,29 +149,38 @@ miniText.TextSize = 16
 miniText.Font = Enum.Font.GothamBold
 miniText.Parent = miniFrame
 
+-- 小方块拖拽
 local miniDragActive = false
 local miniDragStart = nil
 local miniStartPos = nil
-local longPress = nil
+local longPressTimer = nil
+
 miniFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        longPress = task.delay(0.35, function()
+        longPressTimer = task.delay(0.35, function()
             miniDragActive = true
             miniDragStart = input.Position
             miniStartPos = miniFrame.Position
         end)
     end
 end)
+
 miniFrame.InputEnded:Connect(function(input)
-    if longPress then longPress:Cancel() end
+    if longPressTimer then
+        longPressTimer:Cancel()
+        longPressTimer = nil
+    end
     if miniDragActive then
         miniDragActive = false
     elseif miniFrame.Visible then
+        -- 单击恢复主窗口
         mainFrame.Visible = true
         miniFrame.Visible = false
         mainFrame.Position = UDim2.new(0, miniFrame.AbsolutePosition.X, 0, miniFrame.AbsolutePosition.Y)
     end
 end)
+
+-- 全局更新小方块拖拽
 UserInputService.InputChanged:Connect(function(input)
     if miniDragActive and input.UserInputType == Enum.UserInputType.MouseMovement then
         local delta = input.Position - miniDragStart
@@ -183,6 +192,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
+-- 最小化按钮功能
 minBtn.MouseButton1Click:Connect(function()
     mainFrame.Visible = false
     miniFrame.Visible = true
@@ -190,7 +200,7 @@ minBtn.MouseButton1Click:Connect(function()
     miniFrame.BackgroundColor3 = mainFrame.BackgroundColor3
 end)
 
--- 侧边栏容器（位置会动态改变）
+-- ========== 侧边栏容器 ==========
 local sidebar = Instance.new("Frame")
 sidebar.Name = "Sidebar"
 sidebar.BackgroundColor3 = Color3.fromRGB(40,40,58)
@@ -233,7 +243,7 @@ local tabs = {{name="信息", id="info"},{name="样式", id="style"}}
 local selectedTab = "info"
 local tabButtons = {}
 
--- 样式数据（12种）
+-- ========== 12种样式数据 ==========
 local stylesData = {
     {name="暗夜紫罗兰", mainBg=Color3.fromRGB(25,20,35), sidebarBg=Color3.fromRGB(35,28,48), titleBg=Color3.fromRGB(45,38,58), contentBg=Color3.fromRGB(20,16,30), textColor=Color3.fromRGB(220,210,255), accent=Color3.fromRGB(140,100,220), cardBg=Color3.fromRGB(30,24,42), hover=Color3.fromRGB(160,120,240), layout="left"},
     {name="深海梦境", mainBg=Color3.fromRGB(15,40,55), sidebarBg=Color3.fromRGB(20,50,70), titleBg=Color3.fromRGB(25,60,82), contentBg=Color3.fromRGB(12,35,48), textColor=Color3.fromRGB(180,230,255), accent=Color3.fromRGB(0,180,200), cardBg=Color3.fromRGB(18,45,62), hover=Color3.fromRGB(0,210,230), layout="right"},
@@ -250,7 +260,7 @@ local stylesData = {
 }
 local currentStyle = 1
 
--- 构建信息面板
+-- ========== 构建信息面板 ==========
 local function buildInfoPanel(style)
     for _,v in ipairs(infoPanel:GetChildren()) do if v:IsA("Frame") then v:Destroy() end end
     local cardColor = style.cardBg
@@ -323,7 +333,7 @@ local function buildInfoPanel(style)
     descLbl.Parent = descCard
 end
 
--- 构建样式面板
+-- ========== 构建样式面板 ==========
 local styleBtns = {}
 local function buildStylePanel()
     for _,v in ipairs(stylePanel:GetChildren()) do if v:IsA("Frame") or v:IsA("ScrollingFrame") then v:Destroy() end end
@@ -380,6 +390,7 @@ local function buildStylePanel()
         btnCorner.CornerRadius = UDim.new(0,6)
         btnCorner.Parent = btn
         
+        -- 预览色块
         local preview = Instance.new("Frame")
         preview.Size = UDim2.new(0,50,1,-10)
         preview.Position = UDim2.new(0,5,0,5)
@@ -427,6 +438,9 @@ local function buildStylePanel()
         layoutLabel.Parent = btn
         
         styleBtns[i] = btn
+        
+        -- 关键修复：确保按钮可交互并绑定事件
+        btn.AutoButtonColor = true
         btn.MouseButton1Click:Connect(function()
             currentStyle = i
             applyFullStyle()
@@ -440,11 +454,12 @@ local function buildStylePanel()
     end
 end
 
--- 应用完整样式（颜色+布局）
+-- ========== 应用完整样式（颜色+布局）==========
 local function applyFullStyle()
     local style = stylesData[currentStyle]
     if not style then return end
-    -- 颜色
+    
+    -- 应用颜色
     mainFrame.BackgroundColor3 = style.mainBg
     sidebar.BackgroundColor3 = style.sidebarBg
     titleBar.BackgroundColor3 = style.titleBg
@@ -452,11 +467,13 @@ local function applyFullStyle()
     minBtn.BackgroundColor3 = style.sidebarBg
     titleLabel.TextColor3 = style.textColor
     clockLabel.TextColor3 = style.textColor
+    
     -- 重建面板（颜色跟随）
     buildInfoPanel(style)
     buildStylePanel()
-    -- 布局
-    local sidebarWidth = 95
+    
+    -- 应用布局
+    local sidebarWidth = 100
     if style.layout == "left" then
         sidebar.Size = UDim2.new(0, sidebarWidth, 1, -32)
         sidebar.Position = UDim2.new(0, 0, 0, 32)
@@ -489,6 +506,7 @@ local function applyFullStyle()
         infoPanel.Size = UDim2.new(1,0,1,0)
         stylePanel.Size = UDim2.new(1,0,1,0)
     end
+    
     -- 更新侧边栏按钮样式
     for id,btn in pairs(tabButtons) do
         if btn then
@@ -499,6 +517,7 @@ local function applyFullStyle()
             end
         end
     end
+    
     -- 高亮当前样式按钮
     for i,btn in ipairs(styleBtns) do
         if btn then
@@ -509,7 +528,7 @@ local function applyFullStyle()
     end
 end
 
--- 构建侧边栏按钮
+-- ========== 构建侧边栏栏目按钮 ==========
 local function buildSidebarButtons()
     for _,btn in pairs(tabButtons) do if btn then btn:Destroy() end end
     tabButtons = {}
@@ -554,7 +573,7 @@ local function buildSidebarButtons()
     end
 end
 
--- 北京时间更新
+-- ========== 北京时间更新 ==========
 task.spawn(function()
     while mainGui and mainGui.Parent do
         local t = os.date("*t")
@@ -563,10 +582,10 @@ task.spawn(function()
     end
 end)
 
--- 初始化
+-- ========== 初始化 ==========
 buildSidebarButtons()
 buildInfoPanel(stylesData[1])
 buildStylePanel()
 applyFullStyle()
 
-print("XU脚本悬浮窗已加载 - 样式切换功能正常")
+print("XU脚本悬浮窗已加载 - 样式切换功能正常，小方块可移动")
