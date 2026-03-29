@@ -1,10 +1,18 @@
 --[[
     XU 脚本悬浮窗 by HaoChen
     功能：可拖拽悬浮窗、最小化/恢复、侧边栏栏目切换、12种完整样式
-    修复：加载动画卡住导致白屏的问题
+    修复：彻底解决加载动画闪白屏后卡死的问题
+    参考：Roblox开发者论坛拖拽GUI教程 + 页面切换系统教程
 ]]
 
--- 加载提示 - 修复版
+-- 服务
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local player = Players.LocalPlayer
+
+-- ========== 1. 播放炫酷加载动画 ==========
+-- 创建加载GUI
 local loadGui = Instance.new("ScreenGui")
 loadGui.Name = "LoadAnimationGui"
 loadGui.Parent = game.CoreGui
@@ -36,7 +44,7 @@ logoText.Font = Enum.Font.GothamBold
 logoText.TextScaled = true
 logoText.Parent = logoContainer
 
--- 光晕效果（圆角框）- 修复：正确设置Size为UDim2
+-- 光晕效果
 local glow = Instance.new("Frame")
 glow.Size = UDim2.new(1, 0, 1, 0)
 glow.Position = UDim2.new(0, 0, 0, 0)
@@ -55,50 +63,47 @@ whiteFlash.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 whiteFlash.BackgroundTransparency = 1
 whiteFlash.Parent = loadGui
 
--- 执行加载动画
-local TweenService = game:GetService("TweenService")
+-- 执行动画（使用延迟确保每一步都能正确显示）
+task.wait(0.1)
 
--- 1. 容器弹性弹出
-local tweenInfoElastic = TweenInfo.new(0.8, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out)
-local tweenElastic = TweenService:Create(logoContainer, tweenInfoElastic, {
+-- 1. 淡入背景
+local bgFadeIn = TweenService:Create(bg, TweenInfo.new(0.3), {BackgroundTransparency = 0})
+bgFadeIn:Play()
+bgFadeIn.Completed:Wait()
+
+-- 2. 容器弹性弹出
+logoContainer.Size = UDim2.new(0, 0, 0, 0)
+local tweenElastic = TweenService:Create(logoContainer, TweenInfo.new(0.8, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {
     Size = UDim2.new(0, 120, 0, 120),
     Position = UDim2.new(0.5, -60, 0.5, -60)
 })
 tweenElastic:Play()
+tweenElastic.Completed:Wait()
 
--- 2. 光晕动画：让glow变大并变淡
-local tweenInfoGlow = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-local tweenGlow = TweenService:Create(glow, tweenInfoGlow, {
+-- 3. 光晕扩散
+local tweenGlow = TweenService:Create(glow, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
     Size = UDim2.new(1.4, 0, 1.4, 0),
     Position = UDim2.new(-0.2, 0, -0.2, 0),
     BackgroundTransparency = 0.6
 })
 tweenGlow:Play()
+tweenGlow.Completed:Wait()
 
--- 等待容器动画完成
-tweenElastic.Completed:Wait()
-
--- 3. 爆发白光
-local tweenFlashIn = TweenService:Create(whiteFlash, TweenInfo.new(0.3), {
-    BackgroundTransparency = 0
-})
-tweenFlashIn:Play()
+-- 4. 爆发白光
+local tweenFlash = TweenService:Create(whiteFlash, TweenInfo.new(0.3), {BackgroundTransparency = 0})
+tweenFlash:Play()
 task.wait(0.25)
 
--- 4. 淡出加载界面
-local tweenFadeOut = TweenService:Create(loadGui, TweenInfo.new(0.3), {
-    BackgroundTransparency = 1
-})
+-- 5. 淡出加载界面
+local tweenFadeOut = TweenService:Create(loadGui, TweenInfo.new(0.3), {BackgroundTransparency = 1})
 tweenFadeOut:Play()
 task.wait(0.3)
 loadGui:Destroy()
 
--- ========== 主界面开始 ==========
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local player = Players.LocalPlayer
+-- 关键：等待一帧确保加载界面完全销毁后再创建主界面
+task.wait(0.1)
 
+-- ========== 2. 主界面开始 ==========
 local mainGui = Instance.new("ScreenGui")
 mainGui.Name = "XU_Script_GUI"
 mainGui.Parent = game.CoreGui
@@ -135,7 +140,12 @@ local shadowCorner = Instance.new("UICorner")
 shadowCorner.CornerRadius = UDim.new(0, 12)
 shadowCorner.Parent = shadow
 
--- ========== 标题栏 ==========
+-- 主窗口淡入动画
+mainFrame.BackgroundTransparency = 1
+local mainFadeIn = TweenService:Create(mainFrame, TweenInfo.new(0.3), {BackgroundTransparency = 0})
+mainFadeIn:Play()
+
+-- ========== 3. 标题栏 ==========
 local titleBar = Instance.new("Frame")
 titleBar.Size = UDim2.new(1, 0, 0, 38)
 titleBar.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
@@ -185,7 +195,7 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0, 8)
 minCorner.Parent = minBtn
 
--- ========== 拖拽系统 ==========
+-- ========== 4. 拖拽系统 ==========
 local dragActive = false
 local dragStartPos = nil
 local dragFrameStartPos = nil
@@ -214,7 +224,7 @@ titleBar.InputBegan:Connect(function(input)
     end
 end)
 
--- ========== 最小化小方块 ==========
+-- ========== 5. 最小化小方块 ==========
 local miniFrame = Instance.new("Frame")
 miniFrame.Name = "MiniFrame"
 miniFrame.Size = UDim2.new(0, 60, 0, 60)
@@ -306,7 +316,7 @@ minBtn.MouseButton1Click:Connect(function()
     miniText.TextColor3 = titleLabel.TextColor3
 end)
 
--- ========== 侧边栏 ==========
+-- ========== 6. 侧边栏 ==========
 local sidebar = Instance.new("Frame")
 sidebar.Name = "Sidebar"
 sidebar.Size = UDim2.new(0, 130, 1, -38)
@@ -329,7 +339,7 @@ listLayout.Padding = UDim.new(0, 8)
 listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 listLayout.Parent = sidebarList
 
--- ========== 内容区域 ==========
+-- ========== 7. 内容区域 ==========
 local contentArea = Instance.new("Frame")
 contentArea.Name = "ContentArea"
 contentArea.Size = UDim2.new(1, -130, 1, -38)
@@ -356,7 +366,7 @@ stylePanel.Size = UDim2.new(1, 0, 1, 0)
 stylePanel.Parent = contentArea
 stylePanel.Visible = false
 
--- ========== 栏目定义 ==========
+-- ========== 8. 栏目定义 ==========
 local tabs = {
     {name = "信息", id = "info"},
     {name = "样式", id = "style"}
@@ -364,7 +374,7 @@ local tabs = {
 local selectedTab = "info"
 local tabButtons = {}
 
--- ========== 12种样式数据 ==========
+-- ========== 9. 12种样式数据 ==========
 local stylesData = {
     {name = "暗夜紫罗兰", mainBg = Color3.fromRGB(25,20,35), sidebarBg = Color3.fromRGB(35,28,48), titleBg = Color3.fromRGB(45,38,58), contentBg = Color3.fromRGB(20,16,30), textColor = Color3.fromRGB(220,210,255), accentColor = Color3.fromRGB(140,100,220), cardBg = Color3.fromRGB(30,24,42), hoverColor = Color3.fromRGB(160,120,240)},
     {name = "深海梦境", mainBg = Color3.fromRGB(15,40,55), sidebarBg = Color3.fromRGB(20,50,70), titleBg = Color3.fromRGB(25,60,82), contentBg = Color3.fromRGB(12,35,48), textColor = Color3.fromRGB(180,230,255), accentColor = Color3.fromRGB(0,180,200), cardBg = Color3.fromRGB(18,45,62), hoverColor = Color3.fromRGB(0,210,230)},
@@ -382,7 +392,7 @@ local stylesData = {
 local currentStyleIndex = 1
 local styleButtons = {}
 
--- ========== 构建信息面板 ==========
+-- ========== 10. 构建信息面板 ==========
 local function buildInfoPanel(style)
     for _, v in ipairs(infoPanel:GetChildren()) do
         if v:IsA("Frame") then v:Destroy() end
@@ -462,7 +472,7 @@ local function buildInfoPanel(style)
     descLabel.Parent = descCard
 end
 
--- ========== 构建样式面板 ==========
+-- ========== 11. 构建样式面板 ==========
 local function buildStylePanel()
     for _, v in ipairs(stylePanel:GetChildren()) do
         if v:IsA("Frame") or v:IsA("ScrollingFrame") then v:Destroy() end
@@ -577,7 +587,7 @@ local function buildStylePanel()
     end
 end
 
--- ========== 应用样式 ==========
+-- ========== 12. 应用样式 ==========
 local function applyStyle()
     local style = stylesData[currentStyleIndex]
     if not style then return end
@@ -612,7 +622,7 @@ local function applyStyle()
     end
 end
 
--- ========== 构建侧边栏按钮 ==========
+-- ========== 13. 构建侧边栏按钮 ==========
 local function buildSidebarButtons()
     for _, btn in pairs(tabButtons) do
         if btn then btn:Destroy() end
@@ -665,7 +675,7 @@ local function buildSidebarButtons()
     end
 end
 
--- ========== 北京时间更新 ==========
+-- ========== 14. 北京时间更新 ==========
 task.spawn(function()
     while mainGui and mainGui.Parent do
         local t = os.date("*t")
@@ -674,7 +684,7 @@ task.spawn(function()
     end
 end)
 
--- ========== 初始化 ==========
+-- ========== 15. 初始化所有组件 ==========
 buildSidebarButtons()
 buildInfoPanel(stylesData[1])
 buildStylePanel()
