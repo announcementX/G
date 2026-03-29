@@ -1,14 +1,15 @@
 --[[
     XU 脚本悬浮窗 by HaoChen
-    修复：动画结束后主窗口不显示的问题
-    修复：样式按钮点击无反应的问题
+    修复：主窗口不显示问题（采用稳健初始化，基于调试成功的框架）
+    功能：拖拽、最小化、侧边栏切换、12种样式（颜色+布局）
 ]]
 
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 
--- ========== 加载动画（完全保留你的原版，一个字不改） ==========
+-- ========== 1. 加载动画（你的原版，未改动） ==========
 local loadGui = Instance.new("ScreenGui")
+loadGui.Name = "LoadAnim"
 loadGui.Parent = game.CoreGui
 loadGui.IgnoreGuiInset = true
 
@@ -55,7 +56,6 @@ particleContainer.Size = UDim2.new(1, 0, 1, 0)
 particleContainer.BackgroundTransparency = 1
 particleContainer.Parent = loadGui
 
--- 动画执行
 task.wait(0.05)
 local tweenElastic = TweenService:Create(logoContainer, TweenInfo.new(0.7, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {
     Size = UDim2.new(0, 120, 0, 120)
@@ -118,18 +118,18 @@ fadeOut.Completed:Wait()
 loadGui:Destroy()
 task.wait(0.1)
 
--- ========== 主界面（修复：确保主窗口可见） ==========
+-- ========== 2. 主界面（基于调试成功的结构，确保显示） ==========
 local mainGui = Instance.new("ScreenGui")
-mainGui.Name = "XU_Script_GUI"
+mainGui.Name = "XU_MainGUI"
 mainGui.Parent = game.CoreGui
 mainGui.ResetOnSpawn = false
 
--- 主窗口：直接设为可见（BackgroundTransparency = 0），不依赖后续动画
+-- 主窗口（直接可见）
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 420, 0, 340)
 mainFrame.Position = UDim2.new(0.5, -210, 0.5, -170)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30,30,45)
-mainFrame.BackgroundTransparency = 0  -- 关键修复：直接可见
+mainFrame.BackgroundTransparency = 0
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
 mainFrame.Parent = mainGui
@@ -196,16 +196,14 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0,6)
 minCorner.Parent = minBtn
 
--- ========== 主窗口拖拽系统 ==========
+-- 拖拽系统（主窗口）
 local dragging = false
 local dragStart = nil
 local startPos = nil
-
 local function updateDrag(input)
     local delta = input.Position - dragStart
     mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
-
 titleBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
@@ -213,20 +211,18 @@ titleBar.InputBegan:Connect(function(input)
         startPos = mainFrame.Position
     end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
     if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
         updateDrag(input)
     end
 end)
-
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = false
     end
 end)
 
--- ========== 小方块（最小化窗口）==========
+-- 小方块（最小化）
 local miniFrame = Instance.new("Frame")
 miniFrame.Size = UDim2.new(0, 55, 0, 55)
 miniFrame.Position = UDim2.new(0.5, -27.5, 0, 50)
@@ -246,18 +242,15 @@ miniText.TextSize = 16
 miniText.Font = Enum.Font.GothamBold
 miniText.Parent = miniFrame
 
--- 小方块拖拽系统
 local miniDragging = false
 local miniDragStart = nil
 local miniStartPos = nil
 local longPressTimer = nil
 local isLongPressing = false
-
 local function updateMiniDrag(input)
     local delta = input.Position - miniDragStart
     miniFrame.Position = UDim2.new(miniStartPos.X.Scale, miniStartPos.X.Offset + delta.X, miniStartPos.Y.Scale, miniStartPos.Y.Offset + delta.Y)
 end
-
 miniFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         isLongPressing = true
@@ -270,7 +263,6 @@ miniFrame.InputBegan:Connect(function(input)
         end)
     end
 end)
-
 miniFrame.InputEnded:Connect(function(input)
     if longPressTimer then longPressTimer:Cancel() end
     if miniDragging then
@@ -282,13 +274,11 @@ miniFrame.InputEnded:Connect(function(input)
     end
     isLongPressing = false
 end)
-
 UserInputService.InputChanged:Connect(function(input)
     if miniDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
         updateMiniDrag(input)
     end
 end)
-
 minBtn.MouseButton1Click:Connect(function()
     mainFrame.Visible = false
     miniFrame.Visible = true
@@ -297,7 +287,7 @@ minBtn.MouseButton1Click:Connect(function()
     miniText.TextColor3 = titleLabel.TextColor3
 end)
 
--- ========== 侧边栏 ==========
+-- 侧边栏
 local sidebar = Instance.new("Frame")
 sidebar.Name = "Sidebar"
 sidebar.BackgroundColor3 = Color3.fromRGB(40,40,58)
@@ -338,7 +328,7 @@ local tabs = {{name="信息", id="info"},{name="样式", id="style"}}
 local selectedTab = "info"
 local tabButtons = {}
 
--- ========== 12种样式数据 ==========
+-- 样式数据（12种，包含布局）
 local stylesData = {
     {name="暗夜紫罗兰", mainBg=Color3.fromRGB(25,20,35), sidebarBg=Color3.fromRGB(35,28,48), titleBg=Color3.fromRGB(45,38,58), contentBg=Color3.fromRGB(20,16,30), textColor=Color3.fromRGB(220,210,255), accent=Color3.fromRGB(140,100,220), cardBg=Color3.fromRGB(30,24,42), hover=Color3.fromRGB(160,120,240), layout="left"},
     {name="深海梦境", mainBg=Color3.fromRGB(15,40,55), sidebarBg=Color3.fromRGB(20,50,70), titleBg=Color3.fromRGB(25,60,82), contentBg=Color3.fromRGB(12,35,48), textColor=Color3.fromRGB(180,230,255), accent=Color3.fromRGB(0,180,200), cardBg=Color3.fromRGB(18,45,62), hover=Color3.fromRGB(0,210,230), layout="right"},
@@ -362,7 +352,6 @@ local function buildInfoPanel(style)
     local cardColor = style.cardBg
     local textColor = style.textColor
     local subColor = Color3.new(textColor.R*0.8, textColor.G*0.8, textColor.B*0.8)
-    
     local titleCard = Instance.new("Frame")
     titleCard.Size = UDim2.new(1,-20,0,40)
     titleCard.Position = UDim2.new(0,10,0,10)
@@ -382,7 +371,6 @@ local function buildInfoPanel(style)
     titleText.Font = Enum.Font.GothamBold
     titleText.TextXAlignment = Enum.TextXAlignment.Left
     titleText.Parent = titleCard
-    
     local function addCard(y, h, txt)
         local card = Instance.new("Frame")
         card.Size = UDim2.new(1,-20,0,h)
@@ -429,10 +417,9 @@ local function buildInfoPanel(style)
     descLbl.Parent = descCard
 end
 
--- 构建样式面板
+-- 构建样式面板（按钮只创建一次）
 local function buildStylePanel()
     for _,v in ipairs(stylePanel:GetChildren()) do if v:IsA("Frame") or v:IsA("ScrollingFrame") then v:Destroy() end end
-    
     local titleCard = Instance.new("Frame")
     titleCard.Size = UDim2.new(1,-20,0,40)
     titleCard.Position = UDim2.new(0,10,0,10)
@@ -452,7 +439,6 @@ local function buildStylePanel()
     titleText.Font = Enum.Font.GothamBold
     titleText.TextXAlignment = Enum.TextXAlignment.Left
     titleText.Parent = titleCard
-    
     local scroll = Instance.new("ScrollingFrame")
     scroll.Size = UDim2.new(1,-20,0,200)
     scroll.Position = UDim2.new(0,10,0,60)
@@ -469,7 +455,6 @@ local function buildStylePanel()
     layout.Padding = UDim.new(0,8)
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     layout.Parent = container
-    
     styleButtons = {}
     for i,style in ipairs(stylesData) do
         local btn = Instance.new("TextButton")
@@ -481,7 +466,6 @@ local function buildStylePanel()
         local btnCorner = Instance.new("UICorner")
         btnCorner.CornerRadius = UDim.new(0,6)
         btnCorner.Parent = btn
-        
         local preview = Instance.new("Frame")
         preview.Size = UDim2.new(0,50,1,-10)
         preview.Position = UDim2.new(0,5,0,5)
@@ -504,7 +488,6 @@ local function buildStylePanel()
         local pAccentCorner = Instance.new("UICorner")
         pAccentCorner.CornerRadius = UDim.new(0,4)
         pAccentCorner.Parent = pAccent
-        
         local nameLabel = Instance.new("TextLabel")
         nameLabel.Size = UDim2.new(1,-60,0,25)
         nameLabel.Position = UDim2.new(0,60,0,8)
@@ -515,7 +498,6 @@ local function buildStylePanel()
         nameLabel.Font = Enum.Font.GothamSemibold
         nameLabel.TextXAlignment = Enum.TextXAlignment.Left
         nameLabel.Parent = btn
-        
         local layoutLabel = Instance.new("TextLabel")
         layoutLabel.Size = UDim2.new(1,-60,0,20)
         layoutLabel.Position = UDim2.new(0,60,0,33)
@@ -527,9 +509,7 @@ local function buildStylePanel()
         layoutLabel.Font = Enum.Font.Gotham
         layoutLabel.TextXAlignment = Enum.TextXAlignment.Left
         layoutLabel.Parent = btn
-        
         styleButtons[i] = btn
-        
         btn.MouseButton1Click:Connect(function()
             currentStyle = i
             applyStyle()
@@ -537,11 +517,10 @@ local function buildStylePanel()
     end
 end
 
--- 应用样式
+-- 应用样式（颜色+布局）
 local function applyStyle()
     local style = stylesData[currentStyle]
     if not style then return end
-    
     mainFrame.BackgroundColor3 = style.mainBg
     sidebar.BackgroundColor3 = style.sidebarBg
     titleBar.BackgroundColor3 = style.titleBg
@@ -549,9 +528,7 @@ local function applyStyle()
     minBtn.BackgroundColor3 = style.sidebarBg
     titleLabel.TextColor3 = style.textColor
     clockLabel.TextColor3 = style.textColor
-    
     buildInfoPanel(style)
-    
     for id,btn in pairs(tabButtons) do
         if btn then
             btn.BackgroundColor3 = style.sidebarBg
@@ -561,7 +538,6 @@ local function applyStyle()
             end
         end
     end
-    
     for i,btn in ipairs(styleButtons) do
         if btn then
             TweenService:Create(btn, TweenInfo.new(0.2), {
@@ -578,7 +554,6 @@ local function applyStyle()
             end
         end
     end
-    
     local sidebarWidth = 100
     if style.layout == "left" then
         sidebar.Size = UDim2.new(0, sidebarWidth, 1, -32)
@@ -655,4 +630,4 @@ buildInfoPanel(stylesData[1])
 buildStylePanel()
 applyStyle()
 
-print("XU脚本悬浮窗已加载 - 动画保留，主窗口已显示")
+print("XU脚本悬浮窗已加载 - 主窗口应该可见，样式切换正常")
