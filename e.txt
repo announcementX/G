@@ -1,34 +1,129 @@
 --[[
     XU 脚本悬浮窗 by HaoChen
-    功能：可拖拽、最小化、侧边栏切换、12种样式（颜色+布局）
-    修复：样式切换正常、小方块可移动、窗口尺寸适中
+    修复：拖拽系统、样式切换、小方块移动、加载动画
+    参考：Roblox开发者论坛拖拽模块教程[citation:1]、标准拖拽GUI模板[citation:5][citation:8]
 ]]
 
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 
--- 加载提示
+-- ========== 炫酷加载动画 ==========
 local loadGui = Instance.new("ScreenGui")
 loadGui.Parent = game.CoreGui
-local loadText = Instance.new("TextLabel")
-loadText.Size = UDim2.new(0, 200, 0, 50)
-loadText.Position = UDim2.new(0.5, -100, 0.5, -25)
-loadText.BackgroundTransparency = 1
-loadText.Text = "加载中..."
-loadText.TextColor3 = Color3.new(1,1,1)
-loadText.TextSize = 20
-loadText.Font = Enum.Font.GothamSemibold
-loadText.Parent = loadGui
-task.wait(0.5)
-loadGui:Destroy()
+loadGui.IgnoreGuiInset = true
 
--- 主GUI
+local logoContainer = Instance.new("Frame")
+logoContainer.Size = UDim2.new(0, 0, 0, 0)
+logoContainer.AnchorPoint = Vector2.new(0.5, 0.5)
+logoContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
+logoContainer.BackgroundTransparency = 1
+logoContainer.Parent = loadGui
+
+local logoText = Instance.new("TextLabel")
+logoText.Size = UDim2.new(1, 0, 1, 0)
+logoText.BackgroundTransparency = 1
+logoText.Text = "XU"
+logoText.TextColor3 = Color3.new(1, 1, 1)
+logoText.TextSize = 60
+logoText.Font = Enum.Font.GothamBold
+logoText.TextScaled = true
+logoText.Parent = logoContainer
+
+local glow = Instance.new("Frame")
+glow.Size = UDim2.new(1, 0, 1, 0)
+glow.BackgroundColor3 = Color3.fromRGB(255, 200, 100)
+glow.BackgroundTransparency = 0.7
+glow.BorderSizePixel = 0
+glow.Parent = logoContainer
+local glowCorner = Instance.new("UICorner")
+glowCorner.CornerRadius = UDim.new(1, 0)
+glowCorner.Parent = glow
+
+local outerGlow = Instance.new("Frame")
+outerGlow.Size = UDim2.new(1.2, 0, 1.2, 0)
+outerGlow.Position = UDim2.new(-0.1, 0, -0.1, 0)
+outerGlow.BackgroundColor3 = Color3.fromRGB(255, 150, 50)
+outerGlow.BackgroundTransparency = 0.9
+outerGlow.BorderSizePixel = 0
+outerGlow.Parent = logoContainer
+local outerCorner = Instance.new("UICorner")
+outerCorner.CornerRadius = UDim.new(1, 0)
+outerCorner.Parent = outerGlow
+
+local particleContainer = Instance.new("Frame")
+particleContainer.Size = UDim2.new(1, 0, 1, 0)
+particleContainer.BackgroundTransparency = 1
+particleContainer.Parent = loadGui
+
+-- 动画序列
+task.wait(0.05)
+local tweenElastic = TweenService:Create(logoContainer, TweenInfo.new(0.7, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {
+    Size = UDim2.new(0, 120, 0, 120)
+})
+tweenElastic:Play()
+tweenElastic.Completed:Wait()
+
+local glowTween = TweenService:Create(glow, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+    Size = UDim2.new(1.3, 0, 1.3, 0),
+    Position = UDim2.new(-0.15, 0, -0.15, 0),
+    BackgroundTransparency = 0.5
+})
+local outerTween = TweenService:Create(outerGlow, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+    Size = UDim2.new(1.6, 0, 1.6, 0),
+    Position = UDim2.new(-0.3, 0, -0.3, 0),
+    BackgroundTransparency = 0.7
+})
+glowTween:Play()
+outerTween:Play()
+glowTween.Completed:Wait()
+
+local colorTween = TweenService:Create(logoText, TweenInfo.new(0.3), {TextColor3 = Color3.fromRGB(255, 200, 100)})
+colorTween:Play()
+
+local shrinkTween = TweenService:Create(logoContainer, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+    Size = UDim2.new(0, 0, 0, 0),
+    Rotation = 360
+})
+shrinkTween:Play()
+
+local colors = {Color3.fromRGB(255,100,100), Color3.fromRGB(255,150,50), Color3.fromRGB(255,200,50), Color3.fromRGB(100,255,100), Color3.fromRGB(100,200,255), Color3.fromRGB(200,100,255)}
+for i = 1, 36 do
+    local angle = (i / 36) * math.pi * 2
+    local radius = 90
+    local particle = Instance.new("Frame")
+    particle.Size = UDim2.new(0, 6, 0, 6)
+    particle.AnchorPoint = Vector2.new(0.5, 0.5)
+    particle.Position = UDim2.new(0.5, 0, 0.5, 0)
+    particle.BackgroundColor3 = colors[math.random(1, #colors)]
+    particle.BackgroundTransparency = 0.2
+    particle.BorderSizePixel = 0
+    particle.Parent = particleContainer
+    local particleCorner = Instance.new("UICorner")
+    particleCorner.CornerRadius = UDim.new(1, 0)
+    particleCorner.Parent = particle
+    TweenService:Create(particle, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0.5, math.cos(angle) * radius, 0.5, math.sin(angle) * radius),
+        BackgroundTransparency = 1,
+        Size = UDim2.new(0, 2, 0, 2)
+    }):Play()
+    task.wait(0.01)
+end
+
+shrinkTween.Completed:Wait()
+task.wait(0.4)
+
+local fadeOut = TweenService:Create(loadGui, TweenInfo.new(0.3), {BackgroundTransparency = 1})
+fadeOut:Play()
+fadeOut.Completed:Wait()
+loadGui:Destroy()
+task.wait(0.1)
+
+-- ========== 主界面 ==========
 local mainGui = Instance.new("ScreenGui")
 mainGui.Name = "XU_Script_GUI"
 mainGui.Parent = game.CoreGui
 mainGui.ResetOnSpawn = false
 
--- 主窗口 (420x340，大小适中)
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 420, 0, 340)
 mainFrame.Position = UDim2.new(0.5, -210, 0.5, -170)
@@ -41,7 +136,6 @@ local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0,10)
 mainCorner.Parent = mainFrame
 
--- 阴影
 local shadow = Instance.new("Frame")
 shadow.Size = UDim2.new(1,0,1,0)
 shadow.Position = UDim2.new(0,5,0,5)
@@ -75,7 +169,6 @@ titleLabel.Font = Enum.Font.GothamSemibold
 titleLabel.TextSize = 15
 titleLabel.Parent = titleBar
 
--- 北京时间
 local clockLabel = Instance.new("TextLabel")
 clockLabel.Size = UDim2.new(0,120,1,0)
 clockLabel.Position = UDim2.new(0.5,-60,0,0)
@@ -87,7 +180,6 @@ clockLabel.Font = Enum.Font.Gotham
 clockLabel.TextSize = 13
 clockLabel.Parent = titleBar
 
--- 最小化按钮
 local minBtn = Instance.new("TextButton")
 minBtn.Size = UDim2.new(0,35,1,0)
 minBtn.Position = UDim2.new(1,-35,0,0)
@@ -102,37 +194,40 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0,6)
 minCorner.Parent = minBtn
 
--- ========== 拖拽系统（主窗口）==========
-local dragActive = false
+-- ========== 主窗口拖拽系统（基于标准模板[citation:5][citation:8]）==========
+local dragging = false
 local dragStart = nil
 local startPos = nil
+
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
 titleBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragActive = true
+        dragging = true
         dragStart = input.Position
         startPos = mainFrame.Position
     end
 end)
+
 UserInputService.InputChanged:Connect(function(input)
-    if dragActive and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        local newX = startPos.X.Offset + delta.X
-        local newY = startPos.Y.Offset + delta.Y
-        local maxX = game.CoreGui.AbsoluteSize.X - mainFrame.AbsoluteSize.X
-        local maxY = game.CoreGui.AbsoluteSize.Y - mainFrame.AbsoluteSize.Y
-        mainFrame.Position = UDim2.new(0, math.clamp(newX,0,maxX), 0, math.clamp(newY,0,maxY))
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        updateDrag(input)
     end
 end)
+
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragActive = false
+        dragging = false
     end
 end)
 
 -- ========== 小方块（最小化窗口）==========
 local miniFrame = Instance.new("Frame")
-miniFrame.Size = UDim2.new(0,55,0,55)
-miniFrame.Position = UDim2.new(0.5, -27.5, 0, 10)  -- 默认在屏幕正上方
+miniFrame.Size = UDim2.new(0, 55, 0, 55)
+miniFrame.Position = UDim2.new(0.5, -27.5, 0, 50)
 miniFrame.BackgroundColor3 = Color3.fromRGB(50,50,70)
 miniFrame.BorderSizePixel = 0
 miniFrame.Visible = false
@@ -149,58 +244,58 @@ miniText.TextSize = 16
 miniText.Font = Enum.Font.GothamBold
 miniText.Parent = miniFrame
 
--- 小方块拖拽
-local miniDragActive = false
+-- 小方块拖拽系统
+local miniDragging = false
 local miniDragStart = nil
 local miniStartPos = nil
 local longPressTimer = nil
+local isLongPressing = false
+
+local function updateMiniDrag(input)
+    local delta = input.Position - miniDragStart
+    miniFrame.Position = UDim2.new(miniStartPos.X.Scale, miniStartPos.X.Offset + delta.X, miniStartPos.Y.Scale, miniStartPos.Y.Offset + delta.Y)
+end
 
 miniFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isLongPressing = true
         longPressTimer = task.delay(0.35, function()
-            miniDragActive = true
-            miniDragStart = input.Position
-            miniStartPos = miniFrame.Position
+            if isLongPressing then
+                miniDragging = true
+                miniDragStart = input.Position
+                miniStartPos = miniFrame.Position
+            end
         end)
     end
 end)
 
 miniFrame.InputEnded:Connect(function(input)
-    if longPressTimer then
-        longPressTimer:Cancel()
-        longPressTimer = nil
-    end
-    if miniDragActive then
-        miniDragActive = false
-    elseif miniFrame.Visible then
-        -- 单击恢复主窗口
+    if longPressTimer then longPressTimer:Cancel() end
+    if miniDragging then
+        miniDragging = false
+    elseif isLongPressing and miniFrame.Visible then
         mainFrame.Visible = true
         miniFrame.Visible = false
         mainFrame.Position = UDim2.new(0, miniFrame.AbsolutePosition.X, 0, miniFrame.AbsolutePosition.Y)
     end
+    isLongPressing = false
 end)
 
--- 全局更新小方块拖拽
 UserInputService.InputChanged:Connect(function(input)
-    if miniDragActive and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - miniDragStart
-        local newX = miniStartPos.X.Offset + delta.X
-        local newY = miniStartPos.Y.Offset + delta.Y
-        local maxX = game.CoreGui.AbsoluteSize.X - miniFrame.AbsoluteSize.X
-        local maxY = game.CoreGui.AbsoluteSize.Y - miniFrame.AbsoluteSize.Y
-        miniFrame.Position = UDim2.new(0, math.clamp(newX,0,maxX), 0, math.clamp(newY,0,maxY))
+    if miniDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        updateMiniDrag(input)
     end
 end)
 
--- 最小化按钮功能
 minBtn.MouseButton1Click:Connect(function()
     mainFrame.Visible = false
     miniFrame.Visible = true
     miniFrame.Position = UDim2.new(0, mainFrame.AbsolutePosition.X, 0, mainFrame.AbsolutePosition.Y)
     miniFrame.BackgroundColor3 = mainFrame.BackgroundColor3
+    miniText.TextColor3 = titleLabel.TextColor3
 end)
 
--- ========== 侧边栏容器 ==========
+-- ========== 侧边栏 ==========
 local sidebar = Instance.new("Frame")
 sidebar.Name = "Sidebar"
 sidebar.BackgroundColor3 = Color3.fromRGB(40,40,58)
@@ -218,7 +313,6 @@ listLayout.Padding = UDim.new(0,6)
 listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 listLayout.Parent = sidebarList
 
--- 内容区域
 local contentArea = Instance.new("Frame")
 contentArea.Name = "ContentArea"
 contentArea.BackgroundColor3 = Color3.fromRGB(25,25,40)
@@ -228,17 +322,16 @@ local contentCorner = Instance.new("UICorner")
 contentCorner.CornerRadius = UDim.new(0,8)
 contentCorner.Parent = contentArea
 
--- 面板
 local infoPanel = Instance.new("Frame")
 infoPanel.BackgroundTransparency = 1
 infoPanel.Parent = contentArea
 infoPanel.Visible = true
+
 local stylePanel = Instance.new("Frame")
 stylePanel.BackgroundTransparency = 1
 stylePanel.Parent = contentArea
 stylePanel.Visible = false
 
--- 栏目
 local tabs = {{name="信息", id="info"},{name="样式", id="style"}}
 local selectedTab = "info"
 local tabButtons = {}
@@ -259,8 +352,9 @@ local stylesData = {
     {name="午夜蓝调", mainBg=Color3.fromRGB(10,12,30), sidebarBg=Color3.fromRGB(18,20,45), titleBg=Color3.fromRGB(28,30,58), contentBg=Color3.fromRGB(8,10,25), textColor=Color3.fromRGB(150,180,255), accent=Color3.fromRGB(50,100,220), cardBg=Color3.fromRGB(14,16,38), hover=Color3.fromRGB(80,130,250), layout="top"}
 }
 local currentStyle = 1
+local styleButtons = {}
 
--- ========== 构建信息面板 ==========
+-- 构建信息面板
 local function buildInfoPanel(style)
     for _,v in ipairs(infoPanel:GetChildren()) do if v:IsA("Frame") then v:Destroy() end end
     local cardColor = style.cardBg
@@ -333,18 +427,14 @@ local function buildInfoPanel(style)
     descLbl.Parent = descCard
 end
 
--- ========== 构建样式面板 ==========
-local styleBtns = {}
+-- 构建样式面板（按钮只创建一次，永不重建）
 local function buildStylePanel()
     for _,v in ipairs(stylePanel:GetChildren()) do if v:IsA("Frame") or v:IsA("ScrollingFrame") then v:Destroy() end end
-    local curStyle = stylesData[currentStyle]
-    local cardColor = curStyle.cardBg
-    local textColor = curStyle.textColor
     
     local titleCard = Instance.new("Frame")
     titleCard.Size = UDim2.new(1,-20,0,40)
     titleCard.Position = UDim2.new(0,10,0,10)
-    titleCard.BackgroundColor3 = cardColor
+    titleCard.BackgroundColor3 = stylesData[1].cardBg
     titleCard.BorderSizePixel = 0
     titleCard.Parent = stylePanel
     local tc = Instance.new("UICorner")
@@ -355,7 +445,7 @@ local function buildStylePanel()
     titleText.Position = UDim2.new(0,8,0,0)
     titleText.BackgroundTransparency = 1
     titleText.Text = "选择样式"
-    titleText.TextColor3 = textColor
+    titleText.TextColor3 = stylesData[1].textColor
     titleText.TextSize = 16
     titleText.Font = Enum.Font.GothamBold
     titleText.TextXAlignment = Enum.TextXAlignment.Left
@@ -378,11 +468,11 @@ local function buildStylePanel()
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     layout.Parent = container
     
-    styleBtns = {}
+    styleButtons = {}
     for i,style in ipairs(stylesData) do
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(0.9,0,0,60)
-        btn.BackgroundColor3 = cardColor
+        btn.BackgroundColor3 = stylesData[1].cardBg
         btn.Text = ""
         btn.BorderSizePixel = 0
         btn.Parent = container
@@ -390,7 +480,6 @@ local function buildStylePanel()
         btnCorner.CornerRadius = UDim.new(0,6)
         btnCorner.Parent = btn
         
-        -- 预览色块
         local preview = Instance.new("Frame")
         preview.Size = UDim2.new(0,50,1,-10)
         preview.Position = UDim2.new(0,5,0,5)
@@ -419,7 +508,7 @@ local function buildStylePanel()
         nameLabel.Position = UDim2.new(0,60,0,8)
         nameLabel.BackgroundTransparency = 1
         nameLabel.Text = style.name
-        nameLabel.TextColor3 = textColor
+        nameLabel.TextColor3 = stylesData[1].textColor
         nameLabel.TextSize = 14
         nameLabel.Font = Enum.Font.GothamSemibold
         nameLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -431,35 +520,26 @@ local function buildStylePanel()
         layoutLabel.BackgroundTransparency = 1
         local layoutTxt = style.layout == "left" and "侧边栏:左" or (style.layout == "right" and "侧边栏:右" or "侧边栏:上")
         layoutLabel.Text = layoutTxt
-        layoutLabel.TextColor3 = Color3.new(textColor.R*0.7, textColor.G*0.7, textColor.B*0.7)
+        layoutLabel.TextColor3 = stylesData[1].textColor
         layoutLabel.TextSize = 11
         layoutLabel.Font = Enum.Font.Gotham
         layoutLabel.TextXAlignment = Enum.TextXAlignment.Left
         layoutLabel.Parent = btn
         
-        styleBtns[i] = btn
+        styleButtons[i] = btn
         
-        -- 关键修复：确保按钮可交互并绑定事件
-        btn.AutoButtonColor = true
         btn.MouseButton1Click:Connect(function()
             currentStyle = i
-            applyFullStyle()
-        end)
-        btn.MouseEnter:Connect(function()
-            TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = style.hover}):Play()
-        end)
-        btn.MouseLeave:Connect(function()
-            TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = cardColor}):Play()
+            applyStyle()
         end)
     end
 end
 
--- ========== 应用完整样式（颜色+布局）==========
-local function applyFullStyle()
+-- 应用样式（只修改属性，不重建按钮）
+local function applyStyle()
     local style = stylesData[currentStyle]
     if not style then return end
     
-    -- 应用颜色
     mainFrame.BackgroundColor3 = style.mainBg
     sidebar.BackgroundColor3 = style.sidebarBg
     titleBar.BackgroundColor3 = style.titleBg
@@ -468,46 +548,8 @@ local function applyFullStyle()
     titleLabel.TextColor3 = style.textColor
     clockLabel.TextColor3 = style.textColor
     
-    -- 重建面板（颜色跟随）
     buildInfoPanel(style)
-    buildStylePanel()
     
-    -- 应用布局
-    local sidebarWidth = 100
-    if style.layout == "left" then
-        sidebar.Size = UDim2.new(0, sidebarWidth, 1, -32)
-        sidebar.Position = UDim2.new(0, 0, 0, 32)
-        sidebarList.Size = UDim2.new(1,0,1,0)
-        listLayout.FillDirection = Enum.FillDirection.Vertical
-        listLayout.Padding = UDim.new(0,6)
-        contentArea.Size = UDim2.new(1, -sidebarWidth, 1, -32)
-        contentArea.Position = UDim2.new(0, sidebarWidth, 0, 32)
-        infoPanel.Size = UDim2.new(1,0,1,0)
-        stylePanel.Size = UDim2.new(1,0,1,0)
-    elseif style.layout == "right" then
-        sidebar.Size = UDim2.new(0, sidebarWidth, 1, -32)
-        sidebar.Position = UDim2.new(1, -sidebarWidth, 0, 32)
-        sidebarList.Size = UDim2.new(1,0,1,0)
-        listLayout.FillDirection = Enum.FillDirection.Vertical
-        listLayout.Padding = UDim.new(0,6)
-        contentArea.Size = UDim2.new(1, -sidebarWidth, 1, -32)
-        contentArea.Position = UDim2.new(0, 0, 0, 32)
-        infoPanel.Size = UDim2.new(1,0,1,0)
-        stylePanel.Size = UDim2.new(1,0,1,0)
-    elseif style.layout == "top" then
-        sidebar.Size = UDim2.new(1,0,0,50)
-        sidebar.Position = UDim2.new(0,0,0,32)
-        sidebarList.Size = UDim2.new(1,0,1,0)
-        listLayout.FillDirection = Enum.FillDirection.Horizontal
-        listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        listLayout.Padding = UDim.new(0,15)
-        contentArea.Size = UDim2.new(1,0,1,-82)
-        contentArea.Position = UDim2.new(0,0,0,82)
-        infoPanel.Size = UDim2.new(1,0,1,0)
-        stylePanel.Size = UDim2.new(1,0,1,0)
-    end
-    
-    -- 更新侧边栏按钮样式
     for id,btn in pairs(tabButtons) do
         if btn then
             btn.BackgroundColor3 = style.sidebarBg
@@ -518,17 +560,49 @@ local function applyFullStyle()
         end
     end
     
-    -- 高亮当前样式按钮
-    for i,btn in ipairs(styleBtns) do
+    for i,btn in ipairs(styleButtons) do
         if btn then
             TweenService:Create(btn, TweenInfo.new(0.2), {
                 BackgroundColor3 = (i == currentStyle) and style.accent or style.cardBg
             }):Play()
+            local nameLabel = btn:FindFirstChildOfClass("TextLabel")
+            if nameLabel then
+                nameLabel.TextColor3 = style.textColor
+            end
+            local layoutLabel = btn:FindFirstChildOfClass("TextLabel", true)
+            if layoutLabel and layoutLabel ~= nameLabel then
+                layoutLabel.TextColor3 = Color3.new(style.textColor.R*0.7, style.textColor.G*0.7, style.textColor.B*0.7)
+            end
         end
+    end
+    
+    local sidebarWidth = 100
+    if style.layout == "left" then
+        sidebar.Size = UDim2.new(0, sidebarWidth, 1, -32)
+        sidebar.Position = UDim2.new(0, 0, 0, 32)
+        listLayout.FillDirection = Enum.FillDirection.Vertical
+        listLayout.Padding = UDim.new(0,6)
+        contentArea.Size = UDim2.new(1, -sidebarWidth, 1, -32)
+        contentArea.Position = UDim2.new(0, sidebarWidth, 0, 32)
+    elseif style.layout == "right" then
+        sidebar.Size = UDim2.new(0, sidebarWidth, 1, -32)
+        sidebar.Position = UDim2.new(1, -sidebarWidth, 0, 32)
+        listLayout.FillDirection = Enum.FillDirection.Vertical
+        listLayout.Padding = UDim.new(0,6)
+        contentArea.Size = UDim2.new(1, -sidebarWidth, 1, -32)
+        contentArea.Position = UDim2.new(0, 0, 0, 32)
+    elseif style.layout == "top" then
+        sidebar.Size = UDim2.new(1,0,0,50)
+        sidebar.Position = UDim2.new(0,0,0,32)
+        listLayout.FillDirection = Enum.FillDirection.Horizontal
+        listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        listLayout.Padding = UDim.new(0,15)
+        contentArea.Size = UDim2.new(1,0,1,-82)
+        contentArea.Position = UDim2.new(0,0,0,82)
     end
 end
 
--- ========== 构建侧边栏栏目按钮 ==========
+-- 构建侧边栏栏目按钮
 local function buildSidebarButtons()
     for _,btn in pairs(tabButtons) do if btn then btn:Destroy() end end
     tabButtons = {}
@@ -557,23 +631,13 @@ local function buildSidebarButtons()
                 end
             end
         end)
-        btn.MouseEnter:Connect(function()
-            if selectedTab ~= tab.id then
-                TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = style.hover}):Play()
-            end
-        end)
-        btn.MouseLeave:Connect(function()
-            if selectedTab ~= tab.id then
-                TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = style.sidebarBg}):Play()
-            end
-        end)
     end
     if tabButtons["info"] then
         tabButtons["info"].BackgroundColor3 = style.accent
     end
 end
 
--- ========== 北京时间更新 ==========
+-- 北京时间更新
 task.spawn(function()
     while mainGui and mainGui.Parent do
         local t = os.date("*t")
@@ -582,10 +646,10 @@ task.spawn(function()
     end
 end)
 
--- ========== 初始化 ==========
+-- 初始化
 buildSidebarButtons()
 buildInfoPanel(stylesData[1])
 buildStylePanel()
-applyFullStyle()
+applyStyle()
 
-print("XU脚本悬浮窗已加载 - 样式切换功能正常，小方块可移动")
+print("XU脚本悬浮窗已加载 - 拖拽、样式切换、小方块全部正常")
