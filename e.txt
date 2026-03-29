@@ -1,30 +1,26 @@
 --[[
     XU 脚本悬浮窗 by HaoChen
     功能：可拖拽悬浮窗、最小化/恢复、侧边栏栏目切换、12种完整样式
-    动画：XU标志弹性弹出 → 光晕脉冲旋转 → 粒子爆炸消散 → 主界面淡入
+    动画：透明背景 + XU标志弹性弹出 → 光晕脉冲 → 粒子爆炸消散 → 主界面淡入
 ]]
 
 -- 服务
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
--- ========== 1. 炫酷加载动画（完美居中） ==========
+-- ========== 1. 炫酷加载动画（无黑屏，完全透明背景） ==========
 local loadGui = Instance.new("ScreenGui")
 loadGui.Name = "LoadAnimationGui"
 loadGui.Parent = game.CoreGui
 loadGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 loadGui.IgnoreGuiInset = true
+loadGui.BackgroundTransparency = 1  -- 整个 GUI 透明
 
--- 深色渐变背景
-local bg = Instance.new("Frame")
-bg.Size = UDim2.new(1, 0, 1, 0)
-bg.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
-bg.Parent = loadGui
+-- 注意：不创建任何黑色背景，保持完全透明
 
--- 中心容器（使用绝对偏移确保完美居中）
+-- 中心容器（使用 AnchorPoint 完美居中）
 local logoContainer = Instance.new("Frame")
 logoContainer.Size = UDim2.new(0, 0, 0, 0)
 logoContainer.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -73,26 +69,22 @@ particleContainer.Size = UDim2.new(1, 0, 1, 0)
 particleContainer.BackgroundTransparency = 1
 particleContainer.Parent = loadGui
 
--- 加载文字（可选，但为了提示）
+-- 可选：轻量提示文字（半透明，不显眼）
 local loadingText = Instance.new("TextLabel")
 loadingText.Size = UDim2.new(0, 200, 0, 30)
 loadingText.Position = UDim2.new(0.5, -100, 0.8, 0)
 loadingText.BackgroundTransparency = 1
 loadingText.Text = "加载中..."
-loadingText.TextColor3 = Color3.fromRGB(150, 150, 180)
+loadingText.TextColor3 = Color3.fromRGB(200, 200, 220)
 loadingText.TextSize = 16
 loadingText.Font = Enum.Font.Gotham
-loadingText.TextTransparency = 0.5
+loadingText.TextTransparency = 0.3
 loadingText.Parent = loadGui
 
--- 动画步骤（使用 task.wait 确保流畅）
+-- 动画步骤
 task.wait(0.05)
 
--- 1. 背景淡入
-local bgFade = TweenService:Create(bg, TweenInfo.new(0.5), {BackgroundTransparency = 0})
-bgFade:Play()
-
--- 2. 容器弹性弹出（从0放大到120）
+-- 1. 容器弹性弹出（从0放大到120）
 logoContainer.Size = UDim2.new(0, 0, 0, 0)
 local tweenElastic = TweenService:Create(logoContainer, TweenInfo.new(0.7, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {
     Size = UDim2.new(0, 120, 0, 120)
@@ -100,7 +92,7 @@ local tweenElastic = TweenService:Create(logoContainer, TweenInfo.new(0.7, Enum.
 tweenElastic:Play()
 tweenElastic.Completed:Wait()
 
--- 3. 光晕脉冲（放大+变淡+旋转）
+-- 2. 光晕脉冲（放大+变淡）
 local glowTween1 = TweenService:Create(glow, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
     Size = UDim2.new(1.3, 0, 1.3, 0),
     Position = UDim2.new(-0.15, 0, -0.15, 0),
@@ -115,7 +107,7 @@ glowTween1:Play()
 outerTween1:Play()
 glowTween1.Completed:Wait()
 
--- 4. 文字变色+光晕收缩脉冲
+-- 3. 文字变色+光晕收缩脉冲
 local colorTween = TweenService:Create(logoText, TweenInfo.new(0.3), {TextColor3 = Color3.fromRGB(255, 200, 100)})
 colorTween:Play()
 local glowTween2 = TweenService:Create(glow, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
@@ -126,14 +118,14 @@ local glowTween2 = TweenService:Create(glow, TweenInfo.new(0.3, Enum.EasingStyle
 glowTween2:Play()
 glowTween2.Completed:Wait()
 
--- 5. 标志旋转缩小 + 粒子爆炸
+-- 4. 标志旋转缩小 + 粒子爆炸
 local shrinkTween = TweenService:Create(logoContainer, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
     Size = UDim2.new(0, 0, 0, 0),
     Rotation = 360
 })
 shrinkTween:Play()
 
--- 生成粒子（更炫酷：多种颜色，向外辐射）
+-- 生成彩色粒子（向外辐射）
 local colors = {
     Color3.fromRGB(255, 100, 100),
     Color3.fromRGB(255, 150, 50),
@@ -176,7 +168,7 @@ end
 shrinkTween.Completed:Wait()
 task.wait(0.4) -- 等待粒子飞散
 
--- 6. 淡出加载界面
+-- 5. 淡出加载界面（背景本来就是透明的，只需让内容淡出）
 local fadeOut = TweenService:Create(loadGui, TweenInfo.new(0.3), {BackgroundTransparency = 1})
 fadeOut:Play()
 fadeOut.Completed:Wait()
@@ -761,4 +753,4 @@ buildInfoPanel(stylesData[1])
 buildStylePanel()
 applyStyle()
 
-print("XU脚本悬浮窗已加载 - 12种样式，完整拖拽支持")
+print("XU脚本悬浮窗已加载 - 12种样式，完整拖拽支持，无黑屏动画")
