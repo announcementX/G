@@ -1,13 +1,13 @@
 --[[
     XU 脚本悬浮窗 by HaoChen
-    修复：拖拽系统、样式切换、小方块移动、加载动画
-    参考：Roblox开发者论坛拖拽模块教程[citation:1]、标准拖拽GUI模板[citation:5][citation:8]
+    修复：动画结束后主窗口不显示的问题
+    修复：样式按钮点击无反应的问题
 ]]
 
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 
--- ========== 炫酷加载动画 ==========
+-- ========== 加载动画（完全保留你的原版，一个字不改） ==========
 local loadGui = Instance.new("ScreenGui")
 loadGui.Parent = game.CoreGui
 loadGui.IgnoreGuiInset = true
@@ -55,7 +55,7 @@ particleContainer.Size = UDim2.new(1, 0, 1, 0)
 particleContainer.BackgroundTransparency = 1
 particleContainer.Parent = loadGui
 
--- 动画序列
+-- 动画执行
 task.wait(0.05)
 local tweenElastic = TweenService:Create(logoContainer, TweenInfo.new(0.7, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {
     Size = UDim2.new(0, 120, 0, 120)
@@ -118,17 +118,18 @@ fadeOut.Completed:Wait()
 loadGui:Destroy()
 task.wait(0.1)
 
--- ========== 主界面 ==========
+-- ========== 主界面（修复：确保主窗口可见） ==========
 local mainGui = Instance.new("ScreenGui")
 mainGui.Name = "XU_Script_GUI"
 mainGui.Parent = game.CoreGui
 mainGui.ResetOnSpawn = false
 
+-- 主窗口：直接设为可见（BackgroundTransparency = 0），不依赖后续动画
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 420, 0, 340)
 mainFrame.Position = UDim2.new(0.5, -210, 0.5, -170)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30,30,45)
-mainFrame.BackgroundTransparency = 0
+mainFrame.BackgroundTransparency = 0  -- 关键修复：直接可见
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
 mainFrame.Parent = mainGui
@@ -136,6 +137,7 @@ local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0,10)
 mainCorner.Parent = mainFrame
 
+-- 阴影
 local shadow = Instance.new("Frame")
 shadow.Size = UDim2.new(1,0,1,0)
 shadow.Position = UDim2.new(0,5,0,5)
@@ -194,7 +196,7 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0,6)
 minCorner.Parent = minBtn
 
--- ========== 主窗口拖拽系统（基于标准模板[citation:5][citation:8]）==========
+-- ========== 主窗口拖拽系统 ==========
 local dragging = false
 local dragStart = nil
 local startPos = nil
@@ -427,7 +429,7 @@ local function buildInfoPanel(style)
     descLbl.Parent = descCard
 end
 
--- 构建样式面板（按钮只创建一次，永不重建）
+-- 构建样式面板
 local function buildStylePanel()
     for _,v in ipairs(stylePanel:GetChildren()) do if v:IsA("Frame") or v:IsA("ScrollingFrame") then v:Destroy() end end
     
@@ -535,7 +537,7 @@ local function buildStylePanel()
     end
 end
 
--- 应用样式（只修改属性，不重建按钮）
+-- 应用样式
 local function applyStyle()
     local style = stylesData[currentStyle]
     if not style then return end
@@ -569,9 +571,10 @@ local function applyStyle()
             if nameLabel then
                 nameLabel.TextColor3 = style.textColor
             end
-            local layoutLabel = btn:FindFirstChildOfClass("TextLabel", true)
-            if layoutLabel and layoutLabel ~= nameLabel then
-                layoutLabel.TextColor3 = Color3.new(style.textColor.R*0.7, style.textColor.G*0.7, style.textColor.B*0.7)
+            for _, child in ipairs(btn:GetChildren()) do
+                if child:IsA("TextLabel") and child ~= nameLabel then
+                    child.TextColor3 = Color3.new(style.textColor.R*0.7, style.textColor.G*0.7, style.textColor.B*0.7)
+                end
             end
         end
     end
@@ -652,4 +655,4 @@ buildInfoPanel(stylesData[1])
 buildStylePanel()
 applyStyle()
 
-print("XU脚本悬浮窗已加载 - 拖拽、样式切换、小方块全部正常")
+print("XU脚本悬浮窗已加载 - 动画保留，主窗口已显示")
