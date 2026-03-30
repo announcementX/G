@@ -1,4 +1,4 @@
--- XU SCRIPT | ABSOLUTE FINAL GOD UI
+-- XU SCRIPT | FINAL TOP‑TIER UI
 
 local player = game.Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
@@ -6,156 +6,163 @@ local ContentProvider = game:GetService("ContentProvider")
 
 local gui = Instance.new("ScreenGui", player.PlayerGui)
 
--- ================= 主UI =================
+-- ================= 主 UI 框架 =================
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0, 540, 0, 330)
-main.Position = UDim2.new(0.5, -270, 0.5, -165)
-main.BackgroundColor3 = Color3.fromRGB(12,12,16)
+main.Size = UDim2.new(0, 580, 0, 350)
+main.Position = UDim2.new(0.5, -290, 0.5, -175)
+main.BackgroundColor3 = Color3.fromRGB(15,15,20)
 main.Active = true
 main.Draggable = true
 Instance.new("UICorner", main).CornerRadius = UDim.new(0, 18)
 
--- 动态渐变背景
+-- ================= 渐变装饰 =================
 local grad = Instance.new("UIGradient", main)
 grad.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0,255,200)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(120,0,255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0,255,200))
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(40,40,60)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(10,10,20))
 }
-grad.Rotation = 0
-
-task.spawn(function()
-    while true do
-        grad.Rotation += 0.5
-        task.wait(0.02)
-    end
-end)
+grad.Rotation = 35
 
 -- ================= 标题 =================
 local title = Instance.new("TextLabel", main)
 title.Position = UDim2.new(0,15,0,10)
-title.Size = UDim2.new(0,250,0,20)
+title.Size = UDim2.new(0,250,0,24)
 title.Text = "XU SCRIPT"
-title.TextSize = 15
-title.TextColor3 = Color3.fromRGB(255,255,255)
+title.TextSize = 18
+title.TextColor3 = Color3.fromRGB(0,255,200)
 title.BackgroundTransparency = 1
-title.TextXAlignment = Enum.TextXAlignment.Left
-
--- ================= 卡片函数 =================
-local function createCard(parent, pos, size)
-    local card = Instance.new("Frame", parent)
-    card.Size = size
-    card.Position = pos
-    card.BackgroundColor3 = Color3.fromRGB(20,20,25)
-    card.BackgroundTransparency = 0.15
-    Instance.new("UICorner", card).CornerRadius = UDim.new(0,12)
-
-    local stroke = Instance.new("UIStroke", card)
-    stroke.Color = Color3.fromRGB(0,255,200)
-    stroke.Transparency = 0.5
-
-    -- 呼吸光
-    task.spawn(function()
-        while true do
-            TweenService:Create(stroke, TweenInfo.new(1.5), {Transparency = 0.2}):Play()
-            task.wait(1.5)
-            TweenService:Create(stroke, TweenInfo.new(1.5), {Transparency = 0.6}):Play()
-            task.wait(1.5)
-        end
-    end)
-
-    return card
-end
+title.Font = Enum.Font.GothamBold
 
 -- ================= 侧边栏 =================
-local sidebar = createCard(main, UDim2.new(0,10,0,40), UDim2.new(0,130,1,-50))
+local sidebar = Instance.new("Frame", main)
+sidebar.Size = UDim2.new(0,140,1,-50)
+sidebar.Position = UDim2.new(0,0,0,50)
+sidebar.BackgroundTransparency = 1
 
-local function createBtn(text, y)
-    local btn = createCard(sidebar, UDim2.new(0,5,0,y), UDim2.new(1,-10,0,40))
+local function addButton(text, y)
+    local btn = Instance.new("Frame", sidebar)
+    btn.Size = UDim2.new(1,-20,0,44)
+    btn.Position = UDim2.new(0,10,0,y)
+    btn.BackgroundColor3 = Color3.fromRGB(25,25,30)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
+
+    local stroke = Instance.new("UIStroke", btn)
+    stroke.Color = Color3.fromRGB(0,255,200)
+    stroke.Thickness = 1
 
     local label = Instance.new("TextLabel", btn)
     label.Size = UDim2.new(1,-10,1,0)
     label.Position = UDim2.new(0,10,0,0)
     label.Text = text
-    label.TextSize = 13
-    label.TextColor3 = Color3.new(1,1,1)
+    label.TextSize = 14
+    label.Font = Enum.Font.Gotham
+    label.TextColor3 = Color3.fromRGB(255,255,255)
     label.BackgroundTransparency = 1
-    label.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Hover
     btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(30,30,40)}):Play()
     end)
 
     btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundTransparency = 0.15}):Play()
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(25,25,30)}):Play()
     end)
 end
 
-createBtn("脚本信息",10)
+addButton("脚本信息", 10)
 
--- ================= 内容 =================
-local content = Instance.new("Frame", main)
-content.Size = UDim2.new(1,-150,1,-50)
-content.Position = UDim2.new(0,150,0,40)
-content.BackgroundTransparency = 1
+-- ================= 轮播图卡片 =================
+local banner = Instance.new("Frame", main)
+banner.Size = UDim2.new(1,-160,0,180)
+banner.Position = UDim2.new(0,150,0,50)
+banner.BackgroundColor3 = Color3.fromRGB(25,25,30)
+Instance.new("UICorner", banner).CornerRadius = UDim.new(0,12)
 
--- ================= 轮播 =================
-local banner = createCard(content, UDim2.new(0,10,0,10), UDim2.new(1,-20,0,150))
+local stroke2 = Instance.new("UIStroke", banner)
+stroke2.Color = Color3.fromRGB(0,255,200)
+stroke2.Thickness = 1
 
-local img1 = Instance.new("ImageLabel", banner)
-img1.Size = UDim2.new(1,-10,1,-10)
-img1.Position = UDim2.new(0,5,0,5)
-img1.BackgroundTransparency = 1
-
-local img2 = img1:Clone()
-img2.Parent = banner
-img2.ImageTransparency = 1
-
--- ⚠️ 必须换成你自己的ID（最重要）
+-- 唯一有效Image IDs数组
 local images = {
-    "rbxassetid://9125402735",
-    "rbxassetid://6768917255",
-    "rbxassetid://7229442422"
+    "rbxassetid://7451945741",
+    "rbxassetid://6970562433",
+    "rbxassetid://8161302952"
 }
 
+-- 预加载图片
 ContentProvider:PreloadAsync(images)
 
-img1.Image = images[1]
+-- 两个Layer做滑动
+local slot1 = Instance.new("ImageLabel", banner)
+local slot2 = Instance.new("ImageLabel", banner)
 
+for i,v in pairs({slot1, slot2}) do
+    v.Size = UDim2.new(1,-10,1,-10)
+    v.Position = UDim2.new(1,5,0,5)
+    v.BackgroundTransparency = 1
+    v.Image = images[1]
+end
+
+-- 序号显示
+local indexLabel = Instance.new("TextLabel", banner)
+indexLabel.Position = UDim2.new(0.85,0,0.85,0)
+indexLabel.Size = UDim2.new(0,60,0,24)
+indexLabel.TextSize = 14
+indexLabel.Font = Enum.Font.GothamBold
+indexLabel.TextColor3 = Color3.fromRGB(0,255,200)
+indexLabel.BackgroundTransparency = 0.5
+indexLabel.Text = "1/"..#images
+indexLabel.TextScaled = true
+Instance.new("UICorner", indexLabel).CornerRadius = UDim.new(0,6)
+
+-- 初始化第一个
+slot1.Position = UDim2.new(0,5,0,5)
+slot1.Image = images[1]
+
+-- 轮播控制
 task.spawn(function()
-    local i = 1
-    local toggle = true
+    local currentIndex = 1
+    local showFirst = true
 
     while true do
         task.wait(3)
 
-        i += 1
-        if i > #images then i = 1 end
+        local nextIndex = currentIndex + 1
+        if nextIndex > #images then nextIndex = 1 end
 
-        if toggle then
-            img2.Image = images[i]
-            TweenService:Create(img1, TweenInfo.new(0.6), {ImageTransparency = 1}):Play()
-            TweenService:Create(img2, TweenInfo.new(0.6), {ImageTransparency = 0}):Play()
-        else
-            img1.Image = images[i]
-            TweenService:Create(img2, TweenInfo.new(0.6), {ImageTransparency = 1}):Play()
-            TweenService:Create(img1, TweenInfo.new(0.6), {ImageTransparency = 0}):Play()
-        end
+        local incoming = showFirst and slot2 or slot1
+        local outgoing = showFirst and slot1 or slot2
 
-        toggle = not toggle
+        incoming.Image = images[nextIndex]
+        incoming.Position = UDim2.new(1,5,0,5)
+
+        TweenService:Create(outgoing, TweenInfo.new(0.6), {Position = UDim2.new(-1,5,0,5)}):Play()
+        TweenService:Create(incoming, TweenInfo.new(0.6), {Position = UDim2.new(0,5,0,5)}):Play()
+
+        currentIndex = nextIndex
+        indexLabel.Text = tostring(currentIndex).."/"..#images
+
+        showFirst = not showFirst
     end
 end)
 
--- ================= 信息 =================
-local info = createCard(content, UDim2.new(0,10,0,170), UDim2.new(1,-20,0,90))
+-- ================= 单独卡片信息 =================
+-- 作者 框
+local authorCard = Instance.new("Frame", main)
+authorCard.Size = UDim2.new(0,200,0,60)
+authorCard.Position = UDim2.new(0,150,0,250)
+authorCard.BackgroundColor3 = Color3.fromRGB(30,30,36)
+Instance.new("UICorner", authorCard).CornerRadius = UDim.new(0,10)
+local authorTxt = Instance.new("TextLabel", authorCard)
+authorTxt.Size = UDim2.new(1,-10,1,-10)
+authorTxt.Position = UDim2.new(0,5,0,5)
+authorTxt.Text = "作者: HaoChen"
+authorTxt.TextSize = 14
+authorTxt.Font = Enum.Font.Gotham
+authorTxt.TextColor3 = Color3.fromRGB(255,255,255)
+authorTxt.BackgroundTransparency = 1
 
-local txt = Instance.new("TextLabel", info)
-txt.Size = UDim2.new(1,-10,1,-10)
-txt.Position = UDim2.new(0,5,0,5)
-txt.BackgroundTransparency = 1
-txt.TextSize = 13
-txt.TextColor3 = Color3.new(1,1,1)
-txt.TextXAlignment = Enum.TextXAlignment.Left
-txt.TextYAlignment = Enum.TextYAlignment.Top
-txt.Text = "HaoChen\nQQ: 1626844714"
+-- QQ 框
+local qqCard = authorCard:Clone()
+qqCard.Parent = main
+qqCard.Position = UDim2.new(0,380,0,250)
+qqCard:FindFirstChildWhichIsA("TextLabel").Text = "QQ: 1626844714"
