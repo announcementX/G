@@ -1,494 +1,130 @@
--- === HaoChen Hub v5.2 - 悬浮窗已大幅缩小版 ===
--- 悬浮小条现在只有 140 × 32（超级小巧，几乎不挡视线）
--- 你还可以继续改最顶部的两个数字来自定义大小
--- 所有功能已验证可用 | 默认打开【脚本信息】栏目 | 中英双语 | 拖拽+缩小化
+-- XU SCRIPT UI (By HaoChen)
 
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
+local player = game.Players.LocalPlayer
 
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+-- ================== 加载界面 ==================
+local loadingGui = Instance.new("ScreenGui", player.PlayerGui)
+loadingGui.Name = "LoadingUI"
 
--- ==================== 【自定义悬浮窗大小】===================
-local MINIMIZED_WIDTH = 140      -- ← 改这里：悬浮窗宽度（现在已设为超小140）
-local MINIMIZED_HEIGHT = 32      -- ← 改这里：悬浮窗高度（现在已设为超小32）
--- ====================================================
+local loadingFrame = Instance.new("Frame", loadingGui)
+loadingFrame.Size = UDim2.new(0, 250, 0, 120)
+loadingFrame.Position = UDim2.new(0.5, -125, 0.5, -60)
+loadingFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+loadingFrame.BorderSizePixel = 0
+Instance.new("UICorner", loadingFrame).CornerRadius = UDim.new(0, 12)
 
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "HaoChenHub"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = playerGui
+local loadingText = Instance.new("TextLabel", loadingFrame)
+loadingText.Size = UDim2.new(1,0,1,0)
+loadingText.Text = "Loading XU SCRIPT..."
+loadingText.TextColor3 = Color3.new(1,1,1)
+loadingText.BackgroundTransparency = 1
+loadingText.TextScaled = true
+
+wait(3)
+loadingGui:Destroy()
+
+-- ================== 主UI ==================
+local gui = Instance.new("ScreenGui", player.PlayerGui)
+gui.Name = "XUSCRIPT"
 
 -- 主窗口
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 820, 0, 520)
-mainFrame.Position = UDim2.new(0.5, -410, 0.5, -260)
-mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-mainFrame.BorderSizePixel = 0
-mainFrame.Parent = screenGui
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0, 420, 0, 260)
+main.Position = UDim2.new(0.5, -210, 0.5, -130)
+main.BackgroundColor3 = Color3.fromRGB(25,25,25)
+main.Active = true
+main.Draggable = true
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
 
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 14)
-mainCorner.Parent = mainFrame
+-- 顶栏
+local header = Instance.new("Frame", main)
+header.Size = UDim2.new(1,0,0,40)
+header.BackgroundColor3 = Color3.fromRGB(35,35,35)
+Instance.new("UICorner", header).CornerRadius = UDim.new(0, 12)
 
--- 标题栏
-local titleBar = Instance.new("Frame")
-titleBar.Size = UDim2.new(1, 0, 0, 50)
-titleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-titleBar.BorderSizePixel = 0
-titleBar.Parent = mainFrame
-
-local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 14)
-titleCorner.Parent = titleBar
-
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(0, 300, 1, 0)
-titleLabel.Position = UDim2.new(0, 20, 0, 0)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "HaoChen Hub v5.2"
-titleLabel.TextColor3 = Color3.fromRGB(0, 255, 200)
-titleLabel.TextSize = 24
-titleLabel.Font = Enum.Font.GothamBold
-titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-titleLabel.Parent = titleBar
-
--- 语言切换
-local langButton = Instance.new("TextButton")
-langButton.Size = UDim2.new(0, 80, 0, 32)
-langButton.Position = UDim2.new(1, -105, 0, 9)
-langButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-langButton.TextColor3 = Color3.new(1,1,1)
-langButton.TextSize = 16
-langButton.Font = Enum.Font.GothamSemibold
-langButton.Text = "中/EN"
-langButton.Parent = titleBar
-local langCorner = Instance.new("UICorner", langButton)
-langCorner.CornerRadius = UDim.new(0, 8)
-
--- 最小化按钮
-local minimizeBtn = Instance.new("TextButton")
-minimizeBtn.Size = UDim2.new(0, 32, 0, 32)
-minimizeBtn.Position = UDim2.new(1, -48, 0, 9)
-minimizeBtn.BackgroundTransparency = 1
-minimizeBtn.Text = "−"
-minimizeBtn.TextColor3 = Color3.new(1,1,1)
-minimizeBtn.TextSize = 26
-minimizeBtn.Font = Enum.Font.GothamBold
-minimizeBtn.Parent = titleBar
+local title = Instance.new("TextLabel", header)
+title.Text = "XU SCRIPT"
+title.Size = UDim2.new(1,0,1,0)
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(0,255,150)
+title.TextScaled = true
 
 -- 侧边栏
-local sidebar = Instance.new("Frame")
-sidebar.Size = UDim2.new(0, 180, 1, -50)
-sidebar.Position = UDim2.new(0, 0, 0, 50)
-sidebar.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-sidebar.BorderSizePixel = 0
-sidebar.Parent = mainFrame
+local sidebar = Instance.new("Frame", main)
+sidebar.Size = UDim2.new(0,120,1,-40)
+sidebar.Position = UDim2.new(0,0,0,40)
+sidebar.BackgroundColor3 = Color3.fromRGB(30,30,30)
 
-local sidebarList = Instance.new("UIListLayout")
-sidebarList.SortOrder = Enum.SortOrder.LayoutOrder
-sidebarList.Padding = UDim.new(0, 8)
-sidebarList.Parent = sidebar
+-- 按钮（脚本信息）
+local infoBtn = Instance.new("TextButton", sidebar)
+infoBtn.Size = UDim2.new(1,0,0,40)
+infoBtn.Text = "脚本信息"
+infoBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+infoBtn.TextColor3 = Color3.new(1,1,1)
 
-local sidebarPadding = Instance.new("UIPadding")
-sidebarPadding.PaddingTop = UDim.new(0, 15)
-sidebarPadding.PaddingLeft = UDim.new(0, 12)
-sidebarPadding.PaddingRight = UDim.new(0, 12)
-sidebarPadding.Parent = sidebar
+-- 内容区
+local content = Instance.new("Frame", main)
+content.Size = UDim2.new(1,-120,1,-40)
+content.Position = UDim2.new(0,120,0,40)
+content.BackgroundTransparency = 1
 
--- 内容区域
-local contentFrame = Instance.new("Frame")
-contentFrame.Size = UDim2.new(1, -190, 1, -50)
-contentFrame.Position = UDim2.new(0, 190, 0, 50)
-contentFrame.BackgroundTransparency = 1
-contentFrame.Parent = mainFrame
-
--- Tab数据
-local currentLang = "zh"
-local tabs = {
-    {name_zh = "脚本信息", name_en = "Script Info", icon = "📋"},
-    {name_zh = "功能列表", name_en = "Features", icon = "⚡"},
-    {name_zh = "rbscripts.net", name_en = "rbscripts.net", icon = "🌐"},
-    {name_zh = "设置", name_en = "Settings", icon = "⚙️"},
-    {name_zh = "关于", name_en = "About", icon = "ℹ️"}
+-- ================== 轮播图 ==================
+local images = {
+    "rbxassetid://15522917573",
+    "rbxassetid://15522917720",
+    "rbxassetid://15522917899"
 }
 
-local tabButtons = {}
-local contentPages = {}
+local imageLabel = Instance.new("ImageLabel", content)
+imageLabel.Size = UDim2.new(1,-20,0,120)
+imageLabel.Position = UDim2.new(0,10,0,10)
+imageLabel.BackgroundTransparency = 1
+imageLabel.Image = images[1]
 
-for i, tabData in ipairs(tabs) do
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 52)
-    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.TextSize = 18
-    btn.Font = Enum.Font.GothamSemibold
-    btn.TextXAlignment = Enum.TextXAlignment.Left
-    btn.Parent = sidebar
-    
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 10)
-    btnCorner.Parent = btn
-    
-    local iconLabel = Instance.new("TextLabel")
-    iconLabel.Size = UDim2.new(0, 40, 1, 0)
-    iconLabel.BackgroundTransparency = 1
-    iconLabel.Text = tabData.icon
-    iconLabel.TextSize = 24
-    iconLabel.Font = Enum.Font.GothamBold
-    iconLabel.Parent = btn
-    
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, -50, 1, 0)
-    textLabel.Position = UDim2.new(0, 45, 0, 0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.TextXAlignment = Enum.TextXAlignment.Left
-    textLabel.Parent = btn
-    
-    tabButtons[i] = {button = btn, textLabel = textLabel}
-    
-    btn.MouseButton1Click:Connect(function()
-        for _, page in pairs(contentPages) do page.Visible = false end
-        contentPages[i].Visible = true
-    end)
-end
-
--- ==================== 真实可用功能 ====================
--- ESP
-local ESP_Enabled = false
-local espObjects = {}
-local function createESP(plr)
-    if plr == player then return end
-    local billboard = Instance.new("BillboardGui")
-    billboard.AlwaysOnTop = true
-    billboard.Size = UDim2.new(0, 120, 0, 50)
-    billboard.StudsOffset = Vector3.new(0, 4, 0)
-    billboard.Parent = CoreGui
-    local nameLbl = Instance.new("TextLabel", billboard)
-    nameLbl.Size = UDim2.new(1,0,0.5,0)
-    nameLbl.BackgroundTransparency = 1
-    nameLbl.TextColor3 = Color3.new(0,1,0)
-    nameLbl.TextStrokeTransparency = 0.5
-    nameLbl.Text = plr.Name
-    nameLbl.TextSize = 15
-    local distLbl = Instance.new("TextLabel", billboard)
-    distLbl.Size = UDim2.new(1,0,0.5,0)
-    distLbl.Position = UDim2.new(0,0,0.5,0)
-    distLbl.BackgroundTransparency = 1
-    distLbl.TextColor3 = Color3.new(1,1,1)
-    distLbl.TextStrokeTransparency = 0.5
-    distLbl.TextSize = 12
-    espObjects[plr] = {billboard = billboard, name = nameLbl, dist = distLbl}
-end
-local function updateESP()
-    if not ESP_Enabled then return end
-    local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    for plr, data in pairs(espObjects) do
-        local char = plr.Character
-        local root = char and char:FindFirstChild("HumanoidRootPart")
-        local hum = char and char:FindFirstChild("Humanoid")
-        if root and hum and hum.Health > 0 then
-            data.billboard.Adornee = root
-            data.billboard.Enabled = true
-            if myRoot then
-                local dist = (myRoot.Position - root.Position).Magnitude
-                data.dist.Text = string.format("%.0f studs", dist)
-            end
-        else
-            data.billboard.Enabled = false
-        end
-    end
-end
-for _, plr in ipairs(Players:GetPlayers()) do createESP(plr) end
-Players.PlayerAdded:Connect(createESP)
-Players.PlayerRemoving:Connect(function(plr)
-    if espObjects[plr] then espObjects[plr].billboard:Destroy() espObjects[plr] = nil end
-end)
-RunService.RenderStepped:Connect(updateESP)
-
--- Aim Assist
-local Aim_Enabled = false
-local function getClosestTarget()
-    local closest, dist = nil, 9999
-    local mouse = player:GetMouse()
-    local cam = workspace.CurrentCamera
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= player and p.Character and p.Character:FindFirstChild("Head") then
-            local head = p.Character.Head
-            local screenPos, onScreen = cam:WorldToScreenPoint(head.Position)
-            if onScreen then
-                local mousePos = Vector2.new(mouse.X, mouse.Y)
-                local targetPos = Vector2.new(screenPos.X, screenPos.Y)
-                local d = (mousePos - targetPos).Magnitude
-                if d < dist then dist = d closest = p end
-            end
-        end
-    end
-    return closest
-end
-RunService.RenderStepped:Connect(function()
-    if not Aim_Enabled then return end
-    local target = getClosestTarget()
-    if target and target.Character and target.Character:FindFirstChild("Head") then
-        local cam = workspace.CurrentCamera
-        local targetPos = target.Character.Head.Position
-        cam.CFrame = cam.CFrame:Lerp(CFrame.new(cam.CFrame.Position, targetPos), 0.35)
-    end
-end)
-
--- Movement Pack
-local Movement = {SpeedEnabled = false, JumpEnabled = false, InfJumpEnabled = false, NoclipEnabled = false}
-local speedConnection, noclipConnection
-
-local function toggleSpeed()
-    Movement.SpeedEnabled = not Movement.SpeedEnabled
-    if speedConnection then speedConnection:Disconnect() speedConnection = nil end
-    if Movement.SpeedEnabled then
-        speedConnection = RunService.Heartbeat:Connect(function()
-            local char = player.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                local root = char.HumanoidRootPart
-                local moveDir = root.CFrame.LookVector * 8
-                root.Velocity = Vector3.new(moveDir.X * 7, root.Velocity.Y, moveDir.Z * 7)
-            end
-        end)
-    end
-    print("[HaoChen] Speed " .. (Movement.SpeedEnabled and "ON" or "OFF"))
-end
-
-local function toggleNoclip()
-    Movement.NoclipEnabled = not Movement.NoclipEnabled
-    if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
-    if Movement.NoclipEnabled then
-        noclipConnection = RunService.Stepped:Connect(function()
-            local char = player.Character
-            if char then
-                for _, part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then part.CanCollide = false end
-                end
-            end
-        end)
-    end
-    print("[HaoChen] Noclip " .. (Movement.NoclipEnabled and "ON" or "OFF"))
-end
-
-UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.Space and Movement.InfJumpEnabled then
-        local hum = player.Character and player.Character:FindFirstChild("Humanoid")
-        if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
-    end
-end)
-
--- ==================== 页面1：脚本信息（默认打开）===================
-local page1 = Instance.new("Frame")
-page1.Size = UDim2.new(1,0,1,0)
-page1.BackgroundTransparency = 1
-page1.Visible = true
-page1.Parent = contentFrame
-contentPages[1] = page1
-
-local carouselFrame = Instance.new("Frame")
-carouselFrame.Size = UDim2.new(1, -40, 0, 210)
-carouselFrame.Position = UDim2.new(0, 20, 0, 20)
-carouselFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-carouselFrame.Parent = page1
-local carouselCorner = Instance.new("UICorner", carouselFrame)
-carouselCorner.CornerRadius = UDim.new(0, 12)
-
-local carouselImage = Instance.new("ImageLabel")
-carouselImage.Size = UDim2.new(1,0,1,0)
-carouselImage.BackgroundTransparency = 1
-carouselImage.Image = "rbxassetid://6031097223"
-carouselImage.Parent = carouselFrame
-
-local images = {"rbxassetid://6031097223", "rbxassetid://4483345998", "rbxassetid://357822657", "rbxassetid://18227293"}
-local idx = 1
 spawn(function()
+    local i = 1
     while true do
-        wait(3.8)
-        idx = idx % #images + 1
-        carouselImage.Image = images[idx]
+        wait(3)
+        i = i + 1
+        if i > #images then i = 1 end
+        imageLabel.Image = images[i]
     end
 end)
 
-local infoLabel = Instance.new("TextLabel")
-infoLabel.Size = UDim2.new(1, -40, 0, 200)
-infoLabel.Position = UDim2.new(0, 20, 0, 250)
-infoLabel.BackgroundTransparency = 1
-infoLabel.TextColor3 = Color3.new(1,1,1)
-infoLabel.TextSize = 18
-infoLabel.Font = Enum.Font.GothamSemibold
-infoLabel.TextWrapped = true
-infoLabel.Text = "👤 作者：HaoChen\n📧 QQ：1626844714\n\n🎉 HaoChen Hub v5.2 已更新！\n悬浮窗已缩小为140×32\n所有功能正常使用"
-infoLabel.Parent = page1
+-- ================== 信息 ==================
+local infoText = Instance.new("TextLabel", content)
+infoText.Position = UDim2.new(0,10,0,140)
+infoText.Size = UDim2.new(1,-20,0,80)
+infoText.BackgroundTransparency = 1
+infoText.TextColor3 = Color3.new(1,1,1)
+infoText.TextScaled = true
+infoText.Text = "作者: HaoChen\nQQ: 1626844714"
 
--- ==================== 页面2：功能列表 ====================
-local page2 = Instance.new("ScrollingFrame")
-page2.Size = UDim2.new(1,0,1,0)
-page2.CanvasSize = UDim2.new(0,0,0,700)
-page2.BackgroundTransparency = 1
-page2.ScrollBarThickness = 6
-page2.Visible = false
-page2.Parent = contentFrame
-contentPages[2] = page2
+-- ================== 悬浮按钮（缩小后） ==================
+local toggleBtn = Instance.new("TextButton", gui)
+toggleBtn.Size = UDim2.new(0,60,0,60)
+toggleBtn.Position = UDim2.new(0,50,0.5,0)
+toggleBtn.Text = "XU"
+toggleBtn.BackgroundColor3 = Color3.fromRGB(0,255,150)
+toggleBtn.Visible = false
+toggleBtn.Active = true
+toggleBtn.Draggable = true
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(1,0)
 
-local listLayout = Instance.new("UIListLayout")
-listLayout.Padding = UDim.new(0, 12)
-listLayout.Parent = page2
+-- 最小化功能
+local minimize = Instance.new("TextButton", header)
+minimize.Size = UDim2.new(0,40,1,0)
+minimize.Position = UDim2.new(1,-40,0,0)
+minimize.Text = "-"
+minimize.BackgroundTransparency = 1
+minimize.TextColor3 = Color3.new(1,1,1)
 
-local function createBtn(textZh, textEn, func)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -40, 0, 68)
-    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.TextSize = 20
-    btn.Font = Enum.Font.GothamBold
-    btn.Text = currentLang == "zh" and textZh or textEn
-    btn.Parent = page2
-    local c = Instance.new("UICorner", btn); c.CornerRadius = UDim.new(0, 12)
-    btn.MouseButton1Click:Connect(func)
-end
-
-createBtn("切换 ESP", "Toggle ESP", function() ESP_Enabled = not ESP_Enabled print("ESP " .. (ESP_Enabled and "已开启" or "已关闭")) end)
-createBtn("切换 Aim Assist (E键)", "Toggle Aim Assist (E key)", function() Aim_Enabled = not Aim_Enabled print("Aim Assist " .. (Aim_Enabled and "已开启" or "已关闭")) end)
-createBtn("切换 Speed Hack", "Toggle Speed Hack", toggleSpeed)
-createBtn("切换 High Jump", "Toggle High Jump", function()
-    local hum = player.Character and player.Character:FindFirstChild("Humanoid")
-    if hum then hum.JumpPower = hum.JumpPower == 50 and 120 or 50 end
-    print("Jump Power 已切换")
-end)
-createBtn("切换 Infinite Jump", "Toggle Infinite Jump", function() Movement.InfJumpEnabled = not Movement.InfJumpEnabled print("Infinite Jump " .. (Movement.InfJumpEnabled and "已开启" or "已关闭")) end)
-createBtn("切换 Noclip", "Toggle Noclip", toggleNoclip)
-
--- ==================== 页面3：rbscripts.net ====================
-local page3 = Instance.new("ScrollingFrame")
-page3.Size = UDim2.new(1,0,1,0)
-page3.CanvasSize = UDim2.new(0,0,0,800)
-page3.BackgroundTransparency = 1
-page3.ScrollBarThickness = 6
-page3.Visible = false
-page3.Parent = contentFrame
-contentPages[3] = page3
-
-local rbLayout = Instance.new("UIListLayout")
-rbLayout.Padding = UDim.new(0, 10)
-rbLayout.Parent = page3
-
-local rbTitles = {"Aura Ascension - 4479Hub", "[KEYLESS] 4479Hub Build A Boat", "Heavy Rust - SILENT AIM", "Play Music (Break In)", "Give All Skill", "Steal a Brainrot Script", "Flow Hub", "Gravity Hub Blox Fruits", "Solix Hub", "CRIMSON HUB", "VINZ Hub"}
-for _, title in ipairs(rbTitles) do
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -40, 0, 60)
-    btn.BackgroundColor3 = Color3.fromRGB(50, 30, 60)
-    btn.Text = title
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.TextSize = 18
-    btn.Font = Enum.Font.GothamSemibold
-    btn.Parent = page3
-    local c = Instance.new("UICorner", btn); c.CornerRadius = UDim.new(0, 10)
-    btn.MouseButton1Click:Connect(function()
-        print("🔥 来自rbscripts.net：" .. title .. " | 请在对应游戏内单独执行原脚本")
-    end)
-end
-
--- 其他页面
-local page4 = Instance.new("Frame"); page4.Size = UDim2.new(1,0,1,0); page4.BackgroundTransparency = 1; page4.Visible = false; page4.Parent = contentFrame; contentPages[4] = page4
-local setLabel = Instance.new("TextLabel", page4); setLabel.Size = UDim2.new(1, -40, 1, -40); setLabel.Position = UDim2.new(0,20,0,20); setLabel.BackgroundTransparency = 1; setLabel.TextColor3 = Color3.new(1,1,1); setLabel.TextSize = 24; setLabel.Text = "设置 / Settings"
-
-local page5 = Instance.new("Frame"); page5.Size = UDim2.new(1,0,1,0); page5.BackgroundTransparency = 1; page5.Visible = false; page5.Parent = contentFrame; contentPages[5] = page5
-local aboutText = Instance.new("TextLabel", page5); aboutText.Size = UDim2.new(1, -40, 1, -40); aboutText.Position = UDim2.new(0,20,0,20); aboutText.BackgroundTransparency = 1; aboutText.TextColor3 = Color3.new(1,1,1); aboutText.TextSize = 19; aboutText.TextWrapped = true; aboutText.Text = "HaoChen Hub v5.2\n悬浮窗已缩小为140×32\n所有功能正常使用\nEnjoy! QQ:1626844714"
-
--- 更新文字
-local function updateTexts()
-    for i, tabData in ipairs(tabs) do
-        tabButtons[i].textLabel.Text = currentLang == "zh" and tabData.name_zh or tabData.name_en
-    end
-    infoLabel.Text = currentLang == "zh" and "👤 作者：HaoChen\n📧 QQ：1626844714\n\n🎉 HaoChen Hub v5.2 已更新！\n悬浮窗已缩小为140×32\n所有功能正常使用" or "👤 Author: HaoChen\n📧 QQ: 1626844714\n\n🎉 HaoChen Hub v5.2 Updated!\nFloating bar now 140×32"
-end
-
-langButton.MouseButton1Click:Connect(function()
-    currentLang = currentLang == "zh" and "en" or "zh"
-    updateTexts()
+minimize.MouseButton1Click:Connect(function()
+    main.Visible = false
+    toggleBtn.Visible = true
 end)
 
--- 拖拽主窗口
-local dragging, dragStart, startPos
-mainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = mainFrame.Position
-    end
+toggleBtn.MouseButton1Click:Connect(function()
+    main.Visible = true
+    toggleBtn.Visible = false
 end)
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
-end)
-
--- ==================== 悬浮小条（已缩小为140×32）===================
-local minimizedFrame = Instance.new("Frame")
-minimizedFrame.Size = UDim2.new(0, MINIMIZED_WIDTH, 0, MINIMIZED_HEIGHT)
-minimizedFrame.Position = UDim2.new(1, -160, 1, -50)
-minimizedFrame.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-minimizedFrame.Visible = false
-minimizedFrame.Parent = screenGui
-
-local minCorner = Instance.new("UICorner", minimizedFrame)
-minCorner.CornerRadius = UDim.new(0, 16)
-
-local minLabel = Instance.new("TextLabel")
-minLabel.Size = UDim2.new(1,0,1,0)
-minLabel.BackgroundTransparency = 1
-minLabel.Text = "HaoChen Hub"
-minLabel.TextColor3 = Color3.new(1,1,1)
-minLabel.TextSize = 16
-minLabel.Font = Enum.Font.GothamBold
-minLabel.Parent = minimizedFrame
-
-minimizeBtn.MouseButton1Click:Connect(function()
-    mainFrame.Visible = false
-    minimizedFrame.Visible = true
-end)
-
-minimizedFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        mainFrame.Visible = true
-        minimizedFrame.Visible = false
-    end
-end)
-
--- 拖拽小悬浮条
-local minDragging, minDragStart, minStartPos
-minimizedFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        minDragging = true
-        minDragStart = input.Position
-        minStartPos = minimizedFrame.Position
-    end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if minDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - minDragStart
-        minimizedFrame.Position = UDim2.new(minStartPos.X.Scale, minStartPos.X.Offset + delta.X, minStartPos.Y.Scale, minStartPos.Y.Offset + delta.Y)
-    end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then minDragging = false end
-end)
-
--- 默认打开第1个栏目
-contentPages[1].Visible = true
-updateTexts()
-
-print("✅ HaoChen Hub v5.2 加载成功！")
-print("悬浮小条已缩小为 140×32（可继续改顶部数字）")
-print("默认显示【脚本信息】栏目 | 功能全部可用")
-print("Enjoy, HaoChen！🚀 QQ:1626844714")
