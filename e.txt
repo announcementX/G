@@ -1,130 +1,149 @@
--- XU SCRIPT UI (By HaoChen)
+-- XU SCRIPT (Pro UI by HaoChen)
 
 local player = game.Players.LocalPlayer
 
--- ================== 加载界面 ==================
-local loadingGui = Instance.new("ScreenGui", player.PlayerGui)
-loadingGui.Name = "LoadingUI"
+-- ================= LOADING =================
+local loading = Instance.new("ScreenGui", player.PlayerGui)
 
-local loadingFrame = Instance.new("Frame", loadingGui)
-loadingFrame.Size = UDim2.new(0, 250, 0, 120)
-loadingFrame.Position = UDim2.new(0.5, -125, 0.5, -60)
-loadingFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
-loadingFrame.BorderSizePixel = 0
-Instance.new("UICorner", loadingFrame).CornerRadius = UDim.new(0, 12)
+local lf = Instance.new("Frame", loading)
+lf.Size = UDim2.new(0, 260, 0, 120)
+lf.Position = UDim2.new(0.5, -130, 0.5, -60)
+lf.BackgroundColor3 = Color3.fromRGB(15,15,15)
+Instance.new("UICorner", lf).CornerRadius = UDim.new(0, 16)
 
-local loadingText = Instance.new("TextLabel", loadingFrame)
-loadingText.Size = UDim2.new(1,0,1,0)
-loadingText.Text = "Loading XU SCRIPT..."
-loadingText.TextColor3 = Color3.new(1,1,1)
-loadingText.BackgroundTransparency = 1
-loadingText.TextScaled = true
+local lt = Instance.new("TextLabel", lf)
+lt.Size = UDim2.new(1,0,1,0)
+lt.Text = "Loading XU SCRIPT..."
+lt.TextColor3 = Color3.fromRGB(0,255,150)
+lt.BackgroundTransparency = 1
+lt.TextScaled = true
 
-wait(3)
-loadingGui:Destroy()
+wait(2.5)
+loading:Destroy()
 
--- ================== 主UI ==================
+-- ================= MAIN =================
 local gui = Instance.new("ScreenGui", player.PlayerGui)
-gui.Name = "XUSCRIPT"
 
--- 主窗口
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0, 420, 0, 260)
-main.Position = UDim2.new(0.5, -210, 0.5, -130)
-main.BackgroundColor3 = Color3.fromRGB(25,25,25)
+main.Size = UDim2.new(0, 460, 0, 280)
+main.Position = UDim2.new(0.5, -230, 0.5, -140)
+main.BackgroundColor3 = Color3.fromRGB(18,18,18)
 main.Active = true
 main.Draggable = true
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 16)
 
--- 顶栏
+-- 渐变
+local grad = Instance.new("UIGradient", main)
+grad.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(20,20,20)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(10,10,10))
+}
+
+-- ================= HEADER =================
 local header = Instance.new("Frame", main)
 header.Size = UDim2.new(1,0,0,40)
-header.BackgroundColor3 = Color3.fromRGB(35,35,35)
-Instance.new("UICorner", header).CornerRadius = UDim.new(0, 12)
+header.BackgroundTransparency = 1
 
 local title = Instance.new("TextLabel", header)
+title.Position = UDim2.new(0,10,0,0)
+title.Size = UDim2.new(0,200,1,0)
 title.Text = "XU SCRIPT"
-title.Size = UDim2.new(1,0,1,0)
-title.BackgroundTransparency = 1
 title.TextColor3 = Color3.fromRGB(0,255,150)
+title.BackgroundTransparency = 1
+title.TextXAlignment = Enum.TextXAlignment.Left
 title.TextScaled = true
 
--- 侧边栏
+-- 最小化
+local min = Instance.new("TextButton", header)
+min.Size = UDim2.new(0,40,1,0)
+min.Position = UDim2.new(1,-40,0,0)
+min.Text = "-"
+min.BackgroundTransparency = 1
+min.TextColor3 = Color3.new(1,1,1)
+
+-- ================= SIDEBAR =================
 local sidebar = Instance.new("Frame", main)
 sidebar.Size = UDim2.new(0,120,1,-40)
 sidebar.Position = UDim2.new(0,0,0,40)
-sidebar.BackgroundColor3 = Color3.fromRGB(30,30,30)
+sidebar.BackgroundColor3 = Color3.fromRGB(22,22,22)
 
--- 按钮（脚本信息）
 local infoBtn = Instance.new("TextButton", sidebar)
 infoBtn.Size = UDim2.new(1,0,0,40)
 infoBtn.Text = "脚本信息"
-infoBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+infoBtn.BackgroundColor3 = Color3.fromRGB(30,30,30)
 infoBtn.TextColor3 = Color3.new(1,1,1)
 
--- 内容区
+-- ================= CONTENT =================
 local content = Instance.new("Frame", main)
 content.Size = UDim2.new(1,-120,1,-40)
 content.Position = UDim2.new(0,120,0,40)
 content.BackgroundTransparency = 1
 
--- ================== 轮播图 ==================
+-- ================= 轮播图（修复版） =================
 local images = {
     "rbxassetid://15522917573",
     "rbxassetid://15522917720",
     "rbxassetid://15522917899"
 }
 
-local imageLabel = Instance.new("ImageLabel", content)
-imageLabel.Size = UDim2.new(1,-20,0,120)
-imageLabel.Position = UDim2.new(0,10,0,10)
-imageLabel.BackgroundTransparency = 1
-imageLabel.Image = images[1]
+local img = Instance.new("ImageLabel", content)
+img.Size = UDim2.new(1,-20,0,140)
+img.Position = UDim2.new(0,10,0,10)
+img.BackgroundTransparency = 1
+img.Image = images[1]
 
+-- 轮播逻辑（带渐变动画）
 spawn(function()
     local i = 1
     while true do
         wait(3)
+
+        local fade = game:GetService("TweenService"):Create(
+            img,
+            TweenInfo.new(0.5),
+            {ImageTransparency = 1}
+        )
+        fade:Play()
+        fade.Completed:Wait()
+
         i = i + 1
         if i > #images then i = 1 end
-        imageLabel.Image = images[i]
+        img.Image = images[i]
+
+        game:GetService("TweenService"):Create(
+            img,
+            TweenInfo.new(0.5),
+            {ImageTransparency = 0}
+        ):Play()
     end
 end)
 
--- ================== 信息 ==================
-local infoText = Instance.new("TextLabel", content)
-infoText.Position = UDim2.new(0,10,0,140)
-infoText.Size = UDim2.new(1,-20,0,80)
-infoText.BackgroundTransparency = 1
-infoText.TextColor3 = Color3.new(1,1,1)
-infoText.TextScaled = true
-infoText.Text = "作者: HaoChen\nQQ: 1626844714"
+-- ================= 用户信息 =================
+local info = Instance.new("TextLabel", content)
+info.Position = UDim2.new(0,10,0,160)
+info.Size = UDim2.new(1,-20,0,80)
+info.BackgroundTransparency = 1
+info.TextColor3 = Color3.new(1,1,1)
+info.TextScaled = true
+info.Text = "HaoChen\nQQ: 1626844714"
 
--- ================== 悬浮按钮（缩小后） ==================
-local toggleBtn = Instance.new("TextButton", gui)
-toggleBtn.Size = UDim2.new(0,60,0,60)
-toggleBtn.Position = UDim2.new(0,50,0.5,0)
-toggleBtn.Text = "XU"
-toggleBtn.BackgroundColor3 = Color3.fromRGB(0,255,150)
-toggleBtn.Visible = false
-toggleBtn.Active = true
-toggleBtn.Draggable = true
-Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(1,0)
+-- ================= 悬浮按钮 =================
+local toggle = Instance.new("TextButton", gui)
+toggle.Size = UDim2.new(0,60,0,60)
+toggle.Position = UDim2.new(0,50,0.5,0)
+toggle.Text = "XU"
+toggle.BackgroundColor3 = Color3.fromRGB(0,255,150)
+toggle.Visible = false
+toggle.Active = true
+toggle.Draggable = true
+Instance.new("UICorner", toggle).CornerRadius = UDim.new(1,0)
 
--- 最小化功能
-local minimize = Instance.new("TextButton", header)
-minimize.Size = UDim2.new(0,40,1,0)
-minimize.Position = UDim2.new(1,-40,0,0)
-minimize.Text = "-"
-minimize.BackgroundTransparency = 1
-minimize.TextColor3 = Color3.new(1,1,1)
-
-minimize.MouseButton1Click:Connect(function()
+min.MouseButton1Click:Connect(function()
     main.Visible = false
-    toggleBtn.Visible = true
+    toggle.Visible = true
 end)
 
-toggleBtn.MouseButton1Click:Connect(function()
+toggle.MouseButton1Click:Connect(function()
     main.Visible = true
-    toggleBtn.Visible = false
+    toggle.Visible = false
 end)
