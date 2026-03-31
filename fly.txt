@@ -1,189 +1,214 @@
 local player = game.Players.LocalPlayer
-local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+local gui = Instance.new("ScreenGui", player.PlayerGui)
 gui.ResetOnSpawn = false
 
 local TweenService = game:GetService("TweenService")
-
--- 模糊背景
-local blur = Instance.new("BlurEffect", game.Lighting)
-blur.Size = 0
+local RunService = game:GetService("RunService")
 
 -- 主框架
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 260, 0, 140)
+frame.Size = UDim2.new(0, 300, 0, 190)
 frame.Position = UDim2.new(0.35,0,0.3,0)
-frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+frame.BackgroundColor3 = Color3.fromRGB(10,10,15)
 frame.Active = true
 frame.Draggable = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,16)
 
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0,12)
+-- 星空层（重点）
+local starHolder = Instance.new("Frame", frame)
+starHolder.Size = UDim2.new(1,0,1,0)
+starHolder.BackgroundTransparency = 1
 
--- 发光描边
-local stroke = Instance.new("UIStroke", frame)
-stroke.Color = Color3.fromRGB(0,170,255)
-stroke.Thickness = 1.5
-
--- 渐变
-local grad = Instance.new("UIGradient", frame)
-grad.Color = ColorSequence.new{
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(40,40,40)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(15,15,15))
-}
-
--- 粒子背景
-for i=1,20 do
-	local dot = Instance.new("Frame", frame)
-	dot.Size = UDim2.new(0,3,0,3)
-	dot.BackgroundColor3 = Color3.fromRGB(0,170,255)
-	dot.BorderSizePixel = 0
-	dot.Position = UDim2.new(math.random(),0,math.random(),0)
+for i = 1,40 do
+	local star = Instance.new("Frame", starHolder)
+	star.Size = UDim2.new(0, math.random(1,3), 0, math.random(1,3))
+	star.Position = UDim2.new(math.random(),0,math.random(),0)
+	star.BackgroundColor3 = Color3.fromRGB(200,200,255)
+	star.BorderSizePixel = 0
+	Instance.new("UICorner", star).CornerRadius = UDim.new(1,0)
 
 	spawn(function()
-		while dot.Parent do
-			local tween = TweenService:Create(dot, TweenInfo.new(2, Enum.EasingStyle.Linear), {
+		while star.Parent do
+			-- 漂移
+			local t = TweenService:Create(star, TweenInfo.new(math.random(3,8), Enum.EasingStyle.Linear), {
 				Position = UDim2.new(math.random(),0,math.random(),0)
 			})
-			tween:Play()
-			wait(2)
+			t:Play()
+
+			-- 闪烁
+			TweenService:Create(star,TweenInfo.new(1),{
+				BackgroundTransparency = math.random(0,5)/10
+			}):Play()
+
+			wait(math.random(3,8))
 		end
 	end)
 end
 
--- 标题
-local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1,0,0,30)
+-- UI布局（智能排版）
+local layout = Instance.new("UIListLayout", frame)
+layout.Padding = UDim.new(0,8)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- 顶部
+local top = Instance.new("Frame", frame)
+top.Size = UDim2.new(1,-10,0,30)
+top.BackgroundTransparency = 1
+top.LayoutOrder = 1
+
+local title = Instance.new("TextLabel", top)
+title.Size = UDim2.new(1,0,1,0)
 title.BackgroundTransparency = 1
-title.Text = "✈ 飞行系统"
+title.Text = "✦ FLIGHT PANEL"
 title.Font = Enum.Font.GothamBold
 title.TextSize = 16
-title.TextColor3 = Color3.new(1,1,1)
+title.TextColor3 = Color3.fromRGB(180,200,255)
 
--- 通用按钮
-local function btn(txt,pos)
-	local b = Instance.new("TextButton", frame)
-	b.Size = UDim2.new(0,60,0,30)
-	b.Position = pos
-	b.Text = txt
-	b.Font = Enum.Font.Gotham
+-- 信息区
+local info = Instance.new("Frame", frame)
+info.Size = UDim2.new(1,-10,0,40)
+info.BackgroundTransparency = 1
+info.LayoutOrder = 2
+
+local speedText = Instance.new("TextLabel", info)
+speedText.Size = UDim2.new(1,0,1,0)
+speedText.BackgroundTransparency = 1
+speedText.Font = Enum.Font.GothamBlack
+speedText.TextSize = 26
+speedText.Text = "SPEED 1"
+speedText.TextColor3 = Color3.fromRGB(0,170,255)
+
+-- 呼吸动画
+spawn(function()
+	while true do
+		TweenService:Create(speedText,TweenInfo.new(1),{TextTransparency=0.3}):Play()
+		wait(1)
+		TweenService:Create(speedText,TweenInfo.new(1),{TextTransparency=0}):Play()
+		wait(1)
+	end
+end)
+
+-- 控制区（自动排版）
+local controls = Instance.new("Frame", frame)
+controls.Size = UDim2.new(1,-10,0,80)
+controls.BackgroundTransparency = 1
+controls.LayoutOrder = 3
+
+local grid = Instance.new("UIGridLayout", controls)
+grid.CellSize = UDim2.new(0,65,0,35)
+grid.CellPadding = UDim2.new(0,10,0,10)
+
+-- 按钮函数
+local function btn(text)
+	local b = Instance.new("TextButton", controls)
+	b.Text = text
+	b.Font = Enum.Font.GothamBold
+	b.TextSize = 16
 	b.TextColor3 = Color3.new(1,1,1)
-	b.BackgroundColor3 = Color3.fromRGB(30,30,30)
-	Instance.new("UICorner",b).CornerRadius = UDim.new(0,8)
+	b.BackgroundColor3 = Color3.fromRGB(30,30,40)
+	Instance.new("UICorner",b).CornerRadius = UDim.new(0,10)
 
-	b.MouseEnter:Connect(function()
-		TweenService:Create(b,TweenInfo.new(0.2),{BackgroundColor3=Color3.fromRGB(60,60,60)}):Play()
+	-- 点击动画
+	b.MouseButton1Down:Connect(function()
+		TweenService:Create(b,TweenInfo.new(0.1),{Size=b.Size-UDim2.new(0,4,0,4)}):Play()
 	end)
-	b.MouseLeave:Connect(function()
-		TweenService:Create(b,TweenInfo.new(0.2),{BackgroundColor3=Color3.fromRGB(30,30,30)}):Play()
+	b.MouseButton1Up:Connect(function()
+		TweenService:Create(b,TweenInfo.new(0.1),{Size=b.Size+UDim2.new(0,4,0,4)}):Play()
 	end)
 
 	return b
 end
 
-local up = btn("↑",UDim2.new(0,10,0,40))
-local down = btn("↓",UDim2.new(0,10,0,80))
-local fly = btn("飞行",UDim2.new(0,180,0,80))
-local plus = btn("+",UDim2.new(0,80,0,40))
-local minus = btn("-",UDim2.new(0,80,0,80))
+local up = btn("⬆")
+local down = btn("⬇")
+local plus = btn("＋")
+local minus = btn("－")
+local fly = btn("✈")
+local lockBtn = btn("锁定")
 
--- 速度
-local speedLabel = Instance.new("TextLabel", frame)
-speedLabel.Position = UDim2.new(0,160,0,40)
-speedLabel.Size = UDim2.new(0,60,0,30)
-speedLabel.BackgroundTransparency = 1
-speedLabel.Font = Enum.Font.GothamBold
-speedLabel.TextColor3 = Color3.fromRGB(0,170,255)
-speedLabel.Text = "1"
-
--- 关闭
-local close = btn("X",UDim2.new(1,-35,0,5))
-close.Size = UDim2.new(0,30,0,20)
-
--- 小圆球（收纳）
+-- 小球
 local ball = Instance.new("TextButton", gui)
-ball.Size = UDim2.new(0,50,0,50)
+ball.Size = UDim2.new(0,55,0,55)
 ball.Position = UDim2.new(0.1,0,0.5,0)
-ball.Text = "+"
+ball.Text = "✦"
 ball.Visible = false
-ball.BackgroundColor3 = Color3.fromRGB(20,20,20)
+ball.BackgroundColor3 = Color3.fromRGB(20,20,30)
+ball.Active = true
+ball.Draggable = true
 Instance.new("UICorner",ball).CornerRadius = UDim.new(1,0)
 
--- 状态变量
+-- 飞行变量
 local flying = false
 local speed = 1
-local tpwalking = false
+local vertical = 0
+local lock = false
+local bv,bg
 
--- 飞行核心（稳定版）
 local function startFly()
 	flying = true
-	local char = player.Character
-	local root = char:WaitForChild("HumanoidRootPart")
+	local root = player.Character:WaitForChild("HumanoidRootPart")
 
-	local bv = Instance.new("BodyVelocity", root)
+	bv = Instance.new("BodyVelocity", root)
 	bv.MaxForce = Vector3.new(9e9,9e9,9e9)
 
-	local bg = Instance.new("BodyGyro", root)
+	bg = Instance.new("BodyGyro", root)
 	bg.MaxTorque = Vector3.new(9e9,9e9,9e9)
 
-	while flying do
-		game:GetService("RunService").Heartbeat:Wait()
+	RunService:BindToRenderStep("fly",0,function()
+		if not flying then return end
 		local cam = workspace.CurrentCamera
-		bv.Velocity = cam.CFrame.LookVector * (speed*5)
-		bg.CFrame = cam.CFrame
-	end
 
-	bv:Destroy()
-	bg:Destroy()
+		local move = cam.CFrame.LookVector * speed * 5
+		move += Vector3.new(0, vertical*speed*3, 0)
+
+		bv.Velocity = move
+
+		if lock then
+			bg.CFrame = cam.CFrame
+		end
+	end)
 end
 
 local function stopFly()
 	flying = false
+	RunService:UnbindFromRenderStep("fly")
+	if bv then bv:Destroy() end
+	if bg then bg:Destroy() end
 end
 
--- 按钮功能
+-- 控制绑定
 fly.MouseButton1Click:Connect(function()
-	if flying then
-		stopFly()
-	else
-		startFly()
-	end
+	if flying then stopFly() else startFly() end
 end)
 
 plus.MouseButton1Click:Connect(function()
 	speed += 1
-	speedLabel.Text = tostring(speed)
+	speedText.Text = "SPEED "..speed
 end)
 
 minus.MouseButton1Click:Connect(function()
-	if speed > 1 then
-		speed -= 1
-	end
-	speedLabel.Text = tostring(speed)
+	if speed > 1 then speed -= 1 end
+	speedText.Text = "SPEED "..speed
 end)
 
-up.MouseButton1Down:Connect(function()
-	while up:IsMouseOver() do
-		player.Character.HumanoidRootPart.CFrame *= CFrame.new(0,1,0)
-		wait()
-	end
+up.MouseButton1Down:Connect(function() vertical = 1 end)
+up.MouseButton1Up:Connect(function() vertical = 0 end)
+
+down.MouseButton1Down:Connect(function() vertical = -1 end)
+down.MouseButton1Up:Connect(function() vertical = 0 end)
+
+lockBtn.MouseButton1Click:Connect(function()
+	lock = not lock
+	lockBtn.Text = lock and "解锁" or "锁定"
 end)
 
-down.MouseButton1Down:Connect(function()
-	while down:IsMouseOver() do
-		player.Character.HumanoidRootPart.CFrame *= CFrame.new(0,-1,0)
-		wait()
-	end
-end)
-
--- 收起
-close.MouseButton1Click:Connect(function()
+-- 收起展开
+title.InputBegan:Connect(function()
 	frame.Visible = false
 	ball.Visible = true
-	TweenService:Create(blur,TweenInfo.new(0.3),{Size=0}):Play()
 end)
 
--- 展开
 ball.MouseButton1Click:Connect(function()
 	frame.Visible = true
 	ball.Visible = false
-	TweenService:Create(blur,TweenInfo.new(0.3),{Size=10}):Play()
 end)
