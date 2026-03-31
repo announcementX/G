@@ -1,29 +1,30 @@
---// XU飞行（终极原版+UI版）
+--// XU飞行 最终稳定版
 
 local player = game.Players.LocalPlayer
-local gui = Instance.new("ScreenGui",player.PlayerGui)
+local gui = Instance.new("ScreenGui",player:WaitForChild("PlayerGui"))
 gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.DisplayOrder = 999
 
---================ 星空 =================
+--================ 星空（修复版） =================
 local bg = Instance.new("Frame",gui)
 bg.Size = UDim2.new(1,0,1,0)
 bg.BackgroundColor3 = Color3.fromRGB(10,10,20)
 bg.ZIndex = 0
 
-for i=1,120 do
-	local star = Instance.new("Frame",bg)
-	star.Size = UDim2.new(0,2,0,2)
-	star.Position = UDim2.new(math.random(),0,math.random(),0)
-	star.BackgroundColor3 = Color3.new(1,1,1)
-	star.BorderSizePixel = 0
-end
+local emitter = Instance.new("ParticleEmitter",bg)
+emitter.Texture = "rbxassetid://241876344"
+emitter.Rate = 80
+emitter.Speed = NumberRange.new(0)
+emitter.Lifetime = NumberRange.new(999)
+emitter.Size = NumberSequence.new(0.2)
 
 --================ 主UI =================
 local Frame = Instance.new("Frame",gui)
 Frame.Size = UDim2.new(0,220,0,100)
 Frame.Position = UDim2.new(0.1,0,0.4,0)
 Frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
-Frame.ZIndex = 2
+Frame.ZIndex = 10
 Frame.Active = true
 Frame.Draggable = true
 Instance.new("UICorner",Frame)
@@ -33,21 +34,25 @@ title.Size = UDim2.new(1,0,0,25)
 title.Text = "XU飞行"
 title.BackgroundTransparency = 1
 title.TextColor3 = Color3.new(1,1,1)
+title.ZIndex = 11
 
 local start = Instance.new("TextButton",Frame)
 start.Size = UDim2.new(0,70,0,30)
 start.Position = UDim2.new(0,10,0,40)
 start.Text = "开始"
+start.ZIndex = 11
 
 local modeBtn = Instance.new("TextButton",Frame)
 modeBtn.Size = UDim2.new(0,70,0,30)
 modeBtn.Position = UDim2.new(0,90,0,40)
 modeBtn.Text = "模式2"
+modeBtn.ZIndex = 11
 
 local mini = Instance.new("TextButton",Frame)
 mini.Size = UDim2.new(0,25,0,25)
 mini.Position = UDim2.new(1,-30,0,5)
 mini.Text = "-"
+mini.ZIndex = 11
 
 -- 悬浮窗
 local miniFrame = Instance.new("Frame",gui)
@@ -55,13 +60,22 @@ miniFrame.Size = UDim2.new(0,120,0,40)
 miniFrame.Position = Frame.Position
 miniFrame.BackgroundColor3 = Color3.fromRGB(25,25,35)
 miniFrame.Visible = false
-miniFrame.ZIndex = 3
+miniFrame.ZIndex = 20
 Instance.new("UICorner",miniFrame)
 
 local open = Instance.new("TextButton",miniFrame)
 open.Size = UDim2.new(1,0,1,0)
 open.Text = "XU飞行"
 open.BackgroundTransparency = 1
+
+--================ 控制 =================
+local flying = false
+local mode = 2
+
+modeBtn.MouseButton1Click:Connect(function()
+	mode = mode==1 and 2 or 1
+	modeBtn.Text = "模式"..mode
+end)
 
 mini.MouseButton1Click:Connect(function()
 	Frame.Visible = false
@@ -73,16 +87,7 @@ open.MouseButton1Click:Connect(function()
 	miniFrame.Visible = false
 end)
 
---================ 状态 =================
-local flying = false
-local mode = 2
-
-modeBtn.MouseButton1Click:Connect(function()
-	mode = mode==1 and 2 or 1
-	modeBtn.Text = "模式"..mode
-end)
-
---================ 模式1（备用） =================
+--================ 模式1（顺滑飞行） =================
 local function mode1()
 	local char = player.Character
 	local hrp = char:WaitForChild("HumanoidRootPart")
@@ -102,19 +107,16 @@ local function mode1()
 	end)
 end
 
---================ 模式2（你原版完整逻辑） =================
+--================ 模式2（你原版核心） =================
 local function mode2()
 
---👇👇👇 你原代码核心（未改结构）👇👇👇
+	local speeds = 1
+	local speaker = player
+	local chr = speaker.Character
+	local hum = chr:FindFirstChildWhichIsA("Humanoid")
 
-local speeds = 1
-local speaker = player
-local chr = speaker.Character
-local hum = chr:FindFirstChildWhichIsA("Humanoid")
+	nowe = true
 
-nowe = true
-
-if nowe == true then
 	for i = 1, speeds do
 		spawn(function()
 			local hb = game:GetService("RunService").Heartbeat
@@ -127,7 +129,7 @@ if nowe == true then
 		end)
 	end
 
-	game.Players.LocalPlayer.Character.Animate.Disabled = true
+	player.Character.Animate.Disabled = true
 
 	for i,v in next, hum:GetPlayingAnimationTracks() do
 		v:AdjustSpeed(0)
@@ -161,16 +163,12 @@ if nowe == true then
 		bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
 
 		while flying do
-			wait()
+			task.wait()
 			local cam = workspace.CurrentCamera
 			bv.velocity = cam.CFrame.lookVector * 80
 			bg.cframe = cam.CFrame
 		end
 	end
-end
-
---👆👆👆 原逻辑结束 👆👆👆
-
 end
 
 --================ 启动 =================
