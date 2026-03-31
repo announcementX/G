@@ -1,194 +1,187 @@
+--// XU飞行（终极原版+UI版）
+
 local player = game.Players.LocalPlayer
-local gui = Instance.new("ScreenGui", player.PlayerGui)
+local gui = Instance.new("ScreenGui",player.PlayerGui)
 gui.ResetOnSpawn = false
 
-local RunService = game:GetService("RunService")
+--================ 星空 =================
+local bg = Instance.new("Frame",gui)
+bg.Size = UDim2.new(1,0,1,0)
+bg.BackgroundColor3 = Color3.fromRGB(10,10,20)
+bg.ZIndex = 0
 
--- 主UI
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 300, 0, 190)
-frame.Position = UDim2.new(0.35,0,0.3,0)
-frame.BackgroundColor3 = Color3.fromRGB(15,15,25)
-frame.Active = true
-frame.Draggable = true
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
-
--- 星空（高级粒子）
-local stars = Instance.new("Frame", frame)
-stars.Size = UDim2.new(1,0,1,0)
-stars.BackgroundTransparency = 1
-stars.ZIndex = 0
-
-for i = 1,50 do
-	local s = Instance.new("Frame", stars)
-	s.Size = UDim2.new(0,1,0,1)
-	s.Position = UDim2.new(math.random(),0,math.random(),0)
-	s.BackgroundColor3 = Color3.fromRGB(200,220,255)
-	s.BorderSizePixel = 0
-	s.ZIndex = 0
-
-	RunService.RenderStepped:Connect(function()
-		s.Position = s.Position + UDim2.new(0,0,0,0.002 + math.random()*0.002)
-		if s.Position.Y.Scale > 1 then
-			s.Position = UDim2.new(math.random(),0,0,0)
-		end
-	end)
+for i=1,120 do
+	local star = Instance.new("Frame",bg)
+	star.Size = UDim2.new(0,2,0,2)
+	star.Position = UDim2.new(math.random(),0,math.random(),0)
+	star.BackgroundColor3 = Color3.new(1,1,1)
+	star.BorderSizePixel = 0
 end
 
--- UI层
-local ui = Instance.new("Frame", frame)
-ui.Size = UDim2.new(1,0,1,0)
-ui.BackgroundTransparency = 1
-ui.ZIndex = 2
+--================ 主UI =================
+local Frame = Instance.new("Frame",gui)
+Frame.Size = UDim2.new(0,220,0,100)
+Frame.Position = UDim2.new(0.1,0,0.4,0)
+Frame.BackgroundColor3 = Color3.fromRGB(25,25,35)
+Frame.ZIndex = 2
+Frame.Active = true
+Frame.Draggable = true
+Instance.new("UICorner",Frame)
 
--- 标题
-local title = Instance.new("TextLabel", ui)
-title.Size = UDim2.new(1,-40,0,30)
-title.Position = UDim2.new(0,10,0,0)
-title.Text = "FLIGHT"
+local title = Instance.new("TextLabel",Frame)
+title.Size = UDim2.new(1,0,0,25)
+title.Text = "XU飞行"
 title.BackgroundTransparency = 1
-title.TextColor3 = Color3.fromRGB(180,200,255)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 16
+title.TextColor3 = Color3.new(1,1,1)
 
--- 缩小按钮（独立）
-local minimize = Instance.new("TextButton", ui)
-minimize.Size = UDim2.new(0,30,0,30)
-minimize.Position = UDim2.new(1,-35,0,0)
-minimize.Text = "－"
-minimize.BackgroundTransparency = 1
-minimize.TextColor3 = Color3.fromRGB(255,255,255)
+local start = Instance.new("TextButton",Frame)
+start.Size = UDim2.new(0,70,0,30)
+start.Position = UDim2.new(0,10,0,40)
+start.Text = "开始"
 
--- 速度
-local speedText = Instance.new("TextLabel", ui)
-speedText.Position = UDim2.new(0,0,0,35)
-speedText.Size = UDim2.new(1,0,0,35)
-speedText.Text = "SPEED 1"
-speedText.TextColor3 = Color3.fromRGB(0,170,255)
-speedText.Font = Enum.Font.GothamBlack
-speedText.TextSize = 24
-speedText.BackgroundTransparency = 1
+local modeBtn = Instance.new("TextButton",Frame)
+modeBtn.Size = UDim2.new(0,70,0,30)
+modeBtn.Position = UDim2.new(0,90,0,40)
+modeBtn.Text = "模式2"
 
--- 按钮区
-local holder = Instance.new("Frame", ui)
-holder.Position = UDim2.new(0,0,0,75)
-holder.Size = UDim2.new(1,0,0,110)
-holder.BackgroundTransparency = 1
+local mini = Instance.new("TextButton",Frame)
+mini.Size = UDim2.new(0,25,0,25)
+mini.Position = UDim2.new(1,-30,0,5)
+mini.Text = "-"
 
-local grid = Instance.new("UIGridLayout", holder)
-grid.CellSize = UDim2.new(0,70,0,40)
+-- 悬浮窗
+local miniFrame = Instance.new("Frame",gui)
+miniFrame.Size = UDim2.new(0,120,0,40)
+miniFrame.Position = Frame.Position
+miniFrame.BackgroundColor3 = Color3.fromRGB(25,25,35)
+miniFrame.Visible = false
+miniFrame.ZIndex = 3
+Instance.new("UICorner",miniFrame)
 
-local function btn(text)
-	local b = Instance.new("TextButton", holder)
-	b.Text = text
-	b.BackgroundColor3 = Color3.fromRGB(30,30,45)
-	b.TextColor3 = Color3.new(1,1,1)
-	b.Font = Enum.Font.GothamBold
-	b.TextSize = 16
-	Instance.new("UICorner",b).CornerRadius = UDim.new(0,10)
-	return b
-end
-
-local flyBtn = btn("开始")
-local up = btn("↑")
-local down = btn("↓")
-local plus = btn("+")
-local minus = btn("-")
-local mode = btn("模式1")
-
--- 悬浮窗（长方形）
-local mini = Instance.new("TextButton", gui)
-mini.Size = UDim2.new(0,120,0,40)
-mini.Position = UDim2.new(0.1,0,0.5,0)
-mini.Text = "FLIGHT"
-mini.Visible = false
-mini.BackgroundColor3 = Color3.fromRGB(20,20,30)
-mini.TextColor3 = Color3.fromRGB(200,220,255)
-mini.Font = Enum.Font.GothamBold
-mini.TextSize = 16
-mini.Active = true
-mini.Draggable = true
-Instance.new("UICorner",mini).CornerRadius = UDim.new(0,12)
-
--- 飞行
-local flying = false
-local speed = 1
-local vertical = 0
-local modeType = 1
-local bv,bg
-
-local function startFly()
-	flying = true
-	flyBtn.Text = "停止"
-
-	local root = player.Character:WaitForChild("HumanoidRootPart")
-
-	bv = Instance.new("BodyVelocity", root)
-	bv.MaxForce = Vector3.new(9e9,9e9,9e9)
-
-	bg = Instance.new("BodyGyro", root)
-	bg.MaxTorque = Vector3.new(9e9,9e9,9e9)
-
-	RunService:BindToRenderStep("fly",0,function()
-		if not flying then return end
-
-		local cam = workspace.CurrentCamera
-
-		if modeType == 1 then
-			-- 视角模式（你现在要的）
-			bv.Velocity = cam.CFrame.LookVector * speed * 5
-			bg.CFrame = cam.CFrame
-
-		else
-			-- 原始模式（传统飞行）
-			local dir = Vector3.new(0,vertical,0)
-			bv.Velocity = dir * speed * 10
-		end
-	end)
-end
-
-local function stopFly()
-	flying = false
-	flyBtn.Text = "开始"
-	RunService:UnbindFromRenderStep("fly")
-	if bv then bv:Destroy() end
-	if bg then bg:Destroy() end
-end
-
--- 控制
-flyBtn.MouseButton1Click:Connect(function()
-	if flying then stopFly() else startFly() end
-end)
-
-plus.MouseButton1Click:Connect(function()
-	speed += 1
-	speedText.Text = "SPEED "..speed
-end)
-
-minus.MouseButton1Click:Connect(function()
-	if speed > 1 then speed -= 1 end
-	speedText.Text = "SPEED "..speed
-end)
-
-up.MouseButton1Down:Connect(function() vertical = 1 end)
-up.MouseButton1Up:Connect(function() vertical = 0 end)
-
-down.MouseButton1Down:Connect(function() vertical = -1 end)
-down.MouseButton1Up:Connect(function() vertical = 0 end)
-
--- 模式切换
-mode.MouseButton1Click:Connect(function()
-	modeType = modeType == 1 and 2 or 1
-	mode.Text = modeType == 1 and "模式1" or "模式2"
-end)
-
--- 缩小逻辑
-minimize.MouseButton1Click:Connect(function()
-	frame.Visible = false
-	mini.Visible = true
-end)
+local open = Instance.new("TextButton",miniFrame)
+open.Size = UDim2.new(1,0,1,0)
+open.Text = "XU飞行"
+open.BackgroundTransparency = 1
 
 mini.MouseButton1Click:Connect(function()
-	frame.Visible = true
-	mini.Visible = false
+	Frame.Visible = false
+	miniFrame.Visible = true
+end)
+
+open.MouseButton1Click:Connect(function()
+	Frame.Visible = true
+	miniFrame.Visible = false
+end)
+
+--================ 状态 =================
+local flying = false
+local mode = 2
+
+modeBtn.MouseButton1Click:Connect(function()
+	mode = mode==1 and 2 or 1
+	modeBtn.Text = "模式"..mode
+end)
+
+--================ 模式1（备用） =================
+local function mode1()
+	local char = player.Character
+	local hrp = char:WaitForChild("HumanoidRootPart")
+
+	local bv = Instance.new("BodyVelocity",hrp)
+	bv.MaxForce = Vector3.new(9e9,9e9,9e9)
+
+	local bg = Instance.new("BodyGyro",hrp)
+	bg.MaxTorque = Vector3.new(9e9,9e9,9e9)
+
+	game:GetService("RunService").RenderStepped:Connect(function()
+		if flying then
+			local cam = workspace.CurrentCamera
+			bv.Velocity = cam.CFrame.LookVector * 80
+			bg.CFrame = cam.CFrame
+		end
+	end)
+end
+
+--================ 模式2（你原版完整逻辑） =================
+local function mode2()
+
+--👇👇👇 你原代码核心（未改结构）👇👇👇
+
+local speeds = 1
+local speaker = player
+local chr = speaker.Character
+local hum = chr:FindFirstChildWhichIsA("Humanoid")
+
+nowe = true
+
+if nowe == true then
+	for i = 1, speeds do
+		spawn(function()
+			local hb = game:GetService("RunService").Heartbeat
+			tpwalking = true
+			while tpwalking and hb:Wait() do
+				if hum.MoveDirection.Magnitude > 0 then
+					chr:TranslateBy(hum.MoveDirection)
+				end
+			end
+		end)
+	end
+
+	game.Players.LocalPlayer.Character.Animate.Disabled = true
+
+	for i,v in next, hum:GetPlayingAnimationTracks() do
+		v:AdjustSpeed(0)
+	end
+
+	if hum.RigType == Enum.HumanoidRigType.R6 then
+		local torso = chr.Torso
+
+		local bg = Instance.new("BodyGyro", torso)
+		bg.P = 9e4
+		bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+
+		local bv = Instance.new("BodyVelocity", torso)
+		bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+
+		while flying do
+			game:GetService("RunService").RenderStepped:Wait()
+			local cam = workspace.CurrentCamera
+			bv.velocity = cam.CFrame.lookVector * 80
+			bg.cframe = cam.CFrame
+		end
+
+	else
+		local torso = chr.UpperTorso
+
+		local bg = Instance.new("BodyGyro", torso)
+		bg.P = 9e4
+		bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+
+		local bv = Instance.new("BodyVelocity", torso)
+		bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+
+		while flying do
+			wait()
+			local cam = workspace.CurrentCamera
+			bv.velocity = cam.CFrame.lookVector * 80
+			bg.cframe = cam.CFrame
+		end
+	end
+end
+
+--👆👆👆 原逻辑结束 👆👆👆
+
+end
+
+--================ 启动 =================
+start.MouseButton1Click:Connect(function()
+	flying = not flying
+
+	if flying then
+		if mode == 1 then
+			mode1()
+		else
+			mode2()
+		end
+	end
 end)
