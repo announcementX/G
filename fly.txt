@@ -3,43 +3,39 @@ local gui = Instance.new("ScreenGui", player.PlayerGui)
 gui.ResetOnSpawn = false
 
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 
--- 主框架
+-- 主UI
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 300, 0, 190)
 frame.Position = UDim2.new(0.35,0,0.3,0)
-frame.BackgroundColor3 = Color3.fromRGB(10,10,15)
+frame.BackgroundColor3 = Color3.fromRGB(15,15,25)
 frame.Active = true
 frame.Draggable = true
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0,16)
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
 
--- 星空（底层）
-local starLayer = Instance.new("Frame", frame)
-starLayer.Size = UDim2.new(1,0,1,0)
-starLayer.BackgroundTransparency = 1
-starLayer.ZIndex = 0
+-- 星空（高级粒子）
+local stars = Instance.new("Frame", frame)
+stars.Size = UDim2.new(1,0,1,0)
+stars.BackgroundTransparency = 1
+stars.ZIndex = 0
 
-for i = 1,35 do
-	local star = Instance.new("Frame", starLayer)
-	star.Size = UDim2.new(0,2,0,2)
-	star.Position = UDim2.new(math.random(),0,math.random(),0)
-	star.BackgroundColor3 = Color3.fromRGB(200,200,255)
-	star.BorderSizePixel = 0
-	star.ZIndex = 0
-	Instance.new("UICorner", star).CornerRadius = UDim.new(1,0)
+for i = 1,50 do
+	local s = Instance.new("Frame", stars)
+	s.Size = UDim2.new(0,1,0,1)
+	s.Position = UDim2.new(math.random(),0,math.random(),0)
+	s.BackgroundColor3 = Color3.fromRGB(200,220,255)
+	s.BorderSizePixel = 0
+	s.ZIndex = 0
 
-	task.spawn(function()
-		while star.Parent do
-			TweenService:Create(star,TweenInfo.new(math.random(4,8)),{
-				Position = UDim2.new(math.random(),0,math.random(),0)
-			}):Play()
-			wait(math.random(4,8))
+	RunService.RenderStepped:Connect(function()
+		s.Position = s.Position + UDim2.new(0,0,0,0.002 + math.random()*0.002)
+		if s.Position.Y.Scale > 1 then
+			s.Position = UDim2.new(math.random(),0,0,0)
 		end
 	end)
 end
 
--- UI容器（关键！）
+-- UI层
 local ui = Instance.new("Frame", frame)
 ui.Size = UDim2.new(1,0,1,0)
 ui.BackgroundTransparency = 1
@@ -47,75 +43,84 @@ ui.ZIndex = 2
 
 -- 标题
 local title = Instance.new("TextLabel", ui)
-title.Size = UDim2.new(1,0,0,30)
+title.Size = UDim2.new(1,-40,0,30)
+title.Position = UDim2.new(0,10,0,0)
+title.Text = "FLIGHT"
 title.BackgroundTransparency = 1
-title.Text = "✦ FLIGHT"
+title.TextColor3 = Color3.fromRGB(180,200,255)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 16
-title.TextColor3 = Color3.fromRGB(200,220,255)
-title.ZIndex = 2
 
--- 速度显示
+-- 缩小按钮（独立）
+local minimize = Instance.new("TextButton", ui)
+minimize.Size = UDim2.new(0,30,0,30)
+minimize.Position = UDim2.new(1,-35,0,0)
+minimize.Text = "－"
+minimize.BackgroundTransparency = 1
+minimize.TextColor3 = Color3.fromRGB(255,255,255)
+
+-- 速度
 local speedText = Instance.new("TextLabel", ui)
 speedText.Position = UDim2.new(0,0,0,35)
-speedText.Size = UDim2.new(1,0,0,40)
-speedText.BackgroundTransparency = 1
-speedText.Font = Enum.Font.GothamBlack
-speedText.TextSize = 26
+speedText.Size = UDim2.new(1,0,0,35)
 speedText.Text = "SPEED 1"
 speedText.TextColor3 = Color3.fromRGB(0,170,255)
-speedText.ZIndex = 2
+speedText.Font = Enum.Font.GothamBlack
+speedText.TextSize = 24
+speedText.BackgroundTransparency = 1
 
--- 按钮容器
-local btnHolder = Instance.new("Frame", ui)
-btnHolder.Position = UDim2.new(0,0,0,80)
-btnHolder.Size = UDim2.new(1,0,0,100)
-btnHolder.BackgroundTransparency = 1
-btnHolder.ZIndex = 2
+-- 按钮区
+local holder = Instance.new("Frame", ui)
+holder.Position = UDim2.new(0,0,0,75)
+holder.Size = UDim2.new(1,0,0,110)
+holder.BackgroundTransparency = 1
 
-local grid = Instance.new("UIGridLayout", btnHolder)
-grid.CellSize = UDim2.new(0,65,0,35)
-grid.CellPadding = UDim2.new(0,10,0,10)
+local grid = Instance.new("UIGridLayout", holder)
+grid.CellSize = UDim2.new(0,70,0,40)
 
--- 按钮函数
 local function btn(text)
-	local b = Instance.new("TextButton", btnHolder)
+	local b = Instance.new("TextButton", holder)
 	b.Text = text
+	b.BackgroundColor3 = Color3.fromRGB(30,30,45)
+	b.TextColor3 = Color3.new(1,1,1)
 	b.Font = Enum.Font.GothamBold
 	b.TextSize = 16
-	b.TextColor3 = Color3.new(1,1,1)
-	b.BackgroundColor3 = Color3.fromRGB(30,30,40)
-	b.ZIndex = 2
 	Instance.new("UICorner",b).CornerRadius = UDim.new(0,10)
-
 	return b
 end
 
-local up = btn("⬆")
-local down = btn("⬇")
-local plus = btn("＋")
-local minus = btn("－")
-local fly = btn("✈")
+local flyBtn = btn("开始")
+local up = btn("↑")
+local down = btn("↓")
+local plus = btn("+")
+local minus = btn("-")
+local mode = btn("模式1")
 
--- 小球
-local ball = Instance.new("TextButton", gui)
-ball.Size = UDim2.new(0,55,0,55)
-ball.Position = UDim2.new(0.1,0,0.5,0)
-ball.Text = "✦"
-ball.Visible = false
-ball.BackgroundColor3 = Color3.fromRGB(20,20,30)
-ball.Active = true
-ball.Draggable = true
-Instance.new("UICorner",ball).CornerRadius = UDim.new(1,0)
+-- 悬浮窗（长方形）
+local mini = Instance.new("TextButton", gui)
+mini.Size = UDim2.new(0,120,0,40)
+mini.Position = UDim2.new(0.1,0,0.5,0)
+mini.Text = "FLIGHT"
+mini.Visible = false
+mini.BackgroundColor3 = Color3.fromRGB(20,20,30)
+mini.TextColor3 = Color3.fromRGB(200,220,255)
+mini.Font = Enum.Font.GothamBold
+mini.TextSize = 16
+mini.Active = true
+mini.Draggable = true
+Instance.new("UICorner",mini).CornerRadius = UDim.new(0,12)
 
--- 飞行变量
+-- 飞行
 local flying = false
 local speed = 1
 local vertical = 0
+local modeType = 1
 local bv,bg
 
 local function startFly()
 	flying = true
+	flyBtn.Text = "停止"
+
 	local root = player.Character:WaitForChild("HumanoidRootPart")
 
 	bv = Instance.new("BodyVelocity", root)
@@ -129,26 +134,29 @@ local function startFly()
 
 		local cam = workspace.CurrentCamera
 
-		-- 移动（完全跟镜头）
-		local move = cam.CFrame.LookVector * speed * 5
-		move += Vector3.new(0, vertical*speed*3, 0)
+		if modeType == 1 then
+			-- 视角模式（你现在要的）
+			bv.Velocity = cam.CFrame.LookVector * speed * 5
+			bg.CFrame = cam.CFrame
 
-		bv.Velocity = move
-
-		-- 🔥 核心：强制朝向（你要的效果）
-		bg.CFrame = cam.CFrame
+		else
+			-- 原始模式（传统飞行）
+			local dir = Vector3.new(0,vertical,0)
+			bv.Velocity = dir * speed * 10
+		end
 	end)
 end
 
 local function stopFly()
 	flying = false
+	flyBtn.Text = "开始"
 	RunService:UnbindFromRenderStep("fly")
 	if bv then bv:Destroy() end
 	if bg then bg:Destroy() end
 end
 
 -- 控制
-fly.MouseButton1Click:Connect(function()
+flyBtn.MouseButton1Click:Connect(function()
 	if flying then stopFly() else startFly() end
 end)
 
@@ -168,13 +176,19 @@ up.MouseButton1Up:Connect(function() vertical = 0 end)
 down.MouseButton1Down:Connect(function() vertical = -1 end)
 down.MouseButton1Up:Connect(function() vertical = 0 end)
 
--- 收起
-title.InputBegan:Connect(function()
-	frame.Visible = false
-	ball.Visible = true
+-- 模式切换
+mode.MouseButton1Click:Connect(function()
+	modeType = modeType == 1 and 2 or 1
+	mode.Text = modeType == 1 and "模式1" or "模式2"
 end)
 
-ball.MouseButton1Click:Connect(function()
+-- 缩小逻辑
+minimize.MouseButton1Click:Connect(function()
+	frame.Visible = false
+	mini.Visible = true
+end)
+
+mini.MouseButton1Click:Connect(function()
 	frame.Visible = true
-	ball.Visible = false
+	mini.Visible = false
 end)
