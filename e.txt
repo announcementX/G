@@ -1,168 +1,154 @@
--- XU SCRIPT | FINAL TOP‑TIER UI
-
-local player = game.Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
-local ContentProvider = game:GetService("ContentProvider")
+local player = game.Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui", player.PlayerGui)
 
--- ================= 主 UI 框架 =================
+-- ===== 背景模糊 =====
+local blur = Instance.new("BlurEffect", game.Lighting)
+blur.Size = 12
+
+-- ===== 主窗口 =====
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0, 580, 0, 350)
-main.Position = UDim2.new(0.5, -290, 0.5, -175)
-main.BackgroundColor3 = Color3.fromRGB(15,15,20)
+main.Size = UDim2.new(0, 650, 0, 380)
+main.Position = UDim2.new(0.5,-325,0.5,-190)
+main.BackgroundColor3 = Color3.fromRGB(20,20,30)
+main.BackgroundTransparency = 0.1
 main.Active = true
 main.Draggable = true
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 18)
+Instance.new("UICorner", main).CornerRadius = UDim.new(0,20)
 
--- ================= 渐变装饰 =================
-local grad = Instance.new("UIGradient", main)
-grad.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(40,40,60)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(10,10,20))
-}
-grad.Rotation = 35
+-- ===== 发光边框 =====
+local stroke = Instance.new("UIStroke", main)
+stroke.Thickness = 1.5
+stroke.Color = Color3.fromRGB(0,255,200)
+stroke.Transparency = 0.3
 
--- ================= 标题 =================
-local title = Instance.new("TextLabel", main)
-title.Position = UDim2.new(0,15,0,10)
-title.Size = UDim2.new(0,250,0,24)
-title.Text = "XU SCRIPT"
-title.TextSize = 18
+-- ===== 顶栏 =====
+local top = Instance.new("Frame", main)
+top.Size = UDim2.new(1,0,0,40)
+top.BackgroundTransparency = 1
+
+local title = Instance.new("TextLabel", top)
+title.Size = UDim2.new(1,0,1,0)
+title.Text = "XU SCRIPT | PREMIUM"
 title.TextColor3 = Color3.fromRGB(0,255,200)
-title.BackgroundTransparency = 1
 title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.BackgroundTransparency = 1
 
--- ================= 侧边栏 =================
+-- ===== 侧边栏 =====
 local sidebar = Instance.new("Frame", main)
-sidebar.Size = UDim2.new(0,140,1,-50)
-sidebar.Position = UDim2.new(0,0,0,50)
+sidebar.Size = UDim2.new(0,150,1,-40)
+sidebar.Position = UDim2.new(0,0,0,40)
 sidebar.BackgroundTransparency = 1
 
-local function addButton(text, y)
+-- ===== 高级按钮函数 =====
+local function createBtn(text, y)
     local btn = Instance.new("Frame", sidebar)
-    btn.Size = UDim2.new(1,-20,0,44)
+    btn.Size = UDim2.new(1,-20,0,45)
     btn.Position = UDim2.new(0,10,0,y)
-    btn.BackgroundColor3 = Color3.fromRGB(25,25,30)
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
+    btn.BackgroundColor3 = Color3.fromRGB(30,30,40)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,12)
 
-    local stroke = Instance.new("UIStroke", btn)
-    stroke.Color = Color3.fromRGB(0,255,200)
-    stroke.Thickness = 1
+    local glow = Instance.new("UIStroke", btn)
+    glow.Color = Color3.fromRGB(0,255,200)
+    glow.Transparency = 0.7
 
     local label = Instance.new("TextLabel", btn)
-    label.Size = UDim2.new(1,-10,1,0)
-    label.Position = UDim2.new(0,10,0,0)
+    label.Size = UDim2.new(1,0,1,0)
     label.Text = text
-    label.TextSize = 14
-    label.Font = Enum.Font.Gotham
-    label.TextColor3 = Color3.fromRGB(255,255,255)
+    label.TextColor3 = Color3.new(1,1,1)
     label.BackgroundTransparency = 1
+    label.Font = Enum.Font.Gotham
 
     btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(30,30,40)}):Play()
+        TweenService:Create(glow, TweenInfo.new(0.2), {Transparency = 0}):Play()
     end)
 
     btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(25,25,30)}):Play()
+        TweenService:Create(glow, TweenInfo.new(0.2), {Transparency = 0.7}):Play()
     end)
 end
 
-addButton("脚本信息", 10)
+createBtn("HOME", 10)
 
--- ================= 轮播图卡片 =================
+-- ===== 轮播区域 =====
 local banner = Instance.new("Frame", main)
-banner.Size = UDim2.new(1,-160,0,180)
-banner.Position = UDim2.new(0,150,0,50)
-banner.BackgroundColor3 = Color3.fromRGB(25,25,30)
-Instance.new("UICorner", banner).CornerRadius = UDim.new(0,12)
+banner.Size = UDim2.new(1,-170,0,200)
+banner.Position = UDim2.new(0,160,0,50)
+banner.BackgroundColor3 = Color3.fromRGB(25,25,35)
+Instance.new("UICorner", banner).CornerRadius = UDim.new(0,14)
 
-local stroke2 = Instance.new("UIStroke", banner)
-stroke2.Color = Color3.fromRGB(0,255,200)
-stroke2.Thickness = 1
-
--- 唯一有效Image IDs数组
 local images = {
     "rbxassetid://7451945741",
     "rbxassetid://6970562433",
     "rbxassetid://8161302952"
 }
 
--- 预加载图片
-ContentProvider:PreloadAsync(images)
+local img1 = Instance.new("ImageLabel", banner)
+local img2 = Instance.new("ImageLabel", banner)
 
--- 两个Layer做滑动
-local slot1 = Instance.new("ImageLabel", banner)
-local slot2 = Instance.new("ImageLabel", banner)
-
-for i,v in pairs({slot1, slot2}) do
-    v.Size = UDim2.new(1,-10,1,-10)
-    v.Position = UDim2.new(1,5,0,5)
+for _,v in pairs({img1,img2}) do
+    v.Size = UDim2.new(1,0,1,0)
     v.BackgroundTransparency = 1
-    v.Image = images[1]
 end
 
--- 序号显示
-local indexLabel = Instance.new("TextLabel", banner)
-indexLabel.Position = UDim2.new(0.85,0,0.85,0)
-indexLabel.Size = UDim2.new(0,60,0,24)
-indexLabel.TextSize = 14
-indexLabel.Font = Enum.Font.GothamBold
-indexLabel.TextColor3 = Color3.fromRGB(0,255,200)
-indexLabel.BackgroundTransparency = 0.5
-indexLabel.Text = "1/"..#images
-indexLabel.TextScaled = true
-Instance.new("UICorner", indexLabel).CornerRadius = UDim.new(0,6)
+img1.Image = images[1]
+img1.Position = UDim2.new(0,0,0,0)
+img2.Position = UDim2.new(1,0,0,0)
 
--- 初始化第一个
-slot1.Position = UDim2.new(0,5,0,5)
-slot1.Image = images[1]
+local index = 1
+local showing1 = true
 
--- 轮播控制
+local counter = Instance.new("TextLabel", banner)
+counter.Position = UDim2.new(0.8,0,0.85,0)
+counter.Size = UDim2.new(0,80,0,25)
+counter.BackgroundTransparency = 0.3
+counter.TextColor3 = Color3.fromRGB(0,255,200)
+counter.Text = "1/"..#images
+Instance.new("UICorner", counter)
+
 task.spawn(function()
-    local currentIndex = 1
-    local showFirst = true
-
     while true do
         task.wait(3)
 
-        local nextIndex = currentIndex + 1
-        if nextIndex > #images then nextIndex = 1 end
+        local next = index + 1
+        if next > #images then next = 1 end
 
-        local incoming = showFirst and slot2 or slot1
-        local outgoing = showFirst and slot1 or slot2
+        local incoming = showing1 and img2 or img1
+        local outgoing = showing1 and img1 or img2
 
-        incoming.Image = images[nextIndex]
-        incoming.Position = UDim2.new(1,5,0,5)
+        incoming.Image = images[next]
+        incoming.Position = UDim2.new(1,0,0,0)
 
-        TweenService:Create(outgoing, TweenInfo.new(0.6), {Position = UDim2.new(-1,5,0,5)}):Play()
-        TweenService:Create(incoming, TweenInfo.new(0.6), {Position = UDim2.new(0,5,0,5)}):Play()
+        TweenService:Create(outgoing, TweenInfo.new(0.5), {
+            Position = UDim2.new(-1,0,0,0)
+        }):Play()
 
-        currentIndex = nextIndex
-        indexLabel.Text = tostring(currentIndex).."/"..#images
+        TweenService:Create(incoming, TweenInfo.new(0.5), {
+            Position = UDim2.new(0,0,0,0)
+        }):Play()
 
-        showFirst = not showFirst
+        index = next
+        counter.Text = index.."/"..#images
+        showing1 = not showing1
     end
 end)
 
--- ================= 单独卡片信息 =================
--- 作者 框
-local authorCard = Instance.new("Frame", main)
-authorCard.Size = UDim2.new(0,200,0,60)
-authorCard.Position = UDim2.new(0,150,0,250)
-authorCard.BackgroundColor3 = Color3.fromRGB(30,30,36)
-Instance.new("UICorner", authorCard).CornerRadius = UDim.new(0,10)
-local authorTxt = Instance.new("TextLabel", authorCard)
-authorTxt.Size = UDim2.new(1,-10,1,-10)
-authorTxt.Position = UDim2.new(0,5,0,5)
-authorTxt.Text = "作者: HaoChen"
-authorTxt.TextSize = 14
-authorTxt.Font = Enum.Font.Gotham
-authorTxt.TextColor3 = Color3.fromRGB(255,255,255)
-authorTxt.BackgroundTransparency = 1
+-- ===== 信息卡片 =====
+local function card(text, x)
+    local c = Instance.new("Frame", main)
+    c.Size = UDim2.new(0,220,0,60)
+    c.Position = UDim2.new(0,x,0,270)
+    c.BackgroundColor3 = Color3.fromRGB(35,35,45)
+    Instance.new("UICorner", c).CornerRadius = UDim.new(0,12)
 
--- QQ 框
-local qqCard = authorCard:Clone()
-qqCard.Parent = main
-qqCard.Position = UDim2.new(0,380,0,250)
-qqCard:FindFirstChildWhichIsA("TextLabel").Text = "QQ: 1626844714"
+    local t = Instance.new("TextLabel", c)
+    t.Size = UDim2.new(1,0,1,0)
+    t.Text = text
+    t.TextColor3 = Color3.new(1,1,1)
+    t.BackgroundTransparency = 1
+end
+
+card("作者: HaoChen", 170)
+card("QQ: 1626844714", 410)
