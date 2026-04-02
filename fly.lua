@@ -14,12 +14,11 @@ local speed = Instance.new("TextLabel")
 local mine = Instance.new("TextButton")
 local closebutton = Instance.new("TextButton")
 local mini = Instance.new("TextButton")
-local mini2 = Instance.new("TextButton")
 
 local TweenService = game:GetService("TweenService")
 
 -- ==========================================
--- 1. 星空 UI 视觉框架搭建
+-- 1. 星空 UI 视觉框架搭建 (主窗口)
 -- ==========================================
 main.Name = "XU_Space_Mod_Original"
 main.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -36,7 +35,6 @@ Frame.ClipsDescendants = true
 FrameCorner.CornerRadius = UDim.new(0, 8)
 FrameCorner.Parent = Frame
 
--- 动态呼吸边框
 UIStroke.Parent = Frame
 UIStroke.Thickness = 2
 UIStroke.Color = Color3.fromRGB(0, 150, 255)
@@ -72,7 +70,6 @@ StarBg.ZIndex = 0
 Frame.Active = true
 Frame.Draggable = true
 
--- 按钮样式与动效函数
 local function styleTechBtn(btn, neonColor)
 	btn.BorderSizePixel = 0
 	btn.Font = Enum.Font.GothamBold
@@ -88,7 +85,6 @@ local function styleTechBtn(btn, neonColor)
 	corner.CornerRadius = UDim.new(0, 6)
 	corner.Parent = btn
 	
-	-- 丝滑悬停动效
 	local hoverTween = TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = neonColor, BackgroundTransparency = 0.5})
 	local leaveTween = TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(20, 20, 40), BackgroundTransparency = 0.3})
 	
@@ -181,22 +177,56 @@ speed.TextStrokeTransparency = 0.2
 onof.Parent = Frame
 onof.Position = UDim2.new(0.75, 0, 0.35, 0)
 onof.Size = UDim2.new(0, 60, 0, 77)
-onof.Text = "飞行\nOFF"
+onof.Text = "飞行\n关闭"
 styleTechBtn(onof, Color3.fromRGB(255, 50, 50))
 
-mini2.Parent = main
-mini2.BackgroundColor3 = Color3.fromRGB(20, 25, 45)
-mini2.Size = UDim2.new(0, 90, 0, 25)
-mini2.Text = "展开 XU"
-mini2.TextColor3 = Color3.fromRGB(0, 255, 255)
-mini2.Font = Enum.Font.GothamBold
-mini2.Visible = false
-local m2c = Instance.new("UICorner")
-m2c.CornerRadius = UDim.new(0, 6)
-m2c.Parent = mini2
 
 -- ==========================================
--- 3. 原汁原味的核心逻辑 (绝对未删减)
+-- 修正：缩小后的迷你悬浮窗 (支持拖动 + 包含关闭X)
+-- ==========================================
+local MiniFrame = Instance.new("Frame")
+MiniFrame.Name = "MiniFrame"
+MiniFrame.Parent = main
+MiniFrame.BackgroundColor3 = Color3.fromRGB(20, 25, 45)
+MiniFrame.BorderSizePixel = 0
+MiniFrame.Size = UDim2.new(0, 110, 0, 30)
+MiniFrame.Visible = false
+MiniFrame.Active = true       -- 允许交互
+MiniFrame.Draggable = true    -- 恢复可拖动属性
+
+local mCorner = Instance.new("UICorner")
+mCorner.CornerRadius = UDim.new(0, 6)
+mCorner.Parent = MiniFrame
+
+-- 展开按钮
+local expandBtn = Instance.new("TextButton")
+expandBtn.Parent = MiniFrame
+expandBtn.BackgroundTransparency = 1
+expandBtn.Size = UDim2.new(0, 75, 1, 0)
+expandBtn.Font = Enum.Font.GothamBold
+expandBtn.Text = " 展开 XU"
+expandBtn.TextColor3 = Color3.fromRGB(0, 255, 255)
+expandBtn.TextSize = 13
+expandBtn.TextXAlignment = Enum.TextXAlignment.Left
+
+-- 迷你的关闭(✕)按钮
+local miniCloseBtn = Instance.new("TextButton")
+miniCloseBtn.Parent = MiniFrame
+miniCloseBtn.BackgroundTransparency = 1
+miniCloseBtn.Position = UDim2.new(1, -25, 0, 5)
+miniCloseBtn.Size = UDim2.new(0, 20, 0, 20)
+miniCloseBtn.Font = Enum.Font.GothamBold
+miniCloseBtn.Text = "✕"
+miniCloseBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
+miniCloseBtn.TextSize = 14
+
+-- 悬停效果
+miniCloseBtn.MouseEnter:Connect(function() miniCloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255) end)
+miniCloseBtn.MouseLeave:Connect(function() miniCloseBtn.TextColor3 = Color3.fromRGB(255, 50, 50) end)
+
+
+-- ==========================================
+-- 3. 原汁原味的核心逻辑 (完全未改动)
 -- ==========================================
 
 speeds = 1
@@ -219,8 +249,7 @@ onof.MouseButton1Down:connect(function()
 	if nowe == true then
 		nowe = false
 		
-		-- UI视觉反馈
-		onof.Text = "飞行\nOFF"
+		onof.Text = "飞行\n关闭"
 		onof.TextStrokeColor3 = Color3.fromRGB(255, 50, 50)
 
 		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing,true)
@@ -242,8 +271,7 @@ onof.MouseButton1Down:connect(function()
 	else 
 		nowe = true
 		
-		-- UI视觉反馈
-		onof.Text = "飞行\nON"
+		onof.Text = "飞行\n开启"
 		onof.TextStrokeColor3 = Color3.fromRGB(0, 255, 120)
 
 		for i = 1, speeds do
@@ -500,17 +528,28 @@ mine.MouseButton1Down:connect(function()
 	end
 end)
 
+
+-- ==========================================
+-- 窗口显示与隐藏逻辑 (带坐标同步)
+-- ==========================================
 closebutton.MouseButton1Click:Connect(function()
+	main:Destroy()
+end)
+
+miniCloseBtn.MouseButton1Click:Connect(function()
 	main:Destroy()
 end)
 
 mini.MouseButton1Click:Connect(function()
 	Frame.Visible = false
-	mini2.Visible = true
-	mini2.Position = Frame.Position
+	MiniFrame.Visible = true
+	-- 让迷你窗出现在主窗口当前的位置
+	MiniFrame.Position = Frame.Position
 end)
 
-mini2.MouseButton1Click:Connect(function()
+expandBtn.MouseButton1Click:Connect(function()
+	MiniFrame.Visible = false
 	Frame.Visible = true
-	mini2.Visible = false
+	-- 让主窗口在你刚刚拖动迷你窗的位置展开
+	Frame.Position = MiniFrame.Position
 end)
