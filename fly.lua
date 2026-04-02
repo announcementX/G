@@ -1,11 +1,9 @@
 local main = Instance.new("ScreenGui")
 local Frame = Instance.new("Frame")
--- 新增：星空背景图层
 local StarBg = Instance.new("ImageLabel")
--- 新增：背景渐变
 local FrameGradient = Instance.new("UIGradient")
--- 新增：圆角
 local FrameCorner = Instance.new("UICorner")
+local UIStroke = Instance.new("UIStroke")
 
 local up = Instance.new("TextButton")
 local down = Instance.new("TextButton")
@@ -18,234 +16,188 @@ local closebutton = Instance.new("TextButton")
 local mini = Instance.new("TextButton")
 local mini2 = Instance.new("TextButton")
 
--- =============================================
--- 基础设置
--- =============================================
-main.Name = "main"
+local TweenService = game:GetService("TweenService")
+
+-- ==========================================
+-- 1. 星空 UI 视觉框架搭建
+-- ==========================================
+main.Name = "XU_Space_Mod_Original"
 main.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 main.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 main.ResetOnSpawn = false
 
--- =============================================
--- 主面板 (全息星空风格)
--- =============================================
 Frame.Parent = main
--- 深蓝黑色背景，带一点透明度模拟全息
-Frame.BackgroundColor3 = Color3.fromRGB(10, 10, 20)
-Frame.BackgroundTransparency = 0.15
+Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 30)
 Frame.BorderSizePixel = 0
 Frame.Position = UDim2.new(0.1, 0, 0.4, 0)
-Frame.Size = UDim2.new(0, 260, 0, 130) -- 稍微放大布局
-Frame.ClipsDescendants = true -- 确保内容不超出圆角
+Frame.Size = UDim2.new(0, 280, 0, 140)
+Frame.ClipsDescendants = true
 
--- 主面板圆角
 FrameCorner.CornerRadius = UDim.new(0, 8)
 FrameCorner.Parent = Frame
 
--- 主面板渐变 (深蓝 -> 深紫)
+-- 动态呼吸边框
+UIStroke.Parent = Frame
+UIStroke.Thickness = 2
+UIStroke.Color = Color3.fromRGB(0, 150, 255)
+UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+spawn(function()
+	local hue = 0
+	while wait() do
+		hue = hue + 0.005
+		if hue > 1 then hue = 0 end
+		UIStroke.Color = Color3.fromHSV(hue, 0.8, 1)
+	end
+end)
+
 FrameGradient.Color = ColorSequence.new{
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 20, 40)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 10, 50))
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(5, 10, 25)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 15, 50))
 }
 FrameGradient.Rotation = 45
 FrameGradient.Parent = Frame
 
--- 星空背景贴图 (使用Roblox官方星空纹理)
 StarBg.Name = "StarBg"
 StarBg.Parent = Frame
 StarBg.BackgroundTransparency = 1
-StarBg.Position = UDim2.new(0, 0, 0, 0)
 StarBg.Size = UDim2.new(1, 0, 1, 0)
-StarBg.Image = "rbxassetid://9753760451" -- 这是一个Roblox的星空/粒子纹理
-StarBg.ImageColor3 = Color3.fromRGB(200, 200, 255) -- 给星星一点蓝光
-StarBg.ImageTransparency = 0.6 -- 隐隐约约的星星
-StarBg.ScaleType = Enum.ScaleType.Tile -- 平铺
-StarBg.TileSize = UDim2.new(0, 128, 0, 128)
-StarBg.ZIndex = 0 -- 放在最底层
+StarBg.Image = "rbxassetid://9753760451"
+StarBg.ImageColor3 = Color3.fromRGB(180, 200, 255)
+StarBg.ImageTransparency = 0.5
+StarBg.ScaleType = Enum.ScaleType.Tile
+StarBg.TileSize = UDim2.new(0, 150, 0, 150)
+StarBg.ZIndex = 0
 
-Frame.Active = true -- main = gui
+Frame.Active = true
 Frame.Draggable = true
 
--- =============================================
--- 内部元件美化函数 (霓虹科技感)
--- =============================================
-local function styleTechnologyButton(btn, neonColor, isRound)
+-- 按钮样式与动效函数
+local function styleTechBtn(btn, neonColor)
 	btn.BorderSizePixel = 0
-	btn.Font = Enum.Font.GothamBold -- 现代扁平字体
+	btn.Font = Enum.Font.GothamBold
 	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	btn.TextSize = 14
 	btn.ZIndex = 2
-	
-	-- 文字发光效果
 	btn.TextStrokeColor3 = neonColor
-	btn.TextStrokeTransparency = 0.5
+	btn.TextStrokeTransparency = 0.4
+	btn.BackgroundColor3 = Color3.fromRGB(20, 20, 40)
+	btn.BackgroundTransparency = 0.3
 	
-	-- 按钮自身的渐变 (深色底 -> 霓虹边)
-	local grad = Instance.new("UIGradient")
-	grad.Color = ColorSequence.new{
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 30)), -- 深色基底
-		ColorSequenceKeypoint.new(1, neonColor) -- 霓虹色
-	}
-	grad.Rotation = -90 -- 从下往上渐变，模拟着陆灯
-	grad.Parent = btn
-	
-	-- 按钮透明度 (让背景星空透出来)
-	btn.BackgroundTransparency = 0.2
-	
-	-- 按钮圆角
 	local corner = Instance.new("UICorner")
-	if isRound then
-		corner.CornerRadius = UDim.new(1, 0) -- 圆形
-	else
-		corner.CornerRadius = UDim.new(0, 4) -- 微圆角
-	end
+	corner.CornerRadius = UDim.new(0, 6)
 	corner.Parent = btn
+	
+	-- 丝滑悬停动效
+	local hoverTween = TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = neonColor, BackgroundTransparency = 0.5})
+	local leaveTween = TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(20, 20, 40), BackgroundTransparency = 0.3})
+	
+	btn.MouseEnter:Connect(function() hoverTween:Play() end)
+	btn.MouseLeave:Connect(function() leaveTween:Play() end)
 end
 
--- =============================================
--- 标题栏
--- =============================================
+-- ==========================================
+-- 2. 界面元素布局
+-- ==========================================
 TextLabel.Parent = Frame
-TextLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-TextLabel.BackgroundTransparency = 1 -- 透明背景
-TextLabel.Position = UDim2.new(0, 10, 0, 5)
-TextLabel.Size = UDim2.new(0, 120, 0, 25)
+TextLabel.BackgroundTransparency = 1
+TextLabel.Position = UDim2.new(0, 15, 0, 8)
+TextLabel.Size = UDim2.new(0, 150, 0, 20)
 TextLabel.Font = Enum.Font.GothamBold
-TextLabel.Text = "YG全息飞行"
-TextLabel.TextColor3 = Color3.fromRGB(0, 255, 255) -- 亮青色
+TextLabel.Text = "XU 飞行辅助"
+TextLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
 TextLabel.TextSize = 16
 TextLabel.TextXAlignment = Enum.TextXAlignment.Left
 TextLabel.ZIndex = 2
--- 标题发光
-TextLabel.TextStrokeColor3 = Color3.fromRGB(0, 150, 150)
-TextLabel.TextStrokeTransparency = 0.2
-
--- =============================================
--- 按钮与控件排版 (重新规划，更帅气)
--- =============================================
-
--- 左侧：上下移动 (霓虹蓝)
-local blueNeon = Color3.fromRGB(0, 170, 255)
-up.Name = "上"
-up.Parent = Frame
-up.Position = UDim2.new(0.05, 0, 0.35, 0)
-up.Size = UDim2.new(0, 50, 0, 30)
-up.Text = "▲ 上升"
-styleTechnologyButton(up, blueNeon, false)
-
-down.Name = "下"
-down.Parent = Frame
-down.Position = UDim2.new(0.05, 0, 0.65, 0)
-down.Size = UDim2.new(0, 50, 0, 30)
-down.Text = "▼ 下降"
-styleTechnologyButton(down, blueNeon, false)
-
--- 中间：速度控制 (霓虹紫)
-local purpleNeon = Color3.fromRGB(170, 0, 255)
-mine.Name = "mine"
-mine.Parent = Frame
-mine.Position = UDim2.new(0.3, 0, 0.35, 0)
-mine.Size = UDim2.new(0, 50, 0, 30)
-mine.Text = "➖ 减速"
-styleTechnologyButton(mine, purpleNeon, false)
-
-plus.Name = "plus"
-plus.Parent = Frame
-plus.Position = UDim2.new(0.3, 0, 0.65, 0)
-plus.Size = UDim2.new(0, 50, 0, 30)
-plus.Text = "➕ 加速"
-styleTechnologyButton(plus, purpleNeon, false)
-
--- 速度显示 (模拟全息投影数字)
-speed.Name = "speed"
-speed.Parent = Frame
-speed.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-speed.BackgroundTransparency = 1 -- 透明
-speed.Position = UDim2.new(0.55, 0, 0.4, 0)
-speed.Size = UDim2.new(0, 40, 0, 45)
-speed.Font = Enum.Font.Code -- 像素/代码字体，更有科技感
-speed.Text = "1"
-speed.TextColor3 = Color3.fromRGB(255, 215, 0) -- 金色数字
-speed.TextScaled = true
-speed.ZIndex = 2
--- 数字发光
-speed.TextStrokeColor3 = Color3.fromRGB(150, 100, 0)
-speed.TextStrokeTransparency = 0.3
-
--- 右侧：飞行开关 (霓虹绿/红)
-local greenNeon = Color3.fromRGB(0, 255, 120)
-onof.Name = "onof"
-onof.Parent = Frame
-onof.Position = UDim2.new(0.75, 0, 0.35, 0)
-onof.Size = UDim2.new(0, 50, 0, 55) -- 竖长按钮
-onof.Text = "运 行\n中"
-onof.TextWrapped = true -- 文字换行
-styleTechnologyButton(onof, greenNeon, false)
--- 特别修改onof按钮的渐变方向，让它看起来更亮
-local onofGrad = onof:FindFirstChild("UIGradient")
-if onofGrad then onofGrad.Rotation = 45 end
-
-
--- =============================================
--- 功能按钮 (关闭与收起 - 全息简约风格)
--- =============================================
-local function styleTopButton(btn, color)
-	btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	btn.BackgroundTransparency = 1 -- 默认透明
-	btn.BorderSizePixel = 0
-	btn.Font = Enum.Font.GothamBold
-	btn.TextColor3 = color
-	btn.TextSize = 18
-	btn.ZIndex = 3
-	
-	-- 悬停效果逻辑 (通过原生Lua模拟一点)
-	btn.MouseEnter:Connect(function()
-		btn.BackgroundTransparency = 0.8
-		btn.BackgroundColor3 = color
-	end)
-	btn.MouseLeave:Connect(function()
-		btn.BackgroundTransparency = 1
-	end)
-end
+TextLabel.TextStrokeColor3 = Color3.fromRGB(0, 100, 200)
+TextLabel.TextStrokeTransparency = 0.5
 
 closebutton.Name = "Close"
 closebutton.Parent = Frame
-closebutton.Position = UDim2.new(1, -30, 0, 5) -- 右上角
+closebutton.BackgroundTransparency = 1
+closebutton.Position = UDim2.new(1, -30, 0, 5)
 closebutton.Size = UDim2.new(0, 25, 0, 25)
+closebutton.Font = Enum.Font.GothamBold
 closebutton.Text = "✕"
-styleTopButton(closebutton, Color3.fromRGB(255, 50, 50))
+closebutton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closebutton.TextSize = 18
+closebutton.ZIndex = 3
+local closeHover = TweenService:Create(closebutton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 50, 50), BackgroundTransparency = 0})
+local closeLeave = TweenService:Create(closebutton, TweenInfo.new(0.2), {BackgroundTransparency = 1})
+closebutton.MouseEnter:Connect(function() closeHover:Play() end)
+closebutton.MouseLeave:Connect(function() closeLeave:Play() end)
 
-mini.Name = "minimize"
+mini.Name = "mini"
 mini.Parent = Frame
-mini.Position = UDim2.new(1, -55, 0, 5) -- 关闭按钮左侧
+mini.BackgroundTransparency = 1
+mini.Position = UDim2.new(1, -55, 0, 5)
 mini.Size = UDim2.new(0, 25, 0, 25)
-mini.Text = "—" -- 使用长横线
-styleTopButton(mini, Color3.fromRGB(200, 200, 200))
+mini.Font = Enum.Font.GothamBold
+mini.Text = "—"
+mini.TextColor3 = Color3.fromRGB(200, 200, 200)
+mini.TextSize = 14
+mini.ZIndex = 3
+local miniHover = TweenService:Create(mini, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(100, 100, 100), BackgroundTransparency = 0.5})
+local miniLeave = TweenService:Create(mini, TweenInfo.new(0.2), {BackgroundTransparency = 1})
+mini.MouseEnter:Connect(function() miniHover:Play() end)
+mini.MouseLeave:Connect(function() miniLeave:Play() end)
 
--- 展开按钮 (最小化后显示在屏幕上的小横条)
-mini2.Name = "minimize2"
+up.Parent = Frame
+up.Position = UDim2.new(0.05, 0, 0.35, 0)
+up.Size = UDim2.new(0, 60, 0, 35)
+up.Text = "上升"
+styleTechBtn(up, Color3.fromRGB(0, 170, 255))
+
+down.Parent = Frame
+down.Position = UDim2.new(0.05, 0, 0.65, 0)
+down.Size = UDim2.new(0, 60, 0, 35)
+down.Text = "下降"
+styleTechBtn(down, Color3.fromRGB(0, 170, 255))
+
+mine.Parent = Frame
+mine.Position = UDim2.new(0.32, 0, 0.35, 0)
+mine.Size = UDim2.new(0, 60, 0, 35)
+mine.Text = "减速"
+styleTechBtn(mine, Color3.fromRGB(170, 0, 255))
+
+plus.Parent = Frame
+plus.Position = UDim2.new(0.32, 0, 0.65, 0)
+plus.Size = UDim2.new(0, 60, 0, 35)
+plus.Text = "加速"
+styleTechBtn(plus, Color3.fromRGB(170, 0, 255))
+
+speed.Parent = Frame
+speed.BackgroundTransparency = 1
+speed.Position = UDim2.new(0.57, 0, 0.4, 0)
+speed.Size = UDim2.new(0, 40, 0, 45)
+speed.Font = Enum.Font.Code
+speed.Text = "1"
+speed.TextColor3 = Color3.fromRGB(255, 215, 0)
+speed.TextScaled = true
+speed.ZIndex = 2
+speed.TextStrokeColor3 = Color3.fromRGB(150, 100, 0)
+speed.TextStrokeTransparency = 0.2
+
+onof.Parent = Frame
+onof.Position = UDim2.new(0.75, 0, 0.35, 0)
+onof.Size = UDim2.new(0, 60, 0, 77)
+onof.Text = "飞行\nOFF"
+styleTechBtn(onof, Color3.fromRGB(255, 50, 50))
+
 mini2.Parent = main
-mini2.BackgroundColor3 = Color3.fromRGB(15, 20, 40)
-mini2.BackgroundTransparency = 0.3
-mini2.BorderSizePixel = 0
-mini2.Size = UDim2.new(0, 80, 0, 20)
-mini2.Text = "展开辅助"
+mini2.BackgroundColor3 = Color3.fromRGB(20, 25, 45)
+mini2.Size = UDim2.new(0, 90, 0, 25)
+mini2.Text = "展开 XU"
 mini2.TextColor3 = Color3.fromRGB(0, 255, 255)
 mini2.Font = Enum.Font.GothamBold
-mini2.TextSize = 12
-mini2.Position = Frame.Position -- 初始位置同主面板
 mini2.Visible = false
 local m2c = Instance.new("UICorner")
-m2c.CornerRadius = UDim.new(0, 4)
+m2c.CornerRadius = UDim.new(0, 6)
 m2c.Parent = mini2
-local m2g = Instance.new("UIGradient") -- 展开按钮也加个渐变
-m2g.Color = ColorSequence.new(Color3.fromRGB(15, 20, 40), Color3.fromRGB(0, 100, 100))
-m2g.Parent = mini2
 
-
--- =========================================================================================
--- 逻辑部分 (保持原封不动，仅修正了mini2的可见性逻辑)
--- =========================================================================================
+-- ==========================================
+-- 3. 原汁原味的核心逻辑 (绝对未删减)
+-- ==========================================
 
 speeds = 1
 
@@ -257,21 +209,19 @@ local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
 nowe = false
 
 game:GetService("StarterGui"):SetCore("SendNotification", { 
-	Title = "YG全息飞行";
-	Text = "星空系统已加载";
-	Icon = "rbxthumb://type=Asset&id=123135436684871&w=150&h=150"})
+	Title = "XU飞行";
+	Text = "星空主题已加载";
+	Icon = "rbxthumb://type=Asset&id=72322540419714&w=150&h=150"})
 Duration = 5;
-
 
 onof.MouseButton1Down:connect(function()
 
 	if nowe == true then
 		nowe = false
-		onof.Text = "已 停\n止"
-		-- 动态修改按钮颜色逻辑
-		local grad = onof:FindFirstChild("UIGradient")
-		if grad then grad.Color = ColorSequence.new(Color3.fromRGB(20,20,30), Color3.fromRGB(255, 50, 50)) end -- 红色
-		onof.TextStrokeColor3 = Color3.fromRGB(150, 0, 0)
+		
+		-- UI视觉反馈
+		onof.Text = "飞行\nOFF"
+		onof.TextStrokeColor3 = Color3.fromRGB(255, 50, 50)
 
 		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing,true)
 		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown,true)
@@ -291,11 +241,10 @@ onof.MouseButton1Down:connect(function()
 		speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
 	else 
 		nowe = true
-		onof.Text = "运 行\n中"
-		-- 动态修改按钮颜色逻辑
-		local grad = onof:FindFirstChild("UIGradient")
-		if grad then grad.Color = ColorSequence.new(Color3.fromRGB(20,20,30), Color3.fromRGB(0, 255, 120)) end -- 绿色
-		onof.TextStrokeColor3 = Color3.fromRGB(0, 150, 0)
+		
+		-- UI视觉反馈
+		onof.Text = "飞行\nON"
+		onof.TextStrokeColor3 = Color3.fromRGB(0, 255, 120)
 
 		for i = 1, speeds do
 			spawn(function()
@@ -340,11 +289,7 @@ onof.MouseButton1Down:connect(function()
 	end
 
 
-
-
 	if game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RigType == Enum.HumanoidRigType.R6 then
-
-
 
 		local plr = game.Players.LocalPlayer
 		local torso = plr.Character.Torso
@@ -388,7 +333,6 @@ onof.MouseButton1Down:connect(function()
 			else
 				bv.velocity = Vector3.new(0,0,0)
 			end
-			--	game.Players.LocalPlayer.Character.Animate.Disabled = true
 			bg.cframe = game.Workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f+ctrl.b)*50*speed/maxspeed),0,0)
 		end
 		ctrl = {f = 0, b = 0, l = 0, r = 0}
@@ -399,9 +343,6 @@ onof.MouseButton1Down:connect(function()
 		plr.Character.Humanoid.PlatformStand = false
 		game.Players.LocalPlayer.Character.Animate.Disabled = false
 		tpwalking = false
-
-
-
 
 	else
 		local plr = game.Players.LocalPlayer
@@ -458,13 +399,7 @@ onof.MouseButton1Down:connect(function()
 		game.Players.LocalPlayer.Character.Animate.Disabled = false
 		tpwalking = false
 
-
-
 	end
-
-
-
-
 
 end)
 
@@ -504,27 +439,22 @@ down.MouseLeave:connect(function()
 	end
 end)
 
-
 game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function(char)
 	wait(0.7)
 	game.Players.LocalPlayer.Character.Humanoid.PlatformStand = false
 	game.Players.LocalPlayer.Character.Animate.Disabled = false
-
 end)
-
 
 plus.MouseButton1Down:connect(function()
 	speeds = speeds + 1
 	speed.Text = speeds
 	if nowe == true then
 
-
 		tpwalking = false
 		for i = 1, speeds do
 			spawn(function()
 
 				local hb = game:GetService("RunService").Heartbeat	
-
 
 				tpwalking = true
 				local chr = game.Players.LocalPlayer.Character
@@ -539,9 +469,10 @@ plus.MouseButton1Down:connect(function()
 		end
 	end
 end)
+
 mine.MouseButton1Down:connect(function()
 	if speeds == 1 then
-		speed.Text = 'MIN' -- 修正了原脚本的 flyno1 为更简约的 MIN
+		speed.Text = 'flyno1'
 		wait(1)
 		speed.Text = speeds
 	else
@@ -553,7 +484,6 @@ mine.MouseButton1Down:connect(function()
 				spawn(function()
 
 					local hb = game:GetService("RunService").Heartbeat	
-
 
 					tpwalking = true
 					local chr = game.Players.LocalPlayer.Character
@@ -575,15 +505,12 @@ closebutton.MouseButton1Click:Connect(function()
 end)
 
 mini.MouseButton1Click:Connect(function()
-	-- 简约的最小化：隐藏面板，显示“展开”
 	Frame.Visible = false
 	mini2.Visible = true
-	-- 确保mini2出现在Frame当前所在位置
 	mini2.Position = Frame.Position
 end)
 
 mini2.MouseButton1Click:Connect(function()
-	-- 简约的展开
 	Frame.Visible = true
 	mini2.Visible = false
 end)
