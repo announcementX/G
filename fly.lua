@@ -37,7 +37,7 @@ Title.BackgroundTransparency = 1
 Title.Position = UDim2.new(0, 0, 0, 0)
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.Font = Enum.Font.GothamBold
-Title.Text = "XU飞行 - 星空控制台"
+Title.Text = "XU飞行"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 16
 
@@ -78,9 +78,9 @@ local function styleButton(btn, text, pos, size)
     corner.Parent = btn
 end
 
-styleButton(up, "上升 (Hold)", UDim2.new(0.05, 0, 0.28, 0), UDim2.new(0.4, 0, 0, 30))
-styleButton(down, "下降 (Hold)", UDim2.new(0.05, 0, 0.48, 0), UDim2.new(0.4, 0, 0, 30))
-styleButton(onof, "开启飞行", UDim2.new(0.5, 0, 0.28, 0), UDim2.new(0.45, 0, 0, 50))
+styleButton(up, "上升", UDim2.new(0.05, 0, 0.28, 0), UDim2.new(0.4, 0, 0, 30))
+styleButton(down, "下降", UDim2.new(0.05, 0, 0.48, 0), UDim2.new(0.4, 0, 0, 30))
+styleButton(onof, "开启", UDim2.new(0.5, 0, 0.28, 0), UDim2.new(0.45, 0, 0, 50))
 onof.BackgroundColor3 = Color3.fromRGB(80, 120, 255)
 onof.BackgroundTransparency = 0.1
 onof.Font = Enum.Font.GothamBold
@@ -145,7 +145,7 @@ local tpwalking = false
 
 game:GetService("StarterGui"):SetCore("SendNotification", { 
 	Title = "XU飞行已加载";
-	Text = "尽情在星空中翱翔吧";
+	Text = "冰陈，你的屁股痛不痛";
 	Icon = "rbxthumb://type=Asset&id=72322540419714&w=150&h=150"
 })
 
