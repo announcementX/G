@@ -2,24 +2,24 @@ local UIS = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local lplr = Players.LocalPlayer
 
--- [[ 顶层 UI ]]
+-- [[ 顶层容器 ]]
 local sg = Instance.new("ScreenGui")
-sg.Name = "HaoChen_Ultimate_Fix"
+sg.Name = "HaoChen_Elite_UI"
 sg.Parent = lplr:WaitForChild("PlayerGui")
 sg.ResetOnSpawn = false
 
--- [[ 缩小图标：可拖拽的正方形 ]]
+-- [[ 缩小后的图标 - 修复拖拽 ]]
 local MiniIcon = Instance.new("ImageButton")
 MiniIcon.Parent = sg
-MiniIcon.Size = UDim2.new(0, 55, 0, 55)
+MiniIcon.Size = UDim2.new(0, 60, 0, 60)
 MiniIcon.Position = UDim2.new(0.05, 0, 0.4, 0)
 MiniIcon.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
 MiniIcon.Image = "rbxthumb://type=Asset&id=72322540419714&w=150&h=150"
 MiniIcon.Visible = false
-Instance.new("UICorner", MiniIcon).CornerRadius = UDim.new(0, 10)
+Instance.new("UICorner", MiniIcon).CornerRadius = UDim.new(0, 12)
 Instance.new("UIStroke", MiniIcon).Color = Color3.fromRGB(0, 120, 255)
 
--- 缩小图标自由拖拽逻辑
+-- 缩小图标拖拽
 local m_drag, m_start, m_pos
 MiniIcon.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -34,64 +34,82 @@ UIS.InputChanged:Connect(function(input)
 end)
 UIS.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then m_drag = false end end)
 
--- [[ 主悬浮窗 (极致缩小尺寸) ]]
+-- [[ 主悬浮窗 - 现代卡片设计 ]]
 local Main = Instance.new("Frame")
-Main.Name = "Main"
 Main.Parent = sg
-Main.Size = UDim2.new(0, 400, 0, 320) 
-Main.Position = UDim2.new(0.5, -200, 0.5, -160)
-Main.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
+Main.Size = UDim2.new(0, 420, 0, 340) 
+Main.Position = UDim2.new(0.5, -210, 0.5, -170)
+Main.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
 Main.BorderSizePixel = 0
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
-Instance.new("UIStroke", Main).Color = Color3.fromRGB(50, 50, 70)
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+local MainStroke = Instance.new("UIStroke", Main)
+MainStroke.Color = Color3.fromRGB(40, 40, 60)
+MainStroke.Thickness = 2
 
 -- [[ 侧边栏 ]]
 local SideBar = Instance.new("Frame", Main)
-SideBar.Size = UDim2.new(0, 110, 1, 0)
-SideBar.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+SideBar.Size = UDim2.new(0, 120, 1, 0)
+SideBar.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
 SideBar.BorderSizePixel = 0
+Instance.new("UICorner", SideBar).CornerRadius = UDim.new(0, 12)
 
--- 移动限制开关：点击 XU 开始移动，再点停止
+-- 移动限制开关 (点击 XU 标志切换)
 local Logo = Instance.new("TextButton", SideBar)
-Logo.Size = UDim2.new(1, 0, 0, 50)
+Logo.Size = UDim2.new(1, 0, 0, 60)
 Logo.Text = "XU"
 Logo.Font = Enum.Font.GothamBold
 Logo.TextColor3 = Color3.fromRGB(0, 170, 255)
-Logo.TextSize = 32
+Logo.TextSize = 34
 Logo.BackgroundTransparency = 1
 
 local isMoving = false
 Logo.MouseButton1Click:Connect(function()
     isMoving = not isMoving
-    -- 颜色反馈：黄色表示可以移动，蓝色表示锁定
-    Logo.TextColor3 = isMoving and Color3.fromRGB(255, 255, 0) or Color3.fromRGB(0, 170, 255)
+    -- 反馈：开启移动时标志变绿，锁定变蓝
+    Logo.TextColor3 = isMoving and Color3.fromRGB(0, 255, 150) or Color3.fromRGB(0, 170, 255)
 end)
 
 UIS.InputChanged:Connect(function(input)
     if isMoving and input.UserInputType == Enum.UserInputType.MouseMovement then
         local mousePos = UIS:GetMouseLocation()
-        Main.Position = UDim2.new(0, mousePos.X - 55, 0, mousePos.Y - 25)
+        Main.Position = UDim2.new(0, mousePos.X - 60, 0, mousePos.Y - 30)
     end
 end)
 
--- 用户头像名字
-local UserBox = Instance.new("Frame", SideBar)
-UserBox.Size = UDim2.new(1, 0, 0, 50); UserBox.Position = UDim2.new(0, 0, 1, -55); UserBox.BackgroundTransparency = 1
-local Head = Instance.new("ImageLabel", UserBox)
-Head.Size = UDim2.new(0, 30, 0, 30); Head.Position = UDim2.new(0, 8, 0, 10); Head.Image = Players:GetUserThumbnailAsync(lplr.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
-Instance.new("UICorner", Head).CornerRadius = UDim.new(1, 0)
-local LName = Instance.new("TextLabel", UserBox)
-LName.Size = UDim2.new(0, 65, 0, 30); LName.Position = UDim2.new(0, 42, 0, 10); LName.Text = lplr.Name; LName.TextColor3 = Color3.new(1,1,1); LName.Font = Enum.Font.GothamBold; LName.TextSize = 14; LName.TextXAlignment = Enum.TextXAlignment.Left
+-- 左下角用户信息（修复白色色块）
+local UserFrame = Instance.new("Frame", SideBar)
+UserFrame.Size = UDim2.new(1, 0, 0, 60)
+UserFrame.Position = UDim2.new(0, 0, 1, -65)
+UserFrame.BackgroundTransparency = 1 -- 确保透明，无白色底色
 
--- [[ 内容容器 ]]
+local Head = Instance.new("ImageLabel", UserFrame)
+Head.Size = UDim2.new(0, 36, 0, 36)
+Head.Position = UDim2.new(0, 10, 0, 12)
+Head.Image = Players:GetUserThumbnailAsync(lplr.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+Instance.new("UICorner", Head).CornerRadius = UDim.new(1, 0)
+
+local LName = Instance.new("TextLabel", UserFrame)
+LName.Size = UDim2.new(0, 70, 0, 36)
+LName.Position = UDim2.new(0, 52, 0, 12)
+LName.Text = lplr.Name
+LName.TextColor3 = Color3.new(1, 1, 1)
+LName.Font = Enum.Font.GothamSemibold
+LName.TextSize = 15
+LName.TextXAlignment = Enum.TextXAlignment.Left
+LName.BackgroundTransparency = 1
+
+-- [[ 页面容器 ]]
 local Container = Instance.new("Frame", Main)
-Container.Position = UDim2.new(0, 110, 0, 0); Container.Size = UDim2.new(1, -110, 1, 0); Container.BackgroundTransparency = 1
+Container.Position = UDim2.new(0, 120, 0, 0)
+Container.Size = UDim2.new(1, -120, 1, 0)
+Container.BackgroundTransparency = 1
 
 local Pages = {}
 local function CreatePage(name)
     local p = Instance.new("ScrollingFrame", Container)
     p.Size = UDim2.new(1, 0, 1, 0); p.BackgroundTransparency = 1; p.Visible = false; p.ScrollBarThickness = 0
-    local layout = Instance.new("UIListLayout", p); layout.Padding = UDim.new(0, 12); layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    local layout = Instance.new("UIListLayout", p)
+    layout.Padding = UDim.new(0, 15); layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     Pages[name] = p
     return p
 end
@@ -100,19 +118,16 @@ local HomeP = CreatePage("Home")
 local UniversalP = CreatePage("Universal")
 HomeP.Visible = true
 
--- 脚本页间距修复
-Instance.new("UIPadding", UniversalP).PaddingTop = UDim.new(0, 45)
+-- [[ 主页严格顺序布局 ]]
 
--- [[ 主页布局：严格死守位置要求 ]]
-
--- 1. 最上方：轮播图 (Banner)
+-- 1. 最上边：轮播图 (Banner)
 local Banner = Instance.new("ImageLabel", HomeP)
-Banner.Size = UDim2.new(0.92, 0, 0, 90)
-Banner.Image = "rbxassetid://6073743371"
+Banner.Size = UDim2.new(0.92, 0, 0, 100)
+Banner.Image = "rbxassetid://6073743371" -- 替换为高质量背景
 Banner.ScaleType = Enum.ScaleType.Crop
-Instance.new("UICorner", Banner).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", Banner).CornerRadius = UDim.new(0, 10)
 
--- 2. 正中间：作者信息 (字号18, 纯蓝色)
+-- 2. 最中间：作者信息 (统一字号 18, 纯蓝色)
 local Author = Instance.new("TextLabel", HomeP)
 Author.Size = UDim2.new(0.92, 0, 0, 30)
 Author.Text = "作者: HaoChen | QQ: 1626844714"
@@ -121,56 +136,80 @@ Author.Font = Enum.Font.GothamBold
 Author.TextSize = 18
 Author.BackgroundTransparency = 1
 
--- 3. 最下方：详细数据
-local Detail = Instance.new("Frame", HomeP)
-Detail.Size = UDim2.new(0.92, 0, 0, 120)
-Detail.BackgroundColor3 = Color3.fromRGB(18, 18, 26)
-Instance.new("UICorner", Detail).CornerRadius = UDim.new(0, 8)
+-- 3. 最下边：详细数据信息
+local InfoBox = Instance.new("Frame", HomeP)
+InfoBox.Size = UDim2.new(0.92, 0, 0, 140)
+InfoBox.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+Instance.new("UICorner", InfoBox).CornerRadius = UDim.new(0, 8)
 
-local InfoTxt = Instance.new("TextLabel", Detail)
-InfoTxt.Size = UDim2.new(1, -16, 1, -16); InfoTxt.Position = UDim2.new(0, 8, 0, 8); InfoTxt.BackgroundTransparency = 1; InfoTxt.TextColor3 = Color3.fromRGB(200, 200, 200); InfoTxt.Font = Enum.Font.Gotham; InfoTxt.TextSize = 18; InfoTxt.TextXAlignment = Enum.TextXAlignment.Left; InfoTxt.TextYAlignment = Enum.TextYAlignment.Top
+local InfoTxt = Instance.new("TextLabel", InfoBox)
+InfoTxt.Size = UDim2.new(1, -20, 1, -20)
+InfoTxt.Position = UDim2.new(0, 10, 0, 10)
+InfoTxt.BackgroundTransparency = 1
+InfoTxt.TextColor3 = Color3.fromRGB(200, 200, 200)
+InfoTxt.Font = Enum.Font.Gotham
+InfoTxt.TextSize = 18
+InfoTxt.TextXAlignment = Enum.TextXAlignment.Left
+InfoTxt.TextYAlignment = Enum.TextYAlignment.Top
 
 task.spawn(function()
     while task.wait(1) do
-        InfoTxt.Text = string.format("【服务器】ID: %d\n人数: %d/%d\n\n【玩家】ID: %d\n机龄: %d天", game.PlaceId, #Players:GetPlayers(), Players.MaxPlayers, lplr.UserId, lplr.AccountAge)
+        InfoTxt.Text = string.format("【服务器】ID: %d\n节点: %s\n人数: %d/%d\n\n【玩家】ID: %d\n机龄: %d天",
+            game.PlaceId, game.JobId == "" and "Local" or "Active", #Players:GetPlayers(), Players.MaxPlayers,
+            lplr.UserId, lplr.AccountAge
+        )
     end
 end)
 
--- [[ 确认加载逻辑 ]]
-local function ConfirmLoad(name, url)
+-- [[ 确认加载弹窗 ]]
+local function ConfirmAndRun(name, url)
     local Mask = Instance.new("Frame", sg)
     Mask.Size = UDim2.new(1, 0, 1, 0); Mask.BackgroundColor3 = Color3.new(0,0,0); Mask.BackgroundTransparency = 0.5
     local Pop = Instance.new("Frame", Mask)
-    Pop.Size = UDim2.new(0, 240, 0, 120); Pop.Position = UDim2.new(0.5, -120, 0.5, -60); Pop.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-    Instance.new("UICorner", Pop).CornerRadius = UDim.new(0, 8)
-    local T = Instance.new("TextLabel", Pop); T.Size = UDim2.new(1, 0, 0, 70); T.Text = "确定加载: " .. name .. "?"; T.TextColor3 = Color3.new(1,1,1); T.TextSize = 18; T.BackgroundTransparency = 1
-    local function B(t, x, c, f)
-        local btn = Instance.new("TextButton", Pop); btn.Size = UDim2.new(0, 90, 0, 32); btn.Position = UDim2.new(0, x, 0, 75); btn.BackgroundColor3 = c; btn.Text = t; btn.TextColor3 = Color3.new(1,1,1); btn.Font = Enum.Font.GothamBold; Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4); btn.MouseButton1Click:Connect(f)
+    Pop.Size = UDim2.new(0, 250, 0, 130); Pop.Position = UDim2.new(0.5, -125, 0.5, -65); Pop.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    Instance.new("UICorner", Pop).CornerRadius = UDim.new(0, 10)
+    Instance.new("UIStroke", Pop).Color = Color3.fromRGB(0, 170, 255)
+    
+    local T = Instance.new("TextLabel", Pop); T.Size = UDim2.new(1, 0, 0, 80); T.Text = "是否确认加载:\n" .. name .. "?"; T.TextColor3 = Color3.new(1,1,1); T.TextSize = 18; T.BackgroundTransparency = 1; T.Font = Enum.Font.GothamBold
+
+    local function CreatePBtn(txt, x, color, func)
+        local b = Instance.new("TextButton", Pop); b.Size = UDim2.new(0, 95, 0, 35); b.Position = UDim2.new(0, x, 0, 85)
+        b.BackgroundColor3 = color; b.Text = txt; b.TextColor3 = Color3.new(1,1,1); b.Font = Enum.Font.GothamBold; b.TextSize = 14
+        Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6); b.MouseButton1Click:Connect(func)
     end
-    B("确认", 20, Color3.fromRGB(0, 180, 100), function() Mask:Destroy(); loadstring(game:HttpGet(url))() end)
-    B("取消", 130, Color3.fromRGB(180, 50, 50), function() Mask:Destroy() end)
+
+    CreatePBtn("确认加载", 20, Color3.fromRGB(0, 180, 100), function() Mask:Destroy(); loadstring(game:HttpGet(url))() end)
+    CreatePBtn("取消", 135, Color3.fromRGB(180, 50, 50), function() Mask:Destroy() end)
 end
 
--- [[ 脚本按钮 ]]
+-- [[ 脚本列表 - 按钮间距优化 ]]
+Instance.new("UIPadding", UniversalP).PaddingTop = UDim.new(0, 50)
 local function AddScript(page, name, url)
     local b = Instance.new("TextButton", page)
-    b.Size = UDim2.new(0.9, 0, 0, 45); b.BackgroundColor3 = Color3.fromRGB(30, 30, 45); b.Text = "▶ " .. name; b.TextColor3 = Color3.new(1,1,1); b.TextSize = 20; Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8); b.MouseButton1Click:Connect(function() ConfirmLoad(name, url) end)
+    b.Size = UDim2.new(0.9, 0, 0, 50); b.BackgroundColor3 = Color3.fromRGB(30, 30, 45); b.Text = "▶ " .. name; b.TextColor3 = Color3.new(1,1,1); b.TextSize = 20; b.Font = Enum.Font.GothamBold
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8); b.MouseButton1Click:Connect(function() ConfirmAndRun(name, url) end)
 end
 
-AddScript(UniversalP, "通用飞行脚本", "https://raw.githubusercontent.com/announcementX/G/main/fly.lua")
+-- 你的飞行脚本加载
+AddScript(UniversalP, "XU飞行脚本", "https://raw.githubusercontent.com/announcementX/G/main/fly.lua")
 
--- [[ 导航控制 ]]
-local function Nav(t, y, target)
+-- [[ 导航切换 ]]
+local function Nav(txt, pos_y, target)
     local b = Instance.new("TextButton", SideBar)
-    b.Size = UDim2.new(0.85, 0, 0, 35); b.Position = UDim2.new(0.07, 0, 0, y); b.BackgroundColor3 = Color3.fromRGB(25, 25, 35); b.Text = t; b.TextColor3 = Color3.new(0.8,0.8,0.8); b.TextSize = 16; Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+    b.Size = UDim2.new(0.85, 0, 0, 40); b.Position = UDim2.new(0.07, 0, 0, pos_y); b.BackgroundColor3 = Color3.fromRGB(25, 25, 35); b.Text = txt; b.TextColor3 = Color3.new(0.9,0.9,0.9); b.TextSize = 16; b.Font = Enum.Font.GothamBold
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
     b.MouseButton1Click:Connect(function() for _, p in pairs(Pages) do p.Visible = false end target.Visible = true end)
 end
-Nav("🏠 主页", 65, HomeP); Nav("🛠️ 通用", 110, UniversalP)
 
--- [[ 顶栏操作 ]]
-local function TopBtn(t, x, c, f)
-    local b = Instance.new("TextButton", Main); b.Size = UDim2.new(0, 25, 0, 25); b.Position = UDim2.new(1, x, 0, 10); b.Text = t; b.TextColor3 = c; b.BackgroundTransparency = 1; b.TextSize = 25; b.MouseButton1Click:Connect(f)
+Nav("🏠 主页", 70, HomeP)
+Nav("🛠️ 通用", 120, UniversalP)
+
+-- [[ 顶栏操作按钮 ]]
+local function TopBtn(txt, x, color, func)
+    local b = Instance.new("TextButton", Main); b.Size = UDim2.new(0, 28, 0, 28); b.Position = UDim2.new(1, x, 0, 12); b.Text = txt; b.TextColor3 = color; b.BackgroundTransparency = 1; b.TextSize = 26; b.MouseButton1Click:Connect(func)
 end
-TopBtn("×", -35, Color3.fromRGB(255, 80, 80), function() sg:Destroy() end)
-TopBtn("-", -65, Color3.new(0.8,0.8,0.8), function() Main.Visible = false; MiniIcon.Visible = true end)
+
+TopBtn("×", -40, Color3.fromRGB(255, 80, 80), function() sg:Destroy() end)
+TopBtn("-", -75, Color3.new(0.8, 0.8, 0.8), function() Main.Visible = false; MiniIcon.Visible = true end)
+
 MiniIcon.MouseButton1Click:Connect(function() Main.Visible = true; MiniIcon.Visible = false end)
