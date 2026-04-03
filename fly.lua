@@ -18,23 +18,29 @@ local mini = Instance.new("TextButton")
 local TweenService = game:GetService("TweenService")
 
 -- ==========================================
--- 1. 星空 UI 视觉框架搭建 (主窗口)
+-- 1. 基础设置
 -- ==========================================
-main.Name = "XU_Space_Mod_Original"
+main.Name = "XU_Original_Fly"
 main.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 main.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 main.ResetOnSpawn = false
 
+-- ==========================================
+-- 2. 主面板 UI (星空主题)
+-- ==========================================
 Frame.Parent = main
 Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 30)
 Frame.BorderSizePixel = 0
 Frame.Position = UDim2.new(0.1, 0, 0.4, 0)
 Frame.Size = UDim2.new(0, 280, 0, 140)
 Frame.ClipsDescendants = true
+Frame.Active = true
+Frame.Draggable = true
 
 FrameCorner.CornerRadius = UDim.new(0, 8)
 FrameCorner.Parent = Frame
 
+-- 呼吸灯边框
 UIStroke.Parent = Frame
 UIStroke.Thickness = 2
 UIStroke.Color = Color3.fromRGB(0, 150, 255)
@@ -67,9 +73,7 @@ StarBg.ScaleType = Enum.ScaleType.Tile
 StarBg.TileSize = UDim2.new(0, 150, 0, 150)
 StarBg.ZIndex = 0
 
-Frame.Active = true
-Frame.Draggable = true
-
+-- 按钮样式函数
 local function styleTechBtn(btn, neonColor)
 	btn.BorderSizePixel = 0
 	btn.Font = Enum.Font.GothamBold
@@ -80,20 +84,13 @@ local function styleTechBtn(btn, neonColor)
 	btn.TextStrokeTransparency = 0.4
 	btn.BackgroundColor3 = Color3.fromRGB(20, 20, 40)
 	btn.BackgroundTransparency = 0.3
-	
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, 6)
 	corner.Parent = btn
-	
-	local hoverTween = TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = neonColor, BackgroundTransparency = 0.5})
-	local leaveTween = TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(20, 20, 40), BackgroundTransparency = 0.3})
-	
-	btn.MouseEnter:Connect(function() hoverTween:Play() end)
-	btn.MouseLeave:Connect(function() leaveTween:Play() end)
 end
 
 -- ==========================================
--- 2. 界面元素布局
+-- 3. 控件布局
 -- ==========================================
 TextLabel.Parent = Frame
 TextLabel.BackgroundTransparency = 1
@@ -104,25 +101,24 @@ TextLabel.Text = "XU 飞行辅助"
 TextLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
 TextLabel.TextSize = 16
 TextLabel.TextXAlignment = Enum.TextXAlignment.Left
-TextLabel.ZIndex = 2
-TextLabel.TextStrokeColor3 = Color3.fromRGB(0, 100, 200)
-TextLabel.TextStrokeTransparency = 0.5
 
+-- 修正：正方形的 X 关闭按钮
 closebutton.Name = "Close"
 closebutton.Parent = Frame
+closebutton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
 closebutton.BackgroundTransparency = 1
 closebutton.Position = UDim2.new(1, -30, 0, 5)
-closebutton.Size = UDim2.new(0, 25, 0, 25)
+closebutton.Size = UDim2.new(0, 25, 0, 25) -- 正方形
 closebutton.Font = Enum.Font.GothamBold
 closebutton.Text = "✕"
 closebutton.TextColor3 = Color3.fromRGB(255, 255, 255)
 closebutton.TextSize = 18
-closebutton.ZIndex = 3
-local closeHover = TweenService:Create(closebutton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 50, 50), BackgroundTransparency = 0})
-local closeLeave = TweenService:Create(closebutton, TweenInfo.new(0.2), {BackgroundTransparency = 1})
-closebutton.MouseEnter:Connect(function() closeHover:Play() end)
-closebutton.MouseLeave:Connect(function() closeLeave:Play() end)
+local cbc = Instance.new("UICorner", closebutton)
+cbc.CornerRadius = UDim.new(0, 6)
+closebutton.MouseEnter:Connect(function() closebutton.BackgroundTransparency = 0.2 end)
+closebutton.MouseLeave:Connect(function() closebutton.BackgroundTransparency = 1 end)
 
+-- 最小化按钮
 mini.Name = "mini"
 mini.Parent = Frame
 mini.BackgroundTransparency = 1
@@ -132,11 +128,10 @@ mini.Font = Enum.Font.GothamBold
 mini.Text = "—"
 mini.TextColor3 = Color3.fromRGB(200, 200, 200)
 mini.TextSize = 14
-mini.ZIndex = 3
-local miniHover = TweenService:Create(mini, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(100, 100, 100), BackgroundTransparency = 0.5})
-local miniLeave = TweenService:Create(mini, TweenInfo.new(0.2), {BackgroundTransparency = 1})
-mini.MouseEnter:Connect(function() miniHover:Play() end)
-mini.MouseLeave:Connect(function() miniLeave:Play() end)
+local mbc = Instance.new("UICorner", mini)
+mbc.CornerRadius = UDim.new(0, 6)
+mini.MouseEnter:Connect(function() mini.BackgroundTransparency = 0.5 mini.BackgroundColor3 = Color3.fromRGB(100, 100, 100) end)
+mini.MouseLeave:Connect(function() mini.BackgroundTransparency = 1 end)
 
 up.Parent = Frame
 up.Position = UDim2.new(0.05, 0, 0.35, 0)
@@ -170,65 +165,63 @@ speed.Font = Enum.Font.Code
 speed.Text = "1"
 speed.TextColor3 = Color3.fromRGB(255, 215, 0)
 speed.TextScaled = true
-speed.ZIndex = 2
-speed.TextStrokeColor3 = Color3.fromRGB(150, 100, 0)
-speed.TextStrokeTransparency = 0.2
 
 onof.Parent = Frame
 onof.Position = UDim2.new(0.75, 0, 0.35, 0)
 onof.Size = UDim2.new(0, 60, 0, 77)
-onof.Text = "飞行\n关闭"
+onof.Text = "飞行\nOFF"
 styleTechBtn(onof, Color3.fromRGB(255, 50, 50))
 
-
 -- ==========================================
--- 修正：缩小后的迷你悬浮窗 (支持拖动 + 包含关闭X)
+-- 4. 修正：缩小状态组件 (迷你悬浮窗 - 必须可移动)
 -- ==========================================
 local MiniFrame = Instance.new("Frame")
 MiniFrame.Name = "MiniFrame"
 MiniFrame.Parent = main
 MiniFrame.BackgroundColor3 = Color3.fromRGB(20, 25, 45)
-MiniFrame.BorderSizePixel = 0
-MiniFrame.Size = UDim2.new(0, 110, 0, 30)
+MiniFrame.Position = UDim2.new(0.1, 0, 0.4, 0)
+MiniFrame.Size = UDim2.new(0, 120, 0, 35) -- 稍微大一点的长方形容器，里面放展开和X
 MiniFrame.Visible = false
-MiniFrame.Active = true       -- 允许交互
-MiniFrame.Draggable = true    -- 恢复可拖动属性
+MiniFrame.Active = true
+MiniFrame.Draggable = true -- 核心：必须可拖动
 
-local mCorner = Instance.new("UICorner")
-mCorner.CornerRadius = UDim.new(0, 6)
-mCorner.Parent = MiniFrame
+local mfCorner = Instance.new("UICorner", MiniFrame)
+mfCorner.CornerRadius = UDim.new(0, 8)
 
--- 展开按钮
+local mfStroke = Instance.new("UIStroke", MiniFrame)
+mfStroke.Thickness = 1
+mfStroke.Color = Color3.fromRGB(0, 255, 255)
+
 local expandBtn = Instance.new("TextButton")
+expandBtn.Name = "Expand"
 expandBtn.Parent = MiniFrame
 expandBtn.BackgroundTransparency = 1
-expandBtn.Size = UDim2.new(0, 75, 1, 0)
+expandBtn.Position = UDim2.new(0, 5, 0, 0)
+expandBtn.Size = UDim2.new(0, 80, 1, 0)
 expandBtn.Font = Enum.Font.GothamBold
-expandBtn.Text = " 展开 XU"
+expandBtn.Text = "展开 XU"
 expandBtn.TextColor3 = Color3.fromRGB(0, 255, 255)
 expandBtn.TextSize = 13
 expandBtn.TextXAlignment = Enum.TextXAlignment.Left
 
--- 迷你的关闭(✕)按钮
-local miniCloseBtn = Instance.new("TextButton")
-miniCloseBtn.Parent = MiniFrame
-miniCloseBtn.BackgroundTransparency = 1
-miniCloseBtn.Position = UDim2.new(1, -25, 0, 5)
-miniCloseBtn.Size = UDim2.new(0, 20, 0, 20)
-miniCloseBtn.Font = Enum.Font.GothamBold
-miniCloseBtn.Text = "✕"
-miniCloseBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
-miniCloseBtn.TextSize = 14
-
--- 悬停效果
-miniCloseBtn.MouseEnter:Connect(function() miniCloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255) end)
-miniCloseBtn.MouseLeave:Connect(function() miniCloseBtn.TextColor3 = Color3.fromRGB(255, 50, 50) end)
-
+-- 缩小状态下的正方形 X 按钮
+local miniCloseX = Instance.new("TextButton")
+miniCloseX.Name = "MiniClose"
+miniCloseX.Parent = MiniFrame
+miniCloseX.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+miniCloseX.BackgroundTransparency = 0.5
+miniCloseX.Position = UDim2.new(1, -30, 0, 5)
+miniCloseX.Size = UDim2.new(0, 25, 0, 25) -- 正方形 X
+miniCloseX.Font = Enum.Font.GothamBold
+miniCloseX.Text = "✕"
+miniCloseX.TextColor3 = Color3.fromRGB(255, 255, 255)
+miniCloseX.TextSize = 14
+local mcxc = Instance.new("UICorner", miniCloseX)
+mcxc.CornerRadius = UDim.new(0, 4)
 
 -- ==========================================
--- 3. 原汁原味的核心逻辑 (完全未改动)
+-- 5. 核心逻辑 (完全搬运自 fly.lua 源码)
 -- ==========================================
-
 speeds = 1
 
 local speaker = game:GetService("Players").LocalPlayer
