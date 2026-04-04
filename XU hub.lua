@@ -1,9 +1,3 @@
---[[
-    脚本名称：XU 光环人物 (V10 触屏极简修复版)
-    适配：手机端/触屏/R15
-    功能：全维星环、视角锁定上帝模式、极简磨砂 UI、防死
-]]
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -13,10 +7,11 @@ local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local isEnabled = false
 
--- --- 精简配置 ---
+-- --- 核心配置 ---
 local cfg = {
     speed = 60,
-    fly = false,
+    fly = false,        -- 上帝飞行模式
+    headFollow = true,  -- 头部跟随开关
     radius = 6,
     rotSpeed = 2,
     offY = 0, offZ = 0, offX = 0,
@@ -25,7 +20,7 @@ local cfg = {
 
 local tasks = {}
 
--- --- 1. 核心防护 ---
+-- --- 1. 防死与关节锁定 ---
 local function setSafety(state)
     local hum = character:FindFirstChildOfClass("Humanoid")
     if not hum then return end
@@ -46,166 +41,140 @@ local function setSafety(state)
     end
 end
 
--- --- 2. 视角锁定上帝模式与环绕控制 ---
+-- --- 2. 核心移动与坐标计算 ---
 local function runXULoop()
     local root = character:FindFirstChild("HumanoidRootPart")
+    local head = character:FindFirstChild("Head")
     local hum = character:FindFirstChildOfClass("Humanoid")
     local cam = workspace.CurrentCamera
     
     local limbs = {}
     for _, p in pairs(character:GetChildren()) do
-        if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" and p.Name ~= "Head" then
-            table.insert(limbs, p)
+        if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" and (not cfg.headFollow or p.Name ~= "Head") then
+            -- 如果开启头部跟随，则头部也加入控制列表，但不进入圆周运动
+            if p.Name ~= "Head" then table.insert(limbs, p) end
             p.CanCollide = false
         end
     end
 
     tasks.Main = RunService.RenderStepped:Connect(function(dt)
-        if not root then return end
+        if not root or not head then return end
         local t = tick() * cfg.rotSpeed
         
-        -- A. 计算光环位置 (绝对绑定根部)
+        -- 计算基础中心点 (Root + 偏移)
         local baseCF = root.CFrame * CFrame.new(cfg.offX, cfg.offY, cfg.offZ)
         local ringRot = CFrame.Angles(cfg.tiltX, 0, cfg.tiltZ)
+        local centerCF = baseCF * ringRot
 
+        -- A. 头部跟随逻辑
+        if cfg.headFollow then
+            head.CFrame = centerCF -- 头部直接锁定在光环中心
+            head.Velocity = Vector3.new(0,0,0)
+        end
+
+        -- B. 四肢光环圆周运动
         for i, part in ipairs(limbs) do
             local angle = (i / #limbs) * math.pi * 2 + t
             local lPos = Vector3.new(math.cos(angle) * cfg.radius, 0, math.sin(angle) * cfg.radius)
-            part.CFrame = (baseCF * ringRot) * CFrame.new(lPos) * CFrame.Angles(t, 0, 0)
+            part.CFrame = centerCF * CFrame.new(lPos) * CFrame.Angles(t, 0, 0)
         end
 
-        -- B. 视角锁定移动模式 (核心修复)
+        -- C. 视角飞行移动 (彻底修复方向)
         if hum.MoveDirection.Magnitude > 0 then
             if cfg.fly then
                 root.Anchored = true
-                -- 获取相机当前看向的方向
-                local look = cam.CFrame.LookVector
-                local right = cam.CFrame.RightVector
-                -- 将摇杆输入转化为相对于相机视角的移动向量
-                local moveVector = (look * -hum.MoveDirection.Z) + (right * hum.MoveDirection.X)
-                root.CFrame = root.CFrame + (moveVector.Unit * cfg.speed * dt)
+                -- 核心修复：基于相机 CFrame 计算移动向量
+                -- hum.MoveDirection 是相对于世界坐标的，我们需要将其转换
+                local moveDir = cam.CFrame:VectorToWorldSpace(Vector3.new(hum.MoveDirection.X, 0, hum.MoveDirection.Z))
+                -- 移除微小的 Y 轴偏差确保平稳，如果想垂直飞，可以用 LookVector
+                if math.abs(hum.MoveDirection.Z) > 0.1 then
+                   moveDir = (cam.CFrame.LookVector * -hum.MoveDirection.Z) + (cam.CFrame.RightVector * hum.MoveDirection.X)
+                end
+                root.CFrame = root.CFrame + (moveDir.Unit * cfg.speed * dt)
             else
                 root.Anchored = false
                 hum.WalkSpeed = cfg.speed
             end
         else
-            if cfg.fly then 
-                root.Anchored = true 
-                root.Velocity = Vector3.new(0,0,0) 
-            end
+            if cfg.fly then root.Velocity = Vector3.new(0,0,0) end
         end
     end)
 end
 
--- --- 3. 极简 UI 构建 (适配触屏) ---
+-- --- 3. UI 构建 ---
 local function createUI()
     local sg = Instance.new("ScreenGui", CoreGui)
-    sg.Name = "XU_V10_Lite"
-
     local main = Instance.new("Frame", sg)
-    main.Size = UDim2.new(0, 180, 0, 320)
-    main.Position = UDim2.new(0.5, -90, 0.3, 0)
-    main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-    main.BackgroundTransparency = 0.1
+    main.Size = UDim2.new(0, 180, 0, 340)
+    main.Position = UDim2.new(0.5, -90, 0.4, 0)
+    main.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
     main.BorderSizePixel = 0
-    main.Active = true
     main.ClipsDescendants = true
-    Instance.new("UICorner", main).CornerRadius = UDim.new(0, 10)
-    local grad = Instance.new("UIGradient", main)
-    grad.Color = ColorSequence.new(Color3.fromRGB(120, 150, 255), Color3.fromRGB(30, 30, 50))
-    grad.Rotation = 45
+    Instance.new("UICorner", main)
+    Instance.new("UIStroke", main).Color = Color3.fromRGB(80, 100, 255)
 
-    -- 标题 & 拖动区
-    local titleBar = Instance.new("TextButton", main)
-    titleBar.Size = UDim2.new(1, 0, 0, 35)
-    titleBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    titleBar.BackgroundTransparency = 0.8
-    titleBar.Text = "  XU 光环人物"
-    titleBar.TextColor3 = Color3.new(1, 1, 1)
-    titleBar.Font = Enum.Font.GothamBold
-    titleBar.TextSize = 14
-    titleBar.TextXAlignment = Enum.TextXAlignment.Left
-    titleBar.AutoButtonColor = false
+    local bar = Instance.new("TextButton", main)
+    bar.Size = UDim2.new(1, 0, 0, 35); bar.BackgroundColor3 = Color3.fromRGB(40, 45, 80); bar.Text = "  XU 光环 V11"; bar.TextColor3 = Color3.new(1,1,1); bar.TextXAlignment = 0; bar.AutoButtonColor = false
 
-    local minBtn = Instance.new("TextButton", titleBar)
-    minBtn.Size = UDim2.new(0, 35, 1, 0)
-    minBtn.Position = UDim2.new(1, -35, 0, 0)
-    minBtn.Text = "×"
-    minBtn.TextColor3 = Color3.new(1, 1, 1)
-    minBtn.BackgroundTransparency = 1
-    minBtn.TextSize = 20
-
-    -- 精简状态条
-    local status = Instance.new("TextLabel", main)
-    status.Size = UDim2.new(1, 0, 0, 20)
-    status.Position = UDim2.new(0, 0, 0, 35)
-    status.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    status.BackgroundTransparency = 0.9
-    status.Text = "模式: 常规 | 速度: 60"
-    status.TextColor3 = Color3.fromRGB(200, 200, 200)
-    status.TextSize = 10
-    status.Font = Enum.Font.Code
+    local minBtn = Instance.new("TextButton", bar)
+    minBtn.Size = UDim2.new(0, 35, 1, 0); minBtn.Position = UDim2.new(1, -35, 0, 0); minBtn.Text = "—"; minBtn.TextColor3 = Color3.new(1,1,1); minBtn.BackgroundTransparency = 1
 
     local content = Instance.new("ScrollingFrame", main)
-    content.Size = UDim2.new(1, 0, 1, -110)
-    content.Position = UDim2.new(0, 0, 0, 60)
-    content.BackgroundTransparency = 1
-    content.CanvasSize = UDim2.new(0, 0, 0, 550)
-    content.ScrollBarThickness = 0
+    content.Size = UDim2.new(1, 0, 1, -95); content.Position = UDim2.new(0, 0, 0, 35); content.BackgroundTransparency = 1; content.CanvasSize = UDim2.new(0, 0, 0, 520); content.ScrollBarThickness = 0
 
     local function addRow(name, y, key, step)
         local l = Instance.new("TextLabel", content)
-        l.Size = UDim2.new(1, 0, 0, 20); l.Position = UDim2.new(0, 0, 0, y)
-        l.Text = name; l.TextColor3 = Color3.new(1,1,1); l.BackgroundTransparency = 1; l.TextSize = 12
-        
+        l.Size = UDim2.new(1, 0, 0, 20); l.Position = UDim2.new(0, 0, 0, y); l.Text = name; l.TextColor3 = Color3.new(1,1,1); l.BackgroundTransparency = 1; l.TextSize = 12
         local b1 = Instance.new("TextButton", content)
-        b1.Size = UDim2.new(0, 45, 0, 25); b1.Position = UDim2.new(0.15, 0, 0, y+22); b1.Text = "-"; b1.BackgroundColor3 = Color3.fromRGB(60,60,80); Instance.new("UICorner", b1)
-        
+        b1.Size = UDim2.new(0, 45, 0, 25); b1.Position = UDim2.new(0.15, 0, 0, y+22); b1.Text = "-"; b1.BackgroundColor3 = Color3.fromRGB(50,55,90); Instance.new("UICorner", b1)
         local b2 = Instance.new("TextButton", content)
-        b2.Size = UDim2.new(0, 45, 0, 25); b2.Position = UDim2.new(0.6, 0, 0, y+22); b2.Text = "+"; b2.BackgroundColor3 = Color3.fromRGB(60,60,80); Instance.new("UICorner", b2)
-        
+        b2.Size = UDim2.new(0, 45, 0, 25); b2.Position = UDim2.new(0.6, 0, 0, y+22); b2.Text = "+"; b2.BackgroundColor3 = Color3.fromRGB(50,55,90); Instance.new("UICorner", b2)
         b1.Activated:Connect(function() cfg[key] = cfg[key] - step end)
         b2.Activated:Connect(function() cfg[key] = cfg[key] + step end)
     end
 
-    addRow("移动速度", 5, "speed", 10)
-    addRow("光环半径", 60, "radius", 1)
-    addRow("上下偏移", 115, "offY", 1)
-    addRow("前后偏移", 170, "offZ", 1)
-    addRow("光环倾斜X", 225, "tiltX", 0.2)
-    addRow("光环倾斜Z", 280, "tiltZ", 0.2)
-    addRow("旋转速度", 335, "rotSpeed", 0.5)
+    addRow("移动速度", 10, "speed", 10)
+    addRow("光环半径", 65, "radius", 1)
+    addRow("上下偏移", 120, "offY", 1)
+    addRow("光环倾斜X", 175, "tiltX", 0.2)
+    addRow("旋转速度", 230, "rotSpeed", 0.5)
 
-    -- 模式切换
-    local mBtn = Instance.new("TextButton", content)
-    mBtn.Size = UDim2.new(0.8, 0, 0, 35); mBtn.Position = UDim2.new(0.1, 0, 0, 400)
-    mBtn.Text = "常规行走"; mBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50); mBtn.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", mBtn)
-    
-    mBtn.Activated:Connect(function()
-        cfg.fly = not cfg.fly
-        mBtn.Text = cfg.fly and "视角飞行模式" or "常规行走模式"
-        mBtn.BackgroundColor3 = cfg.fly and Color3.fromRGB(50, 100, 200) or Color3.fromRGB(40, 40, 50)
+    -- 开关组
+    local function createToggle(name, y, key, callback)
+        local btn = Instance.new("TextButton", content)
+        btn.Size = UDim2.new(0.8, 0, 0, 30); btn.Position = UDim2.new(0.1, 0, 0, y)
+        btn.BackgroundColor3 = cfg[key] and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(60, 60, 60)
+        btn.Text = name .. (cfg[key] and ": ON" or ": OFF"); btn.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", btn)
+        btn.Activated:Connect(function()
+            cfg[key] = not cfg[key]
+            btn.Text = name .. (cfg[key] and ": ON" or ": OFF")
+            btn.BackgroundColor3 = cfg[key] and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(60, 60, 60)
+            if callback then callback() end
+        end)
+    end
+
+    createToggle("上帝飞行", 290, "fly")
+    createToggle("头部跟随", 330, "headFollow", function()
+        -- 切换头部跟随需要重启循环
+        if isEnabled then 
+            if tasks.Main then tasks.Main:Disconnect() end
+            runXULoop() 
+        end
     end)
 
-    -- 总开关
     local toggle = Instance.new("TextButton", main)
-    toggle.Size = UDim2.new(0.9, 0, 0, 45); toggle.Position = UDim2.new(0.05, 0, 1, -50)
-    toggle.Text = "开启 XU 核心"; toggle.BackgroundColor3 = Color3.fromRGB(60, 80, 200); toggle.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", toggle)
+    toggle.Size = UDim2.new(1, 0, 0, 50); toggle.Position = UDim2.new(0, 0, 1, -50); toggle.Text = "开启 XU 核心"; toggle.BackgroundColor3 = Color3.fromRGB(50, 100, 250); toggle.TextColor3 = Color3.new(1,1,1)
 
     toggle.Activated:Connect(function()
         isEnabled = not isEnabled
         toggle.Text = isEnabled and "停止重置" or "开启 XU 核心"
-        toggle.BackgroundColor3 = isEnabled and Color3.fromRGB(150, 50, 50) or Color3.fromRGB(60, 80, 200)
+        toggle.BackgroundColor3 = isEnabled and Color3.fromRGB(150, 50, 50) or Color3.fromRGB(50, 100, 250)
         if isEnabled then setSafety(true); runXULoop() else if tasks.Main then tasks.Main:Disconnect() end setSafety(false); character:FindFirstChild("HumanoidRootPart").Anchored = false end
     end)
 
-    RunService.RenderStepped:Connect(function()
-        status.Text = string.format("模式: %s | 速度: %d", cfg.fly and "飞行" or "常规", cfg.speed)
-    end)
-
-    -- --- 触屏拖动代码 ---
+    -- --- 触屏拖动 ---
     local dragData = { Dragging = false, StartTouch = nil, StartPos = nil }
-    titleBar.InputBegan:Connect(function(input)
+    bar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragData.Dragging = true; dragData.StartTouch = input.Position; dragData.StartPos = main.Position
         end
@@ -222,15 +191,13 @@ local function createUI()
         end
     end)
 
-    -- --- 极简缩小逻辑 ---
     local isMin = false
     minBtn.Activated:Connect(function()
         isMin = not isMin
-        minBtn.Text = isMin and "+" or "×"
+        minBtn.Text = isMin and "+" or "—"
         content.Visible = not isMin
         toggle.Visible = not isMin
-        status.Visible = not isMin
-        main:TweenSize(isMin and UDim2.new(0, 180, 0, 35) or UDim2.new(0, 180, 0, 320), "Out", "Quart", 0.3, true)
+        main:TweenSize(isMin and UDim2.new(0, 180, 0, 35) or UDim2.new(0, 180, 0, 340), "Out", "Quart", 0.3, true)
     end)
 end
 
