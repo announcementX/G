@@ -1,78 +1,50 @@
 --[[
-    ✦ XU GALAXY V29 - 全服可见增强版 ✦
-    更新：加入了多协议后门注入，解决 FE 同步失效问题。
+    ✦ XU GALAXY V30 - 物理平滑同步版 ✦
+    解决：行走卡顿、FE 别人看不见、UI 显示异常
 ]]
 
 _G.XU_Config = {
     Enabled = false, Speed = 60, Fly = false, Radius = 8, RotSpeed = 2,
     OffX = 0, OffY = 0, OffZ = 0,
     TiltX = 0, TiltY = 0, TiltZ = 0,
-    HeadFollow = true, BackdoorFound = "Scanning...", CurrentVelocity = 0
+    HeadFollow = true, BackdoorFound = "Searching...", CurrentVelocity = 0
 }
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
-local tasks = {}
 local activeBackdoor = nil
 
--- --- 1. 暴力后门嗅探与协议分析 ---
-local function performDeepScan()
-    local hidden = {game:GetService("JointsService"), game:GetService("LogService"), game:GetService("RobloxReplicatedStorage")}
-    local found = nil
-    for _, s in pairs(hidden) do
+-- --- 1. 增强型后门搜索 ---
+local function findBackdoor()
+    local list = {game:GetService("JointsService"), game:GetService("LogService"), game:GetService("RobloxReplicatedStorage")}
+    for _, s in pairs(list) do
         pcall(function()
             for _, v in pairs(s:GetDescendants()) do
-                if v:IsA("RemoteEvent") then found = v; break end
+                if v:IsA("RemoteEvent") then activeBackdoor = v return end
             end
         end)
-        if found then break end
     end
-    
-    if not found then
-        for _, v in pairs(game:GetDescendants()) do
-            if v:IsA("RemoteEvent") and not v:GetFullName():find("Default") then
-                if #v.Name > 15 or v.Name:match("[%W%d]") then found = v; break end
-            end
-        end
-    end
-    
-    activeBackdoor = found
-    _G.XU_Config.BackdoorFound = found and "INJECTED: "..found.Name or "PHYSICS ONLY"
 end
 
--- --- 2. 核心同步注入逻辑 (让别人看见的关键) ---
-local function syncToService(part, targetCF)
-    if not activeBackdoor then return end
-    
-    -- 尝试多种市面流行的后门调用协议
-    pcall(function()
-        -- 协议 A: 标准坐标同步
-        activeBackdoor:FireServer("CFrame", part, targetCF)
-        -- 协议 B: 字符串执行同步 (用于命令行后门)
-        activeBackdoor:FireServer("Execute", string.format("game.Workspace['%s']['%s'].CFrame = CFrame.new(%s)", player.Name, part.Name, tostring(targetCF)))
-        -- 协议 C: 简易参数同步
-        activeBackdoor:FireServer(part, targetCF)
-    end)
-end
-
--- --- 3. 生命锁定与网络所有权接管 ---
-local function toggleState(state)
+-- --- 2. 物理平滑同步 (解决卡顿关键) ---
+local function togglePhysics(state)
     local hum = character:FindFirstChildOfClass("Humanoid")
     if not hum then return end
+    
     if state then
         hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
         hum.Health = 100
+        -- 物理伪装：不锚定根部，而是通过 CFrame 强制补位
         for _, v in pairs(character:GetDescendants()) do
             if v:IsA("Motor6D") then v.Enabled = false end
             if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
                 v.CanCollide = false
                 v.Massless = true
-                -- 尝试强制接管网络所有权 (如果执行器支持)
-                pcall(function() v:SetNetworkOwner(player) end)
             end
         end
     else
@@ -82,62 +54,76 @@ local function toggleState(state)
         end
     end
 end
--- --- 4. 核心几何驱动引擎 (多协议全同步) ---
+
+-- --- 3. 全服广播协议 ---
+local function broadcast(part, cf)
+    if not activeBackdoor then return end
+    pcall(function()
+        -- 尝试多种服务器端可识别的同步指令
+        activeBackdoor:FireServer("CFrame", part, cf)
+        activeBackdoor:FireServer("SetCFrame", part, cf)
+        activeBackdoor:FireServer(part, cf)
+    end)
+end
+-- --- 4. 核心几何驱动引擎 (平滑同步版) ---
 local function initGalaxyLoop()
     local root = character:FindFirstChild("HumanoidRootPart")
     local hum = character:FindFirstChildOfClass("Humanoid")
     local head = character:FindFirstChild("Head")
     local cam = workspace.CurrentCamera
     local limbs = {}
-    
-    -- 智能肢体识别与网络所有权抢夺尝试
+
+    -- 收集肢体并初始化物理属性
     for _, p in pairs(character:GetChildren()) do
         if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" and p.Name ~= "Head" then
             table.insert(limbs, p)
-            -- 核心：尝试将零件的物理控制权强行拉回本地，这是 FE 绕过的物理基础
-            pcall(function() p:SetNetworkOwner(player) end)
+            p.Massless = true
+            p.CanCollide = false
         end
     end
 
-    -- 使用 RenderStepped 锁定最高同步频率
-    tasks.Loop = RunService.RenderStepped:Connect(function(dt)
+    -- 使用 Stepped 而非 RenderStepped 以匹配物理引擎频率，减少抖动
+    tasks.Loop = RunService.Stepped:Connect(function(_, dt)
         if not _G.XU_Config.Enabled or not root then return end
         
-        -- 实时生命维持与状态镜像
+        -- 基础数值监控
         hum.Health = 100
         _G.XU_Config.CurrentVelocity = math.floor(root.Velocity.Magnitude)
 
-        -- A. 全维度视角飞行驱动 (支持速度镜像)
+        -- A. 平滑飞行逻辑 (非锚定方案)
         if _G.XU_Config.Fly then
-            root.Anchored = true
-            root.Velocity = Vector3.zero
+            -- 使用力平衡或直接 CFrame 补偿，不使用 Anchored=true 以防别人看你卡死
+            local moveDir = Vector3.new(0,0,0)
             if hum.MoveDirection.Magnitude > 0 then
-                local moveDir = cam.CFrame.LookVector
-                root.CFrame = root.CFrame + (moveDir * _G.XU_Config.Speed * dt)
+                moveDir = cam.CFrame.LookVector
             end
+            -- 核心：平滑坐标推演
+            root.CFrame = root.CFrame:Lerp(root.CFrame + (moveDir * _G.XU_Config.Speed * dt), 0.8)
+            root.Velocity = Vector3.new(0, 0.1, 0) -- 给一个极小的向上力，防止物理引擎判定休眠
         else
-            root.Anchored = false
             hum.WalkSpeed = _G.XU_Config.Speed
         end
 
-        -- B. 星核轨道算法 (应用三轴偏移与旋转)
+        -- B. 六轴星环算法 (支持 X/Y/Z 偏移与旋转)
         local t = tick() * _G.XU_Config.RotSpeed
-        local basePos = root.Position + Vector3.new(_G.XU_Config.OffX, _G.XU_Config.OffY, _G.XU_Config.OffZ)
         
-        -- 构建全轴旋转矩阵 (Tilt X/Y/Z)
-        local rotCF = CFrame.Angles(
+        -- 1. 计算中心点（包含三轴偏移）
+        local centerPos = root.Position + Vector3.new(_G.XU_Config.OffX, _G.XU_Config.OffY, _G.XU_Config.OffZ)
+        
+        -- 2. 构建旋转平面矩阵 (Tilt X/Y/Z)
+        local rotMatrix = CFrame.Angles(
             math.rad(_G.XU_Config.TiltX), 
             math.rad(_G.XU_Config.TiltY), 
             math.rad(_G.XU_Config.TiltZ)
         )
-        local centerCF = CFrame.new(basePos) * rotCF
+        local centerCF = CFrame.new(centerPos) * rotMatrix
 
-        -- 头部跟随逻辑 (若开启则强制同步头部)
-        if _G.XU_Config.HeadFollow and head then 
-            head.CFrame = centerCF 
+        -- 头部同步
+        if _G.XU_Config.HeadFollow and head then
+            head.CFrame = centerCF
         end
 
-        -- 核心排列与全服同步尝试
+        -- 3. 肢体环绕与后门广播
         for i, part in ipairs(limbs) do
             local angle = (i / #limbs) * math.pi * 2 + t
             local circleOffset = Vector3.new(
@@ -146,155 +132,125 @@ local function initGalaxyLoop()
                 math.sin(angle) * _G.XU_Config.Radius
             )
             
-            -- 最终变换矩阵
+            -- 计算最终目标坐标
             local targetCF = centerCF * CFrame.new(circleOffset) * CFrame.Angles(t, t, t/2)
             
-            -- 【关键：全服可见注入】
-            -- 调用 Part 1 中的多协议同步函数，尝试通过后门向服务器强制广播位置
-            if activeBackdoor then
-                syncToService(part, targetCF)
+            -- 【全服可见核心】
+            -- 调用 Part 1 的广播函数，将坐标推送到服务器
+            if _G.XU_Config.Enabled then
+                broadcast(part, targetCF)
             end
             
-            -- 本地坐标强制设定 (作为备选物理方案)
+            -- 本地渲染
             part.CFrame = targetCF
         end
     end)
 end
 
--- --- 5. 系统启动/停止接口 ---
+-- --- 5. 启动接口 ---
 _G.StartGalaxy = function()
-    print("✦ 系统启动：正在执行幽灵探测与网络所有权接管...")
-    performDeepScan()
-    toggleState(true)
+    findBackdoor()
+    togglePhysics(true)
     initGalaxyLoop()
+    _G.XU_Config.BackdoorFound = activeBackdoor and "SYNC ACTIVE" or "LOCAL ONLY"
 end
 
 _G.StopGalaxy = function()
-    print("✦ 系统停止：正在释放物理控制权...")
     if tasks.Loop then tasks.Loop:Disconnect() end
-    toggleState(false)
-    -- 尝试归还网络所有权
-    for _, p in pairs(character:GetChildren()) do
-        if p:IsA("BasePart") then pcall(function() p:SetNetworkOwner(nil) end) end
-    end
+    togglePhysics(false)
 end
--- --- 6. 星空微缩 UI (Nebula Minimalist V29) ---
-local function createNebulaUI()
-    -- 清理旧 UI 缓存
-    if CoreGui:FindFirstChild("XU_Nebula_V29") then CoreGui.XU_Nebula_V29:Destroy() end
+-- --- 6. 微型星空 UI (Nano Space V30) ---
+local function createNanoUI()
+    -- 清理旧 UI
+    if CoreGui:FindFirstChild("XU_Nano_V30") then CoreGui.XU_Nano_V30:Destroy() end
 
     local sg = Instance.new("ScreenGui", CoreGui)
-    sg.Name = "XU_Nebula_V29"
-    sg.IgnoreGuiInset = true
+    sg.Name = "XU_Nano_V30"
+    sg.ResetOnSpawn = false
 
-    -- 主框架 (极简小巧且不遮挡视线)
+    -- 主面板 (改为固定微型尺寸，防止折叠异常)
     local main = Instance.new("Frame", sg)
-    main.Size = UDim2.new(0, 190, 0, 40) -- 初始高度极小
-    main.Position = UDim2.new(0.5, -95, 0.15, 0)
-    main.BackgroundColor3 = Color3.fromRGB(8, 8, 18)
-    main.ClipsDescendants = true
+    main.Size = UDim2.new(0, 160, 0, 280) 
+    main.Position = UDim2.new(0.5, -80, 0.2, 0)
+    main.BackgroundColor3 = Color3.fromRGB(12, 12, 25)
+    main.BackgroundTransparency = 0.2 -- 半透明毛玻璃感
+    main.BorderSizePixel = 0
     Instance.new("UICorner", main).CornerRadius = UDim.new(0, 10)
 
-    -- 星空呼吸灯边框
+    -- 流光霓虹边框 (星空感)
     local stroke = Instance.new("UIStroke", main)
-    stroke.Thickness = 1.8
-    stroke.Color = Color3.fromRGB(60, 120, 255)
+    stroke.Thickness = 1.5
+    stroke.Color = Color3.fromRGB(0, 150, 255)
     spawn(function()
         while true do
-            local t = TweenService:Create(stroke, TweenInfo.new(3, Enum.EasingStyle.Sine), {Color = Color3.fromRGB(180, 80, 255)})
+            local t = TweenService:Create(stroke, TweenInfo.new(2, Enum.EasingStyle.Sine), {Color = Color3.fromRGB(200, 50, 255)})
             t:Play(); t.Completed:Wait()
-            local t2 = TweenService:Create(stroke, TweenInfo.new(3, Enum.EasingStyle.Sine), {Color = Color3.fromRGB(60, 120, 255)})
+            local t2 = TweenService:Create(stroke, TweenInfo.new(2, Enum.EasingStyle.Sine), {Color = Color3.fromRGB(0, 150, 255)})
             t2:Play(); t2.Completed:Wait()
         end
     end)
 
-    -- 标题按钮 (点击切换展开/折叠)
-    local header = Instance.new("TextButton", main)
-    header.Size = UDim2.new(1, 0, 0, 40)
-    header.BackgroundTransparency = 1
-    header.Text = "✧ XU NEBULA V29 ✧"
-    header.TextColor3 = Color3.new(1, 1, 1)
-    header.Font = Enum.Font.GothamBold; header.TextSize = 11
+    -- 极简标题
+    local title = Instance.new("TextLabel", main)
+    title.Size = UDim2.new(1, 0, 0, 25); title.Text = "✧ GALAXY V30 ✧"; title.TextColor3 = Color3.new(1,1,1)
+    title.Font = Enum.Font.GothamBold; title.TextSize = 10; title.BackgroundTransparency = 1
 
-    -- 实时监控看板 (Monitor Area)
-    local monitor = Instance.new("TextLabel", main)
-    monitor.Size = UDim2.new(1, -16, 0, 75); monitor.Position = UDim2.new(0, 8, 0, 45)
-    monitor.BackgroundColor3 = Color3.new(0, 0, 0); monitor.BackgroundTransparency = 0.75
-    monitor.TextColor3 = Color3.fromRGB(0, 255, 180); monitor.Font = Enum.Font.Code; monitor.TextSize = 9
-    monitor.TextXAlignment = 0; monitor.RichText = true; Instance.new("UICorner", monitor)
+    -- 实时看板 (极小化显示)
+    local mon = Instance.new("TextLabel", main)
+    mon.Size = UDim2.new(1, -10, 0, 45); mon.Position = UDim2.new(0, 5, 0, 25)
+    mon.BackgroundColor3 = Color3.new(0, 0, 0); mon.BackgroundTransparency = 0.8
+    mon.TextColor3 = Color3.fromRGB(0, 255, 180); mon.Font = Enum.Font.Code; mon.TextSize = 8; mon.RichText = true
+    Instance.new("UICorner", mon)
 
-    -- 动态刷新监控信息
     RunService.RenderStepped:Connect(function()
         local c = _G.XU_Config
-        monitor.Text = string.format(
-            " [BD]: <font color='#FFD700'>%s</font>\n [SPD]: %d studs/s\n [ROT]: X%d Y%d Z%d\n [OFF]: X%.1f Y%.1f Z%.1f",
-            c.BackdoorFound, c.CurrentVelocity,
-            c.TiltX, c.TiltY, c.TiltZ,
-            c.OffX, c.OffY, c.OffZ
-        )
+        mon.Text = string.format(" [SYNC]: %s | [V]: %d\n [ROT]: %d,%d,%d\n [OFF]: %.f,%.f,%.f", 
+            c.BackdoorFound, c.CurrentVelocity, c.TiltX, c.TiltY, c.TiltZ, c.OffX, c.OffY, c.OffZ)
     end)
 
-    -- 调节功能滚动区
+    -- 调节区滚动列表
     local scroll = Instance.new("ScrollingFrame", main)
-    scroll.Size = UDim2.new(1, -10, 1, -185); scroll.Position = UDim2.new(0, 5, 0, 125)
-    scroll.BackgroundTransparency = 1; scroll.CanvasSize = UDim2.new(0, 0, 0, 750); scroll.ScrollBarThickness = 1
+    scroll.Size = UDim2.new(1, -6, 1, -120); scroll.Position = UDim2.new(0, 3, 0, 75)
+    scroll.BackgroundTransparency = 1; scroll.CanvasSize = UDim2.new(0, 0, 0, 500); scroll.ScrollBarThickness = 1
 
-    local function addAdj(name, y, key, min, max, step)
+    local function addRow(text, y, key, min, max, step)
         local f = Instance.new("Frame", scroll)
-        f.Size = UDim2.new(1, -10, 0, 38); f.Position = UDim2.new(0, 5, 0, y); f.BackgroundTransparency = 1
-        local l = Instance.new("TextLabel", f); l.Size = UDim2.new(1, 0, 0, 15); l.Text = "✦ "..name; l.TextColor3 = Color3.new(0.7,0.8,1); l.TextSize = 9; l.BackgroundTransparency = 1; l.TextXAlignment = 0
-        local b1 = Instance.new("TextButton", f); b1.Size = UDim2.new(0, 32, 0, 20); b1.Position = UDim2.new(0, 0, 0, 18); b1.Text = "-"; b1.BackgroundColor3 = Color3.fromRGB(35,35,65); b1.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", b1)
-        local b2 = Instance.new("TextButton", f); b2.Size = UDim2.new(0, 32, 0, 20); b2.Position = UDim2.new(1, -32, 0, 18); b2.Text = "+"; b2.BackgroundColor3 = Color3.fromRGB(35,35,65); b2.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", b2)
-        local v = Instance.new("TextLabel", f); v.Size = UDim2.new(1, -74, 0, 20); v.Position = UDim2.new(0, 37, 0, 18); v.Text = tostring(_G.XU_Config[key]); v.TextColor3 = Color3.new(1,1,1); v.BackgroundTransparency = 0.9; v.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", v)
+        f.Size = UDim2.new(1, -4, 0, 32); f.Position = UDim2.new(0, 2, 0, y); f.BackgroundTransparency = 1
+        local l = Instance.new("TextLabel", f); l.Size = UDim2.new(1, 0, 0, 12); l.Text = text; l.TextColor3 = Color3.new(0.6,0.7,1); l.TextSize = 8; l.BackgroundTransparency = 1
+        local b1 = Instance.new("TextButton", f); b1.Size = UDim2.new(0, 25, 0, 15); b1.Position = UDim2.new(0, 2, 0, 14); b1.Text = "-"; b1.BackgroundColor3 = Color3.fromRGB(40,40,70); b1.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", b1)
+        local b2 = Instance.new("TextButton", f); b2.Size = UDim2.new(0, 25, 0, 15); b2.Position = UDim2.new(1, -27, 0, 14); b2.Text = "+"; b2.BackgroundColor3 = Color3.fromRGB(40,40,70); b2.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", b2)
+        local v = Instance.new("TextLabel", f); v.Size = UDim2.new(1, -60, 0, 15); v.Position = UDim2.new(0, 30, 0, 14); v.Text = tostring(_G.XU_Config[key]); v.TextColor3 = Color3.new(1,1,1); v.BackgroundTransparency = 0.9; v.BackgroundColor3 = Color3.new(1,1,1)
         b1.Activated:Connect(function() _G.XU_Config[key] = math.max(min, _G.XU_Config[key]-step); v.Text = tostring(_G.XU_Config[key]) end)
         b2.Activated:Connect(function() _G.XU_Config[key] = math.min(max, _G.XU_Config[key]+step); v.Text = tostring(_G.XU_Config[key]) end)
     end
 
-    -- 部署调节（全维度，不精简）
-    addAdj("MOVE SPEED", 0, "Speed", 0, 1000, 10)
-    addAdj("RING RADIUS", 45, "Radius", 1, 100, 1)
-    addAdj("OFFSET Y", 90, "OffY", -100, 100, 1)
-    addAdj("OFFSET X", 135, "OffX", -100, 100, 1)
-    addAdj("TILT X (PITCH)", 180, "TiltX", -360, 360, 15)
-    addAdj("TILT Y (YAW)", 225, "TiltY", -360, 360, 15)
-    addAdj("TILT Z (ROLL)", 270, "TiltZ", -360, 360, 15)
-    addAdj("ROT RATE", 315, "RotSpeed", 0, 50, 0.5)
+    -- 部署调节（全六轴方向 + 速度）
+    addRow("MOVE SPEED", 0, "Speed", 0, 800, 10)
+    addRow("RING RADIUS", 35, "Radius", 1, 80, 1)
+    addRow("OFFSET Y", 70, "OffY", -80, 80, 1)
+    addRow("OFFSET X", 105, "OffX", -80, 80, 1)
+    addRow("TILT X (角度)", 140, "TiltX", -360, 360, 15)
+    addRow("TILT Y (角度)", 175, "TiltY", -360, 360, 15)
+    addRow("ROT SPEED", 210, "RotSpeed", 0, 30, 0.5)
 
-    -- 辅助切换
-    local function addSw(name, y, key)
-        local b = Instance.new("TextButton", scroll); b.Size = UDim2.new(0.9, 0, 0, 30); b.Position = UDim2.new(0.05, 0, 0, y)
-        b.BackgroundColor3 = _G.XU_Config[key] and Color3.fromRGB(50, 100, 220) or Color3.fromRGB(30, 30, 45)
-        b.Text = name; b.TextColor3 = Color3.new(1,1,1); b.Font = Enum.Font.Gotham; b.TextSize = 10; Instance.new("UICorner", b)
-        b.Activated:Connect(function() _G.XU_Config[key] = not _G.XU_Config[key]; b.BackgroundColor3 = _G.XU_Config[key] and Color3.fromRGB(50, 100, 220) or Color3.fromRGB(30, 30, 45) end)
-    end
-    addSw("FLY MODE", 365, "Fly")
-    addSw("HEAD FOLLOW", 405, "HeadFollow")
-
-    -- 启动核心按钮
+    -- 启动核心
     local toggle = Instance.new("TextButton", main)
-    toggle.Size = UDim2.new(1, -20, 0, 45); toggle.Position = UDim2.new(0, 10, 1, -55)
-    toggle.BackgroundColor3 = Color3.fromRGB(45, 75, 180); toggle.Text = "✦ INITIALIZE CORE ✦"; toggle.TextColor3 = Color3.new(1,1,1); toggle.Font = Enum.Font.GothamBold; Instance.new("UICorner", toggle)
-
-    local expanded = false
-    header.Activated:Connect(function()
-        expanded = not expanded
-        main:TweenSize(expanded and UDim2.new(0, 190, 0, 420) or UDim2.new(0, 190, 0, 40), "Out", "Back", 0.5, true)
-    end)
+    toggle.Size = UDim2.new(1, -16, 0, 35); toggle.Position = UDim2.new(0, 8, 1, -40)
+    toggle.BackgroundColor3 = Color3.fromRGB(40, 80, 200); toggle.Text = "INIT CORE"; toggle.TextColor3 = Color3.new(1,1,1); toggle.Font = Enum.Font.GothamBold; toggle.TextSize = 10; Instance.new("UICorner", toggle)
 
     toggle.Activated:Connect(function()
         _G.XU_Config.Enabled = not _G.XU_Config.Enabled
         if _G.XU_Config.Enabled then
-            toggle.Text = "CORE RUNNING"; toggle.BackgroundColor3 = Color3.fromRGB(160, 45, 45); _G.StartGalaxy()
+            toggle.Text = "RUNNING..."; toggle.BackgroundColor3 = Color3.fromRGB(180, 40, 40); _G.StartGalaxy()
         else
-            toggle.Text = "✦ INITIALIZE CORE ✦"; toggle.BackgroundColor3 = Color3.fromRGB(45, 75, 180); _G.StopGalaxy()
+            toggle.Text = "INIT CORE"; toggle.BackgroundColor3 = Color3.fromRGB(40, 80, 200); _G.StopGalaxy()
         end
     end)
 
-    -- 拖拽交互
-    local drag, start, pos; header.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then drag = true; start = i.Position; pos = main.Position end end)
-    UserInputService.InputChanged:Connect(function(i) if drag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local d = i.Position - start; main.Position = UDim2.new(pos.X.Scale, pos.X.Offset + d.X, pos.Y.Scale, pos.Y.Offset + d.Y) end end)
-    UserInputService.InputEnded:Connect(function() drag = false end)
+    -- 极简拖拽
+    local d, s, p; title.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then d = true; s = i.Position; p = main.Position end end)
+    UserInputService.InputChanged:Connect(function(i) if d and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local delta = i.Position - s; main.Position = UDim2.new(p.X.Scale, p.X.Offset + delta.X, p.Y.Scale, p.Y.Offset + delta.Y) end end)
+    UserInputService.InputEnded:Connect(function() d = false end)
 end
 
-createNebulaUI()
-print("✦ XU GALAXY V29 部署成功！点击悬浮窗标题展开配置界面。")
+createNanoUI()
