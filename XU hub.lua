@@ -139,9 +139,9 @@ AddScript(p1, "Spy", "你猜猜他有啥用", "https://raw.githubusercontent.com
 
 -- 页面2：玩家功能
 AddScript(p2, "ESP", "显示玩家名字 血量", "https://raw.githubusercontent.com/Exunys/ESP-Script/main/ESP.lua")
-AddScript(p2, "", "好像失效了", "https://raw.githubusercontent.com/Exunys/Aimbot-V3/main/Aimbot%20V3.lua")
+AddScript(p2, "这个好像是自瞄", "好像失效了", "https://raw.githubusercontent.com/Exunys/Aimbot-V3/main/Aimbot%20V3.lua")
 
-AddScript(p3, "移动端键盘", "在手机上呼出控制台", "https://raw.githubusercontent.com/advcrem/GuiS/main/Keyboard.lua")
+AddScript(p3, "键盘", "字面意思上的键盘", "https://raw.githubusercontent.com/advcrem/GuiS/main/Keyboard.lua")
 local TopBar = Instance.new("Frame", MainView)
 TopBar.Size = UDim2.new(1, 0, 0, 60); TopBar.BackgroundTransparency = 1
 local Title = CreateGlitchText("XU SCRIPT 冰陈你的屁股痛不痛", TopBar, 22, "Left")
