@@ -1,169 +1,64 @@
-local Library = {Tabs = {}; SelectedTab = nil; Count = 0}
+local Library = {Tabs = {}; SelectedTab = nil; Elements = {}}
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
 
+-- 颜色配置：灵魂深粉色调
+local COLORS = {
+    Main = Color3.fromRGB(255, 230, 240),
+    Bar = Color3.fromRGB(255, 175, 200),
+    Sidebar = Color3.fromRGB(255, 240, 245),
+    Accent = Color3.fromRGB(200, 100, 150), -- 灵魂深粉
+    Text = Color3.fromRGB(80, 60, 70),
+    Highlight = Color3.fromRGB(255, 120, 180)
+}
+
 function Library:Init()
-    local COLORS = {
-        Main = Color3.fromRGB(255, 235, 240), -- 极淡粉
-        Bar = Color3.fromRGB(255, 190, 210),  -- 稍深粉
-        Sidebar = Color3.fromRGB(255, 245, 250),
-        Accent = Color3.fromRGB(255, 130, 170), -- 强调粉
-        Text = Color3.fromRGB(60, 50, 55),
-        Dark = Color3.fromRGB(40, 40, 40)
-    }
-
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "SOUL_ENGINE"
-    ScreenGui.Parent = CoreGui
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
-    -- --- 1. SOUL 启动加载动画 ---
+    local ScreenGui = Instance.new("ScreenGui", CoreGui)
+    ScreenGui.Name = "SOUL_V4"
+    
+    -- --- 1. SOUL 灵魂加载动画 ---
     local Loader = Instance.new("Frame", ScreenGui)
     Loader.Size = UDim2.new(1, 0, 1, 0)
-    Loader.BackgroundColor3 = COLORS.Main
-    Loader.ZIndex = 1000
+    Loader.BackgroundColor3 = Color3.fromRGB(15, 15, 20) -- 灵魂深处背景
+    Loader.ZIndex = 2000
 
-    local SoulTitle = Instance.new("TextLabel", Loader)
-    SoulTitle.Text = "SOUL"
-    SoulTitle.Size = UDim2.new(0, 200, 0, 100)
-    SoulTitle.Position = UDim2.new(0.5, -100, 0.45, -50)
-    SoulTitle.Font = Enum.Font.GothamBold
-    SoulTitle.TextColor3 = COLORS.Accent
-    SoulTitle.TextSize = 80
-    SoulTitle.BackgroundTransparency = 1
-    SoulTitle.TextTransparency = 1
+    local SoulText = Instance.new("TextLabel", Loader)
+    SoulText.Text = "SOUL"
+    SoulText.Font = Enum.Font.GothamBold
+    SoulText.TextSize = 100
+    SoulText.TextColor3 = COLORS.Main
+    SoulText.Position = UDim2.new(0.5, -100, 0.5, -50)
+    SoulText.Size = UDim2.new(0, 200, 0, 100)
+    SoulText.BackgroundTransparency = 1
+    SoulText.ZIndex = 2001
 
-    local Line = Instance.new("Frame", Loader)
-    Line.Size = UDim2.new(0, 0, 0, 2)
-    Line.Position = UDim2.new(0.5, 0, 0.55, 0)
-    Line.BackgroundColor3 = COLORS.Accent
-    Line.BorderSizePixel = 0
+    -- 粒子效果 (简单的灵魂光点)
+    for i = 1, 10 do
+        local p = Instance.new("Frame", Loader)
+        p.Size = UDim2.new(0, 4, 0, 4)
+        p.BackgroundColor3 = COLORS.Accent
+        p.Position = UDim2.new(0.5, math.random(-150, 150), 0.5, math.random(-150, 150))
+        Instance.new("UICorner", p).CornerRadius = UDim.new(1, 0)
+        TweenService:Create(p, TweenInfo.new(1.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, 0, 0.5, 0), BackgroundTransparency = 1}):Play()
+    end
 
-    task.spawn(function()
-        TweenService:Create(SoulTitle, TweenInfo.new(1), {TextTransparency = 0}):Play()
-        TweenService:Create(Line, TweenInfo.new(1, Enum.EasingStyle.Quart), {Size = UDim2.new(0, 150, 0, 2), Position = UDim2.new(0.5, -75, 0.55, 0)}):Play()
-        task.wait(1.8)
-        TweenService:Create(Loader, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
-        TweenService:Create(SoulTitle, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-        TweenService:Create(Line, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
-        task.wait(0.5)
-        Loader:Destroy()
-    end)
+    task.wait(1.5)
+    TweenService:Create(Loader, TweenInfo.new(0.8), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(SoulText, TweenInfo.new(0.8), {TextTransparency = 1}):Play()
+    task.delay(0.8, function() Loader:Destroy() end)
 
     -- --- 2. 主框架 ---
     local Main = Instance.new("Frame", ScreenGui)
-    Main.Name = "Main"
-    Main.Size = UDim2.new(0, 540, 0, 380)
-    Main.Position = UDim2.new(0.5, -270, 0.5, -190)
+    Main.Size = UDim2.new(0, 550, 0, 380)
+    Main.Position = UDim2.new(0.5, -275, 0.5, -190)
     Main.BackgroundColor3 = COLORS.Main
     Main.BorderSizePixel = 0
-    Main.ClipsDescendants = true
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
 
-    -- 渐变层
-    local function SetGrad(obj, rot)
-        local g = Instance.new("UIGradient", obj)
-        g.Rotation = rot
-        g.Color = ColorSequence.new(COLORS.Bar, COLORS.Main)
-        g.Transparency = NumberSequence.new(0, 1)
-    end
-
-    local TopBar = Instance.new("Frame", Main)
-    TopBar.Size = UDim2.new(1, 0, 0, 45)
-    TopBar.BackgroundColor3 = COLORS.Bar
-    TopBar.ZIndex = 10
-    SetGrad(TopBar, 90)
-
-    local BottomBar = Instance.new("Frame", Main)
-    BottomBar.Size = UDim2.new(1, 0, 0, 45)
-    BottomBar.Position = UDim2.new(0, 0, 1, -45)
-    BottomBar.BackgroundColor3 = COLORS.Bar
-    BottomBar.ZIndex = 10
-    SetGrad(BottomBar, -90)
-
-    local Sidebar = Instance.new("ScrollingFrame", Main)
-    Sidebar.Size = UDim2.new(0, 140, 1, -90)
-    Sidebar.Position = UDim2.new(0, 0, 0, 45)
-    Sidebar.BackgroundColor3 = COLORS.Sidebar
-    Sidebar.ZIndex = 9
-    Sidebar.ScrollBarThickness = 0
-    local SGrad = Instance.new("UIGradient", Sidebar)
-    SGrad.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0,0), NumberSequenceKeypoint.new(0.8,0), NumberSequenceKeypoint.new(1,1)})
-
-    local SideLayout = Instance.new("UIListLayout", Sidebar)
-    SideLayout.Padding = UDim.new(0, 5)
-    SideLayout.HorizontalAlignment = "Center"
-
-    local Container = Instance.new("Frame", Main)
-    Container.Size = UDim2.new(1, -155, 1, -110)
-    Container.Position = UDim2.new(0, 150, 0, 55)
-    Container.BackgroundTransparency = 1
-    Container.ZIndex = 5
-
-    -- --- 3. 核心功能键 (关闭/缩小) ---
-    local Title = Instance.new("TextLabel", Main)
-    Title.Text = "SOUL PREMIUM"
-    Title.Font = "GothamBold"
-    Title.TextSize = 16
-    Title.TextColor3 = COLORS.Text
-    Title.Position = UDim2.new(0, 15, 0, 0)
-    Title.Size = UDim2.new(0, 200, 0, 45)
-    Title.BackgroundTransparency = 1
-    Title.ZIndex = 11
-
-    local CloseBtn = Instance.new("TextButton", Main)
-    CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-    CloseBtn.Position = UDim2.new(1, -40, 0, 7)
-    CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 110, 110)
-    CloseBtn.Text = "×"
-    CloseBtn.TextColor3 = Color3.new(1,1,1)
-    CloseBtn.ZIndex = 12
-    Instance.new("UICorner", CloseBtn)
-
-    local MinBtn = Instance.new("TextButton", Main)
-    MinBtn.Size = UDim2.new(0, 30, 0, 30)
-    MinBtn.Position = UDim2.new(1, -75, 0, 7)
-    MinBtn.BackgroundColor3 = COLORS.Accent
-    MinBtn.Text = "-"
-    MinBtn.TextColor3 = Color3.new(1,1,1)
-    MinBtn.ZIndex = 12
-    Instance.new("UICorner", MinBtn)
-
-    -- 缩小/关闭动画修复
-    local MiniIcon = Instance.new("TextButton", ScreenGui)
-    MiniIcon.Size = UDim2.new(0, 0, 0, 0)
-    MiniIcon.BackgroundColor3 = COLORS.Bar
-    MiniIcon.Text = "S"
-    MiniIcon.TextColor3 = Color3.new(1,1,1)
-    MiniIcon.Font = "GothamBold"
-    MiniIcon.Visible = false
-    Instance.new("UICorner", MiniIcon)
-
-    CloseBtn.MouseButton1Click:Connect(function()
-        Main:TweenSize(UDim2.new(0,0,0,0), "In", "Back", 0.3, true)
-        task.wait(0.3) ScreenGui:Destroy()
-    end)
-
-    MinBtn.MouseButton1Click:Connect(function()
-        Main:TweenScale(0, Enum.EasingDirection.In, Enum.EasingStyle.Back, 0.3, true)
-        task.wait(0.3)
-        Main.Visible = false
-        MiniIcon.Visible = true
-        MiniIcon:TweenSize(UDim2.new(0,50,0,50), "Out", "Back", 0.3, true)
-    end)
-
-    MiniIcon.MouseButton1Click:Connect(function()
-        MiniIcon:TweenSize(UDim2.new(0,0,0,0), "In", "Back", 0.2, true)
-        task.wait(0.2)
-        Main.Visible = true
-        Main:TweenScale(1, Enum.EasingDirection.Out, Enum.EasingStyle.Back, 0.3, true)
-        MiniIcon.Visible = false
-    end)
-
-    -- 拖动逻辑
+    -- 拖拽逻辑修复
     local dragging, dragStart, startPos
-    TopBar.InputBegan:Connect(function(input)
+    Main.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true dragStart = input.Position startPos = Main.Position
         end
@@ -176,90 +71,165 @@ function Library:Init()
     end)
     UserInputService.InputEnded:Connect(function() dragging = false end)
 
-    -- --- 4. API 系统 ---
+    -- 上下渐变栏 (45px)
+    local function MakeBar(pos, rot)
+        local bar = Instance.new("Frame", Main)
+        bar.Size = UDim2.new(1, 0, 0, 45)
+        bar.Position = pos
+        bar.BackgroundColor3 = COLORS.Bar
+        bar.BorderSizePixel = 0
+        local g = Instance.new("UIGradient", bar)
+        g.Rotation = rot
+        g.Transparency = NumberSequence.new(0, 1)
+        return bar
+    end
+    local TopBar = MakeBar(UDim2.new(0,0,0,0), 90)
+    local BottomBar = MakeBar(UDim2.new(0,0,1,-45), -90)
+
+    -- 侧边栏
+    local Sidebar = Instance.new("ScrollingFrame", Main)
+    Sidebar.Size = UDim2.new(0, 140, 1, -90)
+    Sidebar.Position = UDim2.new(0, 0, 0, 45)
+    Sidebar.BackgroundColor3 = COLORS.Sidebar
+    Sidebar.BorderSizePixel = 0
+    Sidebar.ScrollBarThickness = 0
+    local SGrad = Instance.new("UIGradient", Sidebar)
+    SGrad.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0,0), NumberSequenceKeypoint.new(0.8,0), NumberSequenceKeypoint.new(1,1)})
+    
+    local SideLayout = Instance.new("UIListLayout", Sidebar)
+    SideLayout.Padding = UDim.new(0, 4)
+    SideLayout.HorizontalAlignment = "Center"
+
+    local Container = Instance.new("Frame", Main)
+    Container.Size = UDim2.new(1, -160, 1, -100)
+    Container.Position = UDim2.new(0, 150, 0, 50)
+    Container.BackgroundTransparency = 1
+
+    -- --- 3. 功能键修复 (关闭/缩小) ---
+    local Title = Instance.new("TextLabel", Main)
+    Title.Text = "SOUL | ENGINE"
+    Title.Font = "GothamBold"
+    Title.TextColor3 = COLORS.Text
+    Title.TextSize = 16
+    Title.Position = UDim2.new(0, 15, 0, 0)
+    Title.Size = UDim2.new(0, 200, 0, 45)
+    Title.BackgroundTransparency = 1
+
+    local function CreateControl(txt, pos, color, callback)
+        local btn = Instance.new("TextButton", Main)
+        btn.Size = UDim2.new(0, 30, 0, 30)
+        btn.Position = UDim2.new(1, pos, 0, 7)
+        btn.BackgroundColor3 = color
+        btn.Text = txt
+        btn.TextColor3 = Color3.new(1,1,1)
+        Instance.new("UICorner", btn)
+        btn.MouseButton1Click:Connect(callback)
+    end
+
+    CreateControl("×", -40, Color3.fromRGB(255, 80, 80), function() ScreenGui:Destroy() end)
+    
+    local MiniIcon = Instance.new("TextButton", ScreenGui)
+    MiniIcon.Size = UDim2.new(0, 50, 0, 50)
+    MiniIcon.BackgroundColor3 = COLORS.Bar
+    MiniIcon.Text = "S"
+    MiniIcon.TextColor3 = Color3.new(1,1,1)
+    MiniIcon.Visible = false
+    Instance.new("UICorner", MiniIcon)
+
+    CreateControl("-", -75, COLORS.Accent, function()
+        Main.Visible = false
+        MiniIcon.Visible = true
+        MiniIcon.Position = UDim2.new(0, Main.AbsolutePosition.X + 250, 0, Main.AbsolutePosition.Y + 160)
+    end)
+
+    MiniIcon.MouseButton1Click:Connect(function() Main.Visible = true MiniIcon.Visible = false end)
+
+    -- --- 4. API (修复高亮提示不消除) ---
+    local currentBtn = nil
+
     function Library:CreateTab(name)
-        Library.Count = Library.Count + 1
-        local ID = Library.Count
-        
         local TabBtn = Instance.new("TextButton", Sidebar)
-        TabBtn.Size = UDim2.new(0, 120, 0, 35)
+        TabBtn.Size = UDim2.new(0, 125, 0, 40)
         TabBtn.BackgroundTransparency = 1
         TabBtn.Text = name
         TabBtn.TextColor3 = COLORS.Text
-        TabBtn.Font = "Gotham"
-        TabBtn.TextSize = 13
-        TabBtn.ZIndex = 15
+        TabBtn.Font = "GothamMedium"
+        TabBtn.TextSize = 14
+
+        local Indicator = Instance.new("Frame", TabBtn)
+        Indicator.Size = UDim2.new(0, 4, 0, 0) -- 初始高度0
+        Indicator.Position = UDim2.new(0, 5, 0.5, 0)
+        Indicator.BackgroundColor3 = COLORS.Highlight
+        Indicator.BorderSizePixel = 0
+        Instance.new("UICorner", Indicator)
 
         local Page = Instance.new("ScrollingFrame", Container)
         Page.Size = UDim2.new(1, 0, 1, 0)
         Page.BackgroundTransparency = 1
-        Page.Visible = (ID == 1)
-        Page.ScrollBarThickness = 0
-        Page.Position = UDim2.new(0, 20, 0, 0) -- 初始偏移用于特效
+        Page.Visible = false
+        Page.ScrollBarThickness = 2
         Instance.new("UIListLayout", Page).Padding = UDim.new(0, 8)
 
         TabBtn.MouseButton1Click:Connect(function()
-            for _, p in pairs(Container:GetChildren()) do
-                if p:IsA("ScrollingFrame") and p.Visible then
-                    TweenService:Create(p, TweenInfo.new(0.2), {Position = UDim2.new(0, -20, 0, 0), GroupTransparency = 1}):Play()
-                    task.wait(0.1)
-                    p.Visible = false
-                end
+            -- 消除之前的高亮
+            if currentBtn and currentBtn ~= TabBtn then
+                TweenService:Create(currentBtn.Indicator, TweenInfo.new(0.3), {Size = UDim2.new(0, 4, 0, 0), Position = UDim2.new(0, 5, 0.5, 0)}):Play()
+                TweenService:Create(currentBtn, TweenInfo.new(0.3), {TextColor3 = COLORS.Text}):Play()
             end
+            
+            -- 设置当前高亮
+            currentBtn = TabBtn
+            TweenService:Create(Indicator, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0, 4, 0, 24), Position = UDim2.new(0, 5, 0.5, -12)}):Play()
+            TweenService:Create(TabBtn, TweenInfo.new(0.3), {TextColor3 = COLORS.Highlight}):Play()
+
+            -- 页面切换效果
+            for _, p in pairs(Container:GetChildren()) do p.Visible = false end
             Page.Visible = true
-            Page.Position = UDim2.new(0, 20, 0, 0)
-            TweenService:Create(Page, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+            Page.Position = UDim2.new(0, 50, 0, 0)
+            TweenService:Create(Page, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Position = UDim2.new(0, 0, 0, 0)}):Play()
         end)
 
         local TabAPI = {}
-        
         function TabAPI:AddButton(text, callback)
             local b = Instance.new("TextButton", Page)
-            b.Size = UDim2.new(1, -10, 0, 38)
+            b.Size = UDim2.new(1, -10, 0, 40)
             b.BackgroundColor3 = Color3.new(1,1,1)
-            b.BackgroundTransparency = 0.4
+            b.BackgroundTransparency = 0.5
             b.Text = "  " .. text
             b.TextXAlignment = "Left"
-            b.TextColor3 = COLORS.Accent
-            b.Font = "GothamSemibold"
+            b.TextColor3 = COLORS.Text
             Instance.new("UICorner", b)
-            
-            b.MouseButton1Click:Connect(function()
-                local t = TweenService:Create(b, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Accent, TextColor3 = Color3.new(1,1,1)})
-                t:Play() t.Completed:Wait()
-                TweenService:Create(b, TweenInfo.new(0.2), {BackgroundColor3 = Color3.new(1,1,1), TextColor3 = COLORS.Accent}):Play()
-                callback()
-            end)
+            b.MouseButton1Click:Connect(callback)
         end
 
         function TabAPI:AddToggle(text, callback)
-            local tMain = Instance.new("TextButton", Page)
-            tMain.Size = UDim2.new(1, -10, 0, 40)
-            tMain.BackgroundColor3 = Color3.new(1,1,1)
-            tMain.BackgroundTransparency = 0.4
-            tMain.Text = "  " .. text
-            tMain.TextXAlignment = "Left"
-            tMain.TextColor3 = COLORS.Text
-            Instance.new("UICorner", tMain)
+            local t = Instance.new("TextButton", Page)
+            t.Size = UDim2.new(1, -10, 0, 40)
+            t.BackgroundColor3 = Color3.new(1,1,1)
+            t.BackgroundTransparency = 0.5
+            t.Text = "  " .. text
+            t.TextXAlignment = "Left"
+            t.TextColor3 = COLORS.Text
+            Instance.new("UICorner", t)
 
-            local box = Instance.new("Frame", tMain)
-            box.Size = UDim2.new(0, 34, 0, 18)
-            box.Position = UDim2.new(1, -45, 0.5, -9)
+            local box = Instance.new("Frame", t)
+            box.Size = UDim2.new(0, 40, 0, 20)
+            box.Position = UDim2.new(1, -50, 0.5, -10)
             box.BackgroundColor3 = COLORS.Bar
             Instance.new("UICorner", box).CornerRadius = UDim.new(1,0)
 
             local dot = Instance.new("Frame", box)
-            dot.Size = UDim2.new(0, 14, 0, 14)
-            dot.Position = UDim2.new(0, 2, 0.5, -7)
+            dot.Size = UDim2.new(0, 16, 0, 16)
+            dot.Position = UDim2.new(0, 2, 0.5, -8)
             dot.BackgroundColor3 = Color3.new(1,1,1)
             Instance.new("UICorner", dot).CornerRadius = UDim.new(1,0)
 
-            local state = false
-            tMain.MouseButton1Click:Connect(function()
-                state = not state
-                TweenService:Create(dot, TweenInfo.new(0.2), {Position = UDim2.new(state and 0.55 or 0, 2, 0.5, -7)}):Play()
-                TweenService:Create(box, TweenInfo.new(0.2), {BackgroundColor3 = state and COLORS.Accent or COLORS.Bar}):Play()
-                callback(state)
+            local s = false
+            t.MouseButton1Click:Connect(function()
+                s = not s
+                TweenService:Create(dot, TweenInfo.new(0.3), {Position = UDim2.new(s and 1 or 0, s and -18 or 2, 0.5, -8)}):Play()
+                TweenService:Create(box, TweenInfo.new(0.3), {BackgroundColor3 = s and COLORS.Highlight or COLORS.Bar}):Play()
+                callback(s)
             end)
         end
 
