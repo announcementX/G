@@ -1,4 +1,4 @@
-local Library = {Tabs = {}; Count = 0; IsMobile = true; Dragging = false}
+local Library = {Tabs = {}; Count = 0; IsMobile = true}
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
@@ -6,204 +6,175 @@ local RunService = game:GetService("RunService")
 
 function Library:Init()
     local ScreenGui = Instance.new("ScreenGui", CoreGui)
-    ScreenGui.Name = "SOUL_V12_PRO"
-    ScreenGui.IgnoreGuiInset = true
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-
-    local COLORS = {
-        Main = Color3.fromRGB(255, 240, 245),
-        Accent = Color3.fromRGB(255, 100, 160),
-        Dark = Color3.fromRGB(15, 10, 12),
-        Sidebar = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 200, 225)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 240, 245))
-        })
-    }
-
-    -- --- 1. 高级加载动画：灵魂坍缩 (全屏) ---
+    ScreenGui.Name = "SOUL_V13_MASTER"
+    ScreenGui.IgnoreGuiInset = true -- 真正全屏
+    
+    -- --- 1. 你要的“极致炫酷”全屏加载 ---
     local Loader = Instance.new("Frame", ScreenGui)
     Loader.Size = UDim2.new(1, 0, 1, 0)
-    Loader.BackgroundColor3 = COLORS.Dark
-    Loader.ZIndex = 10000
+    Loader.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+    Loader.ZIndex = 20000
 
     local Logo = Instance.new("TextLabel", Loader)
-    Logo.Text = "S  O  U  L"
-    Logo.Font = Enum.Font.GothamBold
-    Logo.TextSize = 50
-    Logo.TextColor3 = Color3.new(1, 1, 1)
+    Logo.Text = "S O U L"
+    Logo.Font = "GothamBold"
+    Logo.TextSize = 1
+    Logo.TextColor3 = Color3.fromRGB(255, 100, 160)
     Logo.Size = UDim2.new(1, 0, 1, 0)
     Logo.BackgroundTransparency = 1
-    Logo.ZIndex = 10001
 
-    -- 粒子背景动效
+    -- 灵魂波纹特效
     task.spawn(function()
-        for i = 1, 30 do
-            local p = Instance.new("Frame", Loader)
-            p.Size = UDim2.new(0, 3, 0, 3)
-            p.BackgroundColor3 = COLORS.Accent
-            p.Position = UDim2.new(math.random(), 0, math.random(), 0)
-            Instance.new("UICorner", p)
-            TweenService:Create(p, TweenInfo.new(2, Enum.EasingStyle.Quart), {Position = UDim2.new(0.5, 0, 0.5, 0), BackgroundTransparency = 1}):Play()
-        end
-        TweenService:Create(Logo, TweenInfo.new(1.2, Enum.EasingStyle.Back), {TextSize = 100}):Play()
-        task.wait(1.5)
+        local t1 = TweenService:Create(Logo, TweenInfo.new(1.2, Enum.EasingStyle.Back), {TextSize = 80})
+        t1:Play()
+        t1.Completed:Wait()
+        -- 炸裂渐隐
+        TweenService:Create(Logo, TweenInfo.new(0.8), {TextSize = 200, TextTransparency = 1}):Play()
         TweenService:Create(Loader, TweenInfo.new(1), {BackgroundTransparency = 1}):Play()
-        TweenService:Create(Logo, TweenInfo.new(0.8), {TextTransparency = 1, TextSize = 150}):Play()
         task.delay(1, function() Loader:Destroy() end)
     end)
 
-    -- --- 2. 主框架 (物理重构) ---
+    -- --- 2. 主框架 (粉色渐变背景 + 手机端拖拽) ---
     local Main = Instance.new("Frame", ScreenGui)
     Main.Size = UDim2.new(0, 520, 0, 340)
     Main.Position = UDim2.new(0.5, -260, 0.5, -170)
-    Main.BackgroundColor3 = COLORS.Main
-    Main.BorderSizePixel = 0
-    Main.ZIndex = 100
+    Main.BackgroundColor3 = Color3.new(1, 1, 1)
     Main.ClipsDescendants = true
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+    Main.ZIndex = 100
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 15)
+    
+    -- 你要求的渐变背景
+    local MainGrad = Instance.new("UIGradient", Main)
+    MainGrad.Color = ColorSequence.new(Color3.fromRGB(255, 190, 220), Color3.fromRGB(255, 245, 250))
+    MainGrad.Rotation = 45
 
-    -- 侧边栏
+    -- 拖拽逻辑 (手机端强制优化)
+    local dragging, dragInput, dragStart, startPos
+    Main.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+            dragging = true dragStart = i.Position startPos = Main.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(i)
+        if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+            dragInput = i
+        end
+    end)
+    RunService.RenderStepped:Connect(function()
+        if dragging and dragInput then
+            local delta = dragInput.Position - dragStart
+            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function() dragging = false end)
+
+    -- --- 3. 补全：物理绘制的控制键 ---
+    local function CreateCtrl(x, color, isClose, cb)
+        local b = Instance.new("TextButton", Main)
+        b.Size = UDim2.new(0, 28, 0, 28)
+        b.Position = UDim2.new(1, x, 0, 12)
+        b.BackgroundColor3 = color
+        b.Text = ""
+        b.ZIndex = 500
+        Instance.new("UICorner", b).CornerRadius = UDim.new(1, 0)
+        
+        local l = Instance.new("Frame", b)
+        l.Size = UDim2.new(0.6, 0, 0, 2)
+        l.Position = UDim2.new(0.5, 0, 0.5, 0)
+        l.AnchorPoint = Vector2.new(0.5, 0.5)
+        l.BackgroundColor3 = Color3.new(1, 1, 1)
+        if isClose then
+            l.Rotation = 45
+            local l2 = l:Clone()
+            l2.Parent = b
+            l2.Rotation = -45
+        end
+        b.MouseButton1Click:Connect(cb)
+    end
+
+    -- 极小化回显球 (手机适配)
+    local Mini = Instance.new("TextButton", ScreenGui)
+    Mini.Size = UDim2.new(0, 38, 0, 38)
+    Mini.BackgroundColor3 = Color3.fromRGB(255, 100, 160)
+    Mini.Visible = false
+    Mini.Text = "S"
+    Mini.Font = "GothamBold"
+    Mini.TextColor3 = Color3.new(1, 1, 1)
+    Mini.ZIndex = 1000
+    Instance.new("UICorner", Mini).CornerRadius = UDim.new(1, 0)
+
+    -- 关闭动画
+    CreateCtrl(-40, Color3.fromRGB(255, 80, 80), true, function()
+        Main:TweenSizeAndPosition(UDim2.new(0,0,0,0), Main.Position + UDim2.new(0,260,0,170), "In", "Back", 0.4, true)
+        task.wait(0.4) ScreenGui:Destroy()
+    end)
+
+    -- 缩小动画
+    CreateCtrl(-75, Color3.fromRGB(255, 120, 180), false, function()
+        Main:TweenSize(UDim2.new(0,0,0,0), "In", "Quad", 0.3, true)
+        task.wait(0.3)
+        Main.Visible = false
+        Mini.Position = UDim2.new(0.5, -19, 0.05, 0)
+        Mini.Visible = true
+    end)
+
+    Mini.MouseButton1Click:Connect(function()
+        Main.Visible = true
+        Main:TweenSize(UDim2.new(0, 520, 0, 340), "Out", "Back", 0.4, true)
+        Mini.Visible = false
+    end)
+
+    -- --- 4. 栏目系统 (修复无法切换) ---
     local Sidebar = Instance.new("Frame", Main)
     Sidebar.Size = UDim2.new(0, 140, 1, 0)
-    Sidebar.BackgroundColor3 = Color3.new(1,1,1)
-    Sidebar.ZIndex = 110
-    local SGrad = Instance.new("UIGradient", Sidebar)
-    SGrad.Color = COLORS.Sidebar
-    SGrad.Rotation = 90
-
-    local SideScroll = Instance.new("ScrollingFrame", Sidebar)
-    SideScroll.Size = UDim2.new(1, 0, 1, -60)
-    SideScroll.Position = UDim2.new(0, 0, 0, 60)
-    SideScroll.BackgroundTransparency = 1
-    SideScroll.ScrollBarThickness = 0
-    Instance.new("UIListLayout", SideScroll).Padding = UDim.new(0, 5)
+    Sidebar.BackgroundTransparency = 1
+    Instance.new("UIListLayout", Sidebar).Padding = UDim.new(0, 5)
+    Instance.new("UIPadding", Sidebar).PaddingTop = UDim.new(0, 60)
 
     local Container = Instance.new("Frame", Main)
     Container.Size = UDim2.new(1, -160, 1, -70)
     Container.Position = UDim2.new(0, 150, 0, 60)
     Container.BackgroundTransparency = 1
-    Container.ZIndex = 105
 
-    -- --- 3. 手机端顶级拖拽系统 (物理帧同步) ---
-    local function EnableDrag(UI)
-        local dragInput, dragStart, startPos
-        UI.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                Library.Dragging = true
-                dragStart = input.Position
-                startPos = UI.Position
-                input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then Library.Dragging = false end
-                end)
-            end
-        end)
-        UI.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                dragInput = input
-            end
-        end)
-        RunService.RenderStepped:Connect(function()
-            if Library.Dragging and dragInput then
-                local delta = dragInput.Position - dragStart
-                UI.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-            end
-        end)
-    end
-    EnableDrag(Main)
-
-    -- --- 4. 纯手工控制键 (解决叉号显示) ---
-    local function CreateIconBtn(x, color, cb, isClose)
-        local btn = Instance.new("TextButton", Main)
-        btn.Size = UDim2.new(0, 30, 0, 30)
-        btn.Position = UDim2.new(1, x, 0, 15)
-        btn.BackgroundColor3 = color
-        btn.Text = ""
-        btn.ZIndex = 500
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
-        
-        local l1 = Instance.new("Frame", btn)
-        l1.Size = UDim2.new(0.6, 0, 0, 2)
-        l1.Position = UDim2.new(0.5, 0, 0.5, 0)
-        l1.AnchorPoint = Vector2.new(0.5, 0.5)
-        l1.BackgroundColor3 = Color3.new(1,1,1)
-        l1.BorderSizePixel = 0
-        if isClose then
-            l1.Rotation = 45
-            local l2 = l1:Clone()
-            l2.Parent = btn
-            l2.Rotation = -45
-        end
-        
-        btn.MouseButton1Click:Connect(cb)
-    end
-
-    -- 极小化悬浮窗
-    local MiniBall = Instance.new("TextButton", ScreenGui)
-    MiniBall.Size = UDim2.new(0, 45, 0, 45)
-    MiniBall.BackgroundColor3 = COLORS.Accent
-    MiniBall.Text = "S"
-    MiniBall.Font = "GothamBold"
-    MiniBall.TextColor3 = Color3.new(1, 1, 1)
-    MiniBall.Visible = false
-    MiniBall.ZIndex = 2000
-    Instance.new("UICorner", MiniBall).CornerRadius = UDim.new(1,0)
-    EnableDrag(MiniBall)
-
-    CreateIconBtn(-45, Color3.fromRGB(255, 95, 95), function()
-        Main:TweenSize(UDim2.new(0,0,0,0), "In", "Back", 0.4, true)
-        task.wait(0.4) ScreenGui:Destroy()
-    end, true)
-
-    CreateIconBtn(-85, COLORS.Accent, function()
-        Main.Visible = false
-        MiniBall.Visible = true
-        MiniBall.Position = UDim2.new(0.5, -22, 0.1, 0)
-    end, false)
-
-    MiniBall.MouseButton1Click:Connect(function()
-        Main.Visible = true
-        MiniBall.Visible = false
-    end)
-
-    -- --- 5. 核心 API (强制物理切换) ---
     function Library:CreateTab(name)
         Library.Count = Library.Count + 1
         local ID = Library.Count
 
-        local TabBtn = Instance.new("TextButton", SideScroll)
-        TabBtn.Size = UDim2.new(1, -20, 0, 40)
+        local TabBtn = Instance.new("TextButton", Sidebar)
+        TabBtn.Size = UDim2.new(0.9, 0, 0, 38)
         TabBtn.BackgroundTransparency = 1
         TabBtn.Text = name
-        TabBtn.TextColor3 = Color3.fromRGB(100, 80, 90)
+        TabBtn.TextColor3 = Color3.fromRGB(80, 60, 70)
         TabBtn.Font = "Gotham"
-        TabBtn.TextSize = 14
 
         local Page = Instance.new("ScrollingFrame", Container)
         Page.Size = UDim2.new(1, 0, 1, 0)
         Page.BackgroundTransparency = 1
         Page.Visible = false
         Page.ScrollBarThickness = 0
-        Instance.new("UIListLayout", Page).Padding = UDim.new(0, 10)
+        Instance.new("UIListLayout", Page).Padding = UDim.new(0, 8)
 
         TabBtn.MouseButton1Click:Connect(function()
-            -- 强制物理清除
+            -- 彻底重置
             for _, v in pairs(Container:GetChildren()) do if v:IsA("ScrollingFrame") then v.Visible = false end end
-            for _, v in pairs(SideScroll:GetChildren()) do if v:IsA("TextButton") then v.TextColor3 = Color3.fromRGB(100, 80, 90) end end
-            
+            for _, v in pairs(Sidebar:GetChildren()) do if v:IsA("TextButton") then v.BackgroundTransparency = 1 end end
+            -- 激活
             Page.Visible = true
-            TabBtn.TextColor3 = COLORS.Accent
-            -- 切入动画
-            Page.Position = UDim2.new(0, 30, 0, 0)
-            Page:TweenPosition(UDim2.new(0, 0, 0, 0), "Out", "Quart", 0.4, true)
+            TabBtn.BackgroundTransparency = 0.8
+            TabBtn.BackgroundColor3 = Color3.new(1,1,1)
+            -- 动画切入
+            Page.Position = UDim2.new(0, 20, 0, 0)
+            Page:TweenPosition(UDim2.new(0,0,0,0), "Out", "Quart", 0.3, true)
         end)
 
-        if ID == 1 then task.delay(1.5, function() Page.Visible = true; TabBtn.TextColor3 = COLORS.Accent end) end
+        if ID == 1 then task.delay(1.5, function() Page.Visible = true; TabBtn.BackgroundTransparency = 0.8 end) end
 
         local TabAPI = {}
         function TabAPI:AddButton(text, cb)
             local b = Instance.new("TextButton", Page)
-            b.Size = UDim2.new(1, -10, 0, 42)
+            b.Size = UDim2.new(1, -10, 0, 40)
             b.BackgroundColor3 = Color3.new(1, 1, 1)
+            b.BackgroundTransparency = 0.5
             b.Text = "  " .. text
             b.TextXAlignment = "Left"
             b.Font = "GothamBold"
