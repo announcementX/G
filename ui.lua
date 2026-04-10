@@ -1,140 +1,159 @@
-local Library = {Tabs = {}; Count = 0}
+local Library = {Tabs = {}; Count = 0; Animating = false}
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
 
 function Library:Init()
     local ScreenGui = Instance.new("ScreenGui", CoreGui)
-    ScreenGui.Name = "SOUL_V9_FINAL"
+    ScreenGui.Name = "SOUL_V10_ETHEREAL"
     ScreenGui.IgnoreGuiInset = true
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 
     local COLORS = {
-        Main = Color3.fromRGB(255, 240, 245),
-        Sidebar = Color3.fromRGB(255, 200, 220),
-        Accent = Color3.fromRGB(255, 80, 150),
-        Text = Color3.fromRGB(60, 40, 50),
-        Dark = Color3.fromRGB(20, 10, 15)
+        Main = Color3.fromRGB(255, 245, 250),
+        Sidebar = Color3.fromRGB(255, 210, 230),
+        Accent = Color3.fromRGB(255, 120, 180),
+        Text = Color3.fromRGB(80, 60, 70),
+        LoaderBG = Color3.fromRGB(15, 12, 14)
     }
 
-    -- --- 1. 真正的全屏炫酷加载 ---
+    -- --- 1. 震撼：灵魂粒子炸裂加载 ---
     local Loader = Instance.new("Frame", ScreenGui)
     Loader.Size = UDim2.new(1, 0, 1, 0)
-    Loader.BackgroundColor3 = COLORS.Dark
-    Loader.ZIndex = 10000
+    Loader.BackgroundColor3 = COLORS.LoaderBG
+    Loader.ZIndex = 20000
 
-    local SoulText = Instance.new("TextLabel", Loader)
-    SoulText.Size = UDim2.new(1, 0, 1, 0)
-    SoulText.Text = "S O U L"
-    SoulText.Font = Enum.Font.GothamBold
-    SoulText.TextColor3 = Color3.new(1, 1, 1)
-    SoulText.TextSize = 0
-    SoulText.BackgroundTransparency = 1
-    SoulText.ZIndex = 10001
+    local CenterText = Instance.new("TextLabel", Loader)
+    CenterText.Size = UDim2.new(1, 0, 1, 0)
+    CenterText.Text = "SOUL"
+    CenterText.Font = "GothamBold"
+    CenterText.TextColor3 = Color3.new(1, 1, 1)
+    CenterText.TextSize = 0
+    CenterText.BackgroundTransparency = 1
+    CenterText.ZIndex = 20001
 
     task.spawn(function()
-        -- 震荡放大效果
-        TweenService:Create(SoulText, TweenInfo.new(1, Enum.EasingStyle.Back), {TextSize = 100}):Play()
-        task.wait(1.2)
-        TweenService:Create(SoulText, TweenInfo.new(0.5), {TextTransparency = 1, TextSize = 150}):Play()
-        TweenService:Create(Loader, TweenInfo.new(0.8), {BackgroundTransparency = 1}):Play()
-        task.delay(0.8, function() Loader:Destroy() end)
+        -- 粒子爆炸
+        for i = 1, 24 do
+            local p = Instance.new("Frame", Loader)
+            p.Size = UDim2.new(0, 4, 0, 4)
+            p.BackgroundColor3 = COLORS.Accent
+            p.Position = UDim2.new(0.5, 0, 0.5, 0)
+            Instance.new("UICorner", p)
+            local angle = math.rad(i * (360/24))
+            local targetPos = UDim2.new(0.5 + math.cos(angle)*0.2, 0, 0.5 + math.sin(angle)*0.2, 0)
+            TweenService:Create(p, TweenInfo.new(1.5, Enum.EasingStyle.Quart), {Position = targetPos, BackgroundTransparency = 1}):Play()
+        end
+        TweenService:Create(CenterText, TweenInfo.new(1, Enum.EasingStyle.Back), {TextSize = 80}):Play()
+        task.wait(1.5)
+        TweenService:Create(Loader, TweenInfo.new(1), {BackgroundTransparency = 1}):Play()
+        TweenService:Create(CenterText, TweenInfo.new(0.8), {TextTransparency = 1}):Play()
+        task.delay(1, function() Loader:Destroy() end)
     end)
 
-    -- --- 2. 主框架 (解决点击失效) ---
+    -- --- 2. 主框架 (极简设计) ---
     local Main = Instance.new("Frame", ScreenGui)
-    Main.Size = UDim2.new(0, 580, 0, 400)
-    Main.Position = UDim2.new(0.5, -290, 0.5, -200)
+    Main.Size = UDim2.new(0, 560, 0, 380)
+    Main.Position = UDim2.new(0.5, -280, 0.5, -190)
     Main.BackgroundColor3 = COLORS.Main
     Main.BorderSizePixel = 0
+    Main.ClipsDescendants = true
     Main.ZIndex = 100
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 20)
 
-    -- 背景渐变
-    local MainGrad = Instance.new("UIGradient", Main)
-    MainGrad.Color = ColorSequence.new(COLORS.Sidebar, COLORS.Main)
-    MainGrad.Rotation = 45
-
-    -- 侧边栏
-    local Sidebar = Instance.new("Frame", Main)
-    Sidebar.Size = UDim2.new(0, 150, 1, 0)
-    Sidebar.BackgroundTransparency = 1
-    Sidebar.ZIndex = 110
-
-    local SideLayout = Instance.new("UIListLayout", Sidebar)
-    SideLayout.Padding = UDim.new(0, 5)
-    SideLayout.HorizontalAlignment = "Center"
-    Instance.new("UIPadding", Sidebar).PaddingTop = UDim.new(0, 60)
+    -- 渐变背景
+    local Grad = Instance.new("UIGradient", Main)
+    Grad.Color = ColorSequence.new(COLORS.Sidebar, COLORS.Main)
+    Grad.Rotation = 45
 
     local Container = Instance.new("Frame", Main)
-    Container.Size = UDim2.new(1, -170, 1, -80)
+    Container.Size = UDim2.new(1, -170, 1, -70)
     Container.Position = UDim2.new(0, 160, 0, 60)
     Container.BackgroundTransparency = 1
-    Container.ZIndex = 105
 
-    -- --- 3. 核心控制键 (强制置顶) ---
-    local function CreateBtn(name, txt, x, color, cb)
+    -- --- 3. 隐藏式控制键 (点击必灵敏) ---
+    local function CreateControl(icon, x, cb)
         local b = Instance.new("TextButton", Main)
-        b.Name = name
-        b.Size = UDim2.new(0, 32, 0, 32)
-        b.Position = UDim2.new(1, x, 0, 12)
-        b.BackgroundColor3 = color
-        b.Text = txt
-        b.Font = "GothamBold"
-        b.TextColor3 = Color3.new(1, 1, 1)
-        b.ZIndex = 500 -- 极高层级
+        b.Size = UDim2.new(0, 24, 0, 24)
+        b.Position = UDim2.new(1, x, 0, 15)
+        b.BackgroundTransparency = 0.8
+        b.BackgroundColor3 = COLORS.Accent
+        b.Text = icon
+        b.TextColor3 = COLORS.Text
+        b.Font = "Gotham"
+        b.TextSize = 12
+        b.ZIndex = 500
         Instance.new("UICorner", b).CornerRadius = UDim.new(1, 0)
         
-        -- 增加点击缩小动画
-        b.MouseButton1Down:Connect(function()
-            b:TweenSize(UDim2.new(0, 28, 0, 28), "Out", "Quad", 0.1, true)
+        b.MouseButton1Click:Connect(function()
+            if Library.Animating then return end -- 动画中禁止重复点击
+            cb()
         end)
-        b.MouseButton1Up:Connect(function()
-            b:TweenSize(UDim2.new(0, 32, 0, 32), "Out", "Quad", 0.1, true)
-        end)
-        b.MouseButton1Click:Connect(cb)
     end
 
-    -- 关闭功能 (带缩小消失动画)
-    CreateBtn("Close", "×", -45, Color3.fromRGB(255, 90, 90), function()
-        Main:TweenSize(UDim2.new(0, 0, 0, 0), "In", "Back", 0.4, true)
+    -- 缩小回显球 (极小化设计)
+    local MiniBall = Instance.new("TextButton", ScreenGui)
+    MiniBall.Size = UDim2.new(0, 35, 0, 35) -- 缩小尺寸
+    MiniBall.BackgroundColor3 = COLORS.Accent
+    MiniBall.Visible = false
+    MiniBall.ZIndex = 1000
+    MiniBall.Text = ""
+    Instance.new("UICorner", MiniBall).CornerRadius = UDim.new(1, 0)
+    -- 呼吸灯特效
+    task.spawn(function()
+        while true do
+            TweenService:Create(MiniBall, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency = 0.4}):Play()
+            task.wait(1)
+            TweenService:Create(MiniBall, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency = 0}):Play()
+            task.wait(1)
+        end
+    end)
+
+    -- 关闭动画
+    CreateControl("✕", -35, function()
+        Library.Animating = true
+        Main:TweenSizeAndPosition(UDim2.new(0,0,0,0), Main.Position + UDim2.new(0,280,0,190), "In", "Back", 0.4, true)
         task.wait(0.4) ScreenGui:Destroy()
     end)
 
-    -- 缩小功能
-    local MiniIcon = Instance.new("TextButton", ScreenGui)
-    MiniIcon.Size = UDim2.new(0, 55, 0, 55)
-    MiniIcon.BackgroundColor3 = COLORS.Accent
-    MiniIcon.Text = "S"
-    MiniIcon.TextColor3 = Color3.new(1, 1, 1)
-    MiniIcon.Visible = false
-    MiniIcon.ZIndex = 1000
-    Instance.new("UICorner", MiniIcon).CornerRadius = UDim.new(1, 0)
-
-    CreateBtn("Min", "-", -85, COLORS.Accent, function()
+    -- 缩小动画 (丝滑衔接)
+    CreateControl("—", -65, function()
+        Library.Animating = true
+        Main:TweenSize(UDim2.new(0,0,0,0), "In", "Quad", 0.3, true)
+        task.wait(0.3)
         Main.Visible = false
-        MiniIcon.Visible = true
-        MiniIcon.Position = UDim2.new(0.5, -27, 0.1, 0)
+        MiniBall.Position = UDim2.new(0.5, -17, 0.05, 0)
+        MiniBall.Visible = true
+        Library.Animating = false
     end)
 
-    MiniIcon.MouseButton1Click:Connect(function()
+    MiniBall.MouseButton1Click:Connect(function()
+        MiniBall.Visible = false
         Main.Visible = true
-        MiniIcon.Visible = false
+        Main:TweenSize(UDim2.new(0, 560, 0, 380), "Out", "Back", 0.4, true)
     end)
 
-    -- --- 4. API (修复切换逻辑) ---
+    -- --- 4. 栏目 API ---
+    local Sidebar = Instance.new("Frame", Main)
+    Sidebar.Size = UDim2.new(0, 140, 1, 0)
+    Sidebar.BackgroundTransparency = 1
+    local SideLayout = Instance.new("UIListLayout", Sidebar)
+    SideLayout.Padding = UDim.new(0, 10)
+    SideLayout.HorizontalAlignment = "Center"
+    Instance.new("UIPadding", Sidebar).PaddingTop = UDim.new(0, 70)
+
     function Library:CreateTab(name)
         Library.Count = Library.Count + 1
         local ID = Library.Count
-
+        
         local TabBtn = Instance.new("TextButton", Sidebar)
-        TabBtn.Size = UDim2.new(0.9, 0, 0, 40)
-        TabBtn.BackgroundColor3 = Color3.new(1, 1, 1)
-        TabBtn.BackgroundTransparency = 0.8
+        TabBtn.Size = UDim2.new(0.85, 0, 0, 35)
+        TabBtn.BackgroundTransparency = 1
         TabBtn.Text = name
         TabBtn.TextColor3 = COLORS.Text
+        TabBtn.Font = "Gotham"
+        TabBtn.TextSize = 13
         TabBtn.ZIndex = 120
-        Instance.new("UICorner", TabBtn)
 
         local Page = Instance.new("ScrollingFrame", Container)
         Page.Size = UDim2.new(1, 0, 1, 0)
@@ -144,95 +163,73 @@ function Library:Init()
         Instance.new("UIListLayout", Page).Padding = UDim.new(0, 8)
 
         TabBtn.MouseButton1Click:Connect(function()
-            -- 强制重置
-            for _, v in pairs(Container:GetChildren()) do
-                if v:IsA("ScrollingFrame") then v.Visible = false end
-            end
-            for _, v in pairs(Sidebar:GetChildren()) do
-                if v:IsA("TextButton") then
-                    TweenService:Create(v, TweenInfo.new(0.3), {BackgroundTransparency = 0.8, TextColor3 = COLORS.Text}):Play()
-                end
-            end
-            -- 激活动画
-            Page.Visible = true
-            TweenService:Create(TabBtn, TweenInfo.new(0.3), {BackgroundTransparency = 0.4, TextColor3 = COLORS.Accent}):Play()
+            if Library.Animating then return end
+            -- 强制物理重置
+            for _, v in pairs(Container:GetChildren()) do if v:IsA("ScrollingFrame") then v.Visible = false end end
+            for _, v in pairs(Sidebar:GetChildren()) do if v:IsA("TextButton") then v.BackgroundTransparency = 1 end end
             
-            -- 切换特效 (位移)
-            Page.Position = UDim2.new(0, 20, 0, 0)
+            Page.Visible = true
+            TabBtn.BackgroundTransparency = 0.8
+            TabBtn.BackgroundColor3 = Color3.new(1,1,1)
+            -- 侧边栏切入动画
+            Page.Position = UDim2.new(0, 15, 0, 0)
             Page:TweenPosition(UDim2.new(0, 0, 0, 0), "Out", "Quart", 0.3, true)
         end)
 
         -- 默认开启第一个
-        if ID == 1 then
-            task.spawn(function()
-                task.wait(1.5)
-                Page.Visible = true
-                TabBtn.BackgroundTransparency = 0.4
-                TabBtn.TextColor3 = COLORS.Accent
-            end)
-        end
+        if ID == 1 then task.delay(1.6, function() Page.Visible = true end) end
 
         local TabAPI = {}
-        
-        -- 点击触发按钮 (带缩小动画)
         function TabAPI:AddButton(text, cb)
             local b = Instance.new("TextButton", Page)
-            b.Size = UDim2.new(1, -10, 0, 40)
+            b.Size = UDim2.new(1, -10, 0, 38)
             b.BackgroundColor3 = Color3.new(1, 1, 1)
+            b.BackgroundTransparency = 0.5
             b.Text = "  " .. text
             b.TextXAlignment = "Left"
-            b.Font = "GothamBold"
-            Instance.new("UICorner", b)
-            b.MouseButton1Click:Connect(function()
-                b:TweenSize(UDim2.new(1, -20, 0, 36), "Out", "Quad", 0.1, true)
-                task.wait(0.1)
-                b:TweenSize(UDim2.new(1, -10, 0, 40), "Out", "Quad", 0.1, true)
-                cb()
-            end)
+            b.Font = "GothamMedium"
+            Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+            b.MouseButton1Click:Connect(cb)
         end
-
-        -- 开关按钮
         function TabAPI:AddToggle(text, cb)
             local t = Instance.new("TextButton", Page)
-            t.Size = UDim2.new(1, -10, 0, 40)
+            t.Size = UDim2.new(1, -10, 0, 38)
             t.BackgroundColor3 = Color3.new(1, 1, 1)
+            t.BackgroundTransparency = 0.5
             t.Text = "  " .. text
             t.TextXAlignment = "Left"
-            Instance.new("UICorner", t)
+            Instance.new("UICorner", t).CornerRadius = UDim.new(0, 8)
             
             local box = Instance.new("Frame", t)
-            box.Size = UDim2.new(0, 40, 0, 20)
-            box.Position = UDim2.new(1, -50, 0.5, -10)
-            box.BackgroundColor3 = Color3.fromRGB(220, 220, 220)
+            box.Size = UDim2.new(0, 34, 0, 18)
+            box.Position = UDim2.new(1, -45, 0.5, -9)
+            box.BackgroundColor3 = Color3.fromRGB(210, 210, 210)
             Instance.new("UICorner", box).CornerRadius = UDim.new(1, 0)
             
             local dot = Instance.new("Frame", box)
-            dot.Size = UDim2.new(0, 16, 0, 16)
-            dot.Position = UDim2.new(0, 2, 0.5, -8)
+            dot.Size = UDim2.new(0, 14, 0, 14)
+            dot.Position = UDim2.new(0, 2, 0.5, -7)
             dot.BackgroundColor3 = Color3.new(1, 1, 1)
             Instance.new("UICorner", dot)
 
             local s = false
             t.MouseButton1Click:Connect(function()
                 s = not s
-                dot:TweenPosition(UDim2.new(s and 1 or 0, s and -18 or 2, 0.5, -8), "Out", "Quad", 0.2, true)
-                TweenService:Create(box, TweenInfo.new(0.2), {BackgroundColor3 = s and COLORS.Accent or Color3.fromRGB(220, 220, 220)}):Play()
+                dot:TweenPosition(UDim2.new(s and 1 or 0, s and -16 or 2, 0.5, -7), "Out", "Quad", 0.2, true)
+                TweenService:Create(box, TweenInfo.new(0.2), {BackgroundColor3 = s and COLORS.Accent or Color3.fromRGB(210, 210, 210)}):Play()
                 cb(s)
             end)
         end
-
         return TabAPI
     end
 
-    -- 简单拖拽
+    -- 拖拽逻辑修复
     local dStart, sPos, dragging
     Main.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-            dragging = true dStart = i.Position sPos = Main.Position
-        end
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true dStart = i.Position sPos = Main.Position end
     end)
     UserInputService.InputChanged:Connect(function(i)
-        if dragging and (i.UserInputType.Name:find("Mouse") or i.UserInputType == Enum.UserInputType.Touch) then
+        if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = i.Position - dStart
             Main.Position = UDim2.new(sPos.X.Scale, sPos.X.Offset + delta.X, sPos.Y.Scale, sPos.Y.Offset + delta.Y)
         end
