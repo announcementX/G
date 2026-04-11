@@ -1,5 +1,5 @@
--- [[ CyberPink UI V7 - Mobile & Touch Optimized ]]
-local CyberPink = {}
+-- [[ CyberPink UI V8 - Mobile Optimized with Minimize ]]
+local CyberPink = { _Toggled = true }
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
@@ -7,7 +7,6 @@ local CoreGui = game:GetService("CoreGui")
 function CyberPink:CreateWindow(Config)
     local WindowName = Config.Name or "CyberPink UI"
     
-    -- 清理旧 UI
     for _, v in pairs(CoreGui:GetChildren()) do
         if v.Name == "CyberPink_Root" then v:Destroy() end
     end
@@ -15,11 +14,10 @@ function CyberPink:CreateWindow(Config)
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "CyberPink_Root"
     ScreenGui.Parent = CoreGui
-    ScreenGui.ResetOnSpawn = false
     
     local Main = Instance.new("Frame")
     Main.Name = "Main"
-    Main.Size = UDim2.new(0, 420, 0, 280) -- 手机端稍微调小一点尺寸，更适合屏幕
+    Main.Size = UDim2.new(0, 420, 0, 280)
     Main.Position = UDim2.new(0.5, -210, 0.5, -140)
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     Main.BorderSizePixel = 0
@@ -27,10 +25,9 @@ function CyberPink:CreateWindow(Config)
     Main.Parent = ScreenGui
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
 
-    -- 【手机端优化的标题栏】
+    -- 【顶部标题栏】
     local Topbar = Instance.new("Frame")
-    Topbar.Name = "Topbar"
-    Topbar.Size = UDim2.new(1, 0, 0, 45) -- 稍微加高，方便手指点击
+    Topbar.Size = UDim2.new(1, 0, 0, 45)
     Topbar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     Topbar.BorderSizePixel = 0
     Topbar.Parent = Main
@@ -46,68 +43,81 @@ function CyberPink:CreateWindow(Config)
     Title.BackgroundTransparency = 1
     Title.Parent = Topbar
 
-    -- 【关闭按钮 - 手机端点击优化】
-    local CloseBtn = Instance.new("TextButton")
-    CloseBtn.Size = UDim2.new(0, 32, 0, 32)
-    CloseBtn.Position = UDim2.new(1, -40, 0.5, -16)
-    CloseBtn.Text = "×"
-    CloseBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
-    CloseBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    CloseBtn.Font = Enum.Font.GothamBold
-    CloseBtn.Parent = Topbar
-    Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 8)
-    CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+    -- 【按钮组】
+    local Btns = Instance.new("Frame")
+    Btns.Size = UDim2.new(0, 80, 1, 0)
+    Btns.Position = UDim2.new(1, -85, 0, 0)
+    Btns.BackgroundTransparency = 1
+    Btns.Parent = Topbar
 
-    -- 【🔥 顶级手机端拖拽逻辑修复】
-    local dragging, dragInput, dragStart, startPos
-    
-    local function update(input)
-        local delta = input.Position - dragStart
-        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
+    -- 关闭按钮
+    local Close = Instance.new("TextButton")
+    Close.Size = UDim2.new(0, 30, 0, 30)
+    Close.Position = UDim2.new(0, 45, 0.5, -15)
+    Close.Text = "×"
+    Close.TextColor3 = Color3.fromRGB(255, 100, 100)
+    Close.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    Close.Parent = Btns
+    Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 8)
+    Close.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
+    -- 最小化按钮 (恢复正常！)
+    local Minimize = Instance.new("TextButton")
+    Minimize.Size = UDim2.new(0, 30, 0, 30)
+    Minimize.Position = UDim2.new(0, 5, 0.5, -15)
+    Minimize.Text = "-"
+    Minimize.TextColor3 = Color3.fromRGB(255, 192, 203)
+    Minimize.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    Minimize.Parent = Btns
+    Instance.new("UICorner", Minimize).CornerRadius = UDim.new(0, 8)
+
+    Minimize.MouseButton1Click:Connect(function()
+        CyberPink._Toggled = not CyberPink._Toggled
+        local targetSize = CyberPink._Toggled and UDim2.new(0, 420, 0, 280) or UDim2.new(0, 420, 0, 45)
+        Main:TweenSize(targetSize, "Out", "Quart", 0.35, true)
+    end)
+
+    -- 【手机端丝滑拖拽】
+    local dragging, dragStart, startPos
     Topbar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = Main.Position
-            
             input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
             end)
         end
     end)
-
-    Topbar.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-
     UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            update(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
 
-    -- 分页与组件
+    -- 内容区
+    local ContentFrame = Instance.new("Frame")
+    ContentFrame.Size = UDim2.new(1, 0, 1, -45)
+    ContentFrame.Position = UDim2.new(0, 0, 0, 45)
+    ContentFrame.BackgroundTransparency = 1
+    ContentFrame.Parent = Main
+
     local TabContainer = Instance.new("ScrollingFrame")
-    TabContainer.Size = UDim2.new(0, 120, 1, -55)
-    TabContainer.Position = UDim2.new(0, 5, 0, 50)
+    TabContainer.Size = UDim2.new(0, 120, 1, -10)
+    TabContainer.Position = UDim2.new(0, 5, 0, 5)
     TabContainer.BackgroundTransparency = 1
     TabContainer.ScrollBarThickness = 0
-    TabContainer.Parent = Main
+    TabContainer.Parent = ContentFrame
     Instance.new("UIListLayout", TabContainer).Padding = UDim.new(0, 5)
 
     local PageContainer = Instance.new("Frame")
-    PageContainer.Size = UDim2.new(1, -135, 1, -55)
-    PageContainer.Position = UDim2.new(0, 130, 0, 50)
+    PageContainer.Size = UDim2.new(1, -135, 1, -10)
+    PageContainer.Position = UDim2.new(0, 130, 0, 5)
     PageContainer.BackgroundTransparency = 1
-    PageContainer.Parent = Main
+    PageContainer.Parent = ContentFrame
 
-    local Window = { Tabs = {} }
+    local Window = {}
     function Window:CreateTab(Name)
         local TBtn = Instance.new("TextButton")
         TBtn.Size = UDim2.new(1, 0, 0, 35)
@@ -137,11 +147,7 @@ function CyberPink:CreateWindow(Config)
             TBtn.TextColor3 = Color3.fromRGB(255, 192, 203)
         end)
 
-        if #TabContainer:GetChildren() == 1 then 
-            Page.Visible = true 
-            TBtn.BackgroundTransparency = 0.8
-            TBtn.TextColor3 = Color3.fromRGB(255, 192, 203)
-        end
+        if #TabContainer:GetChildren() == 1 then Page.Visible = true TBtn.BackgroundTransparency = 0.8 TBtn.TextColor3 = Color3.fromRGB(255, 192, 203) end
 
         local Elements = {}
         function Elements:CreateToggle(tname, callback)
