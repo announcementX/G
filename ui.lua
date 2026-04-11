@@ -1,7 +1,9 @@
 --[[
-    SOUL UI Library v9.0 - "Sakura Black Hole"
-    配色：淡粉色 & 深暗色
-    动画：中心爆发加载 / 中心坍缩缩小 / 右下角图文通知
+    SOUL UI Library v11.0 - "PURE VECTOR"
+    - 配色：极致淡粉色 (Sakura Pink)
+    - 绘制：纯代码绘制缩小横杠 (非文本)，增大点击热区。
+    - 动画：中心爆发加载 / 中心坍缩缩小 / 中心坍缩关闭
+    - 组件：信息栏、滑动开关、输入框、右下角图文提示
 ]]
 
 local SOUL = {}
@@ -11,13 +13,11 @@ local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
--- 严格执行淡粉色配色
 local Theme = {
-    Main = Color3.fromRGB(255, 182, 193), -- 淡粉色 (Light Pink)
-    Background = Color3.fromRGB(20, 20, 25),
-    Element = Color3.fromRGB(30, 30, 35),
-    Text = Color3.fromRGB(255, 255, 255),
-    SubText = Color3.fromRGB(200, 200, 200)
+    Main = Color3.fromRGB(255, 182, 193), -- 淡粉色
+    Bg = Color3.fromRGB(15, 15, 18),     
+    Element = Color3.fromRGB(25, 25, 30),
+    Text = Color3.fromRGB(255, 255, 255)
 }
 
 local function Tween(obj, time, prop, style, dir)
@@ -26,7 +26,7 @@ local function Tween(obj, time, prop, style, dir)
     return t
 end
 
-local function Drag(obj)
+local function MakeDraggable(obj)
     local dragging, dragStart, startPos
     obj.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -42,107 +42,119 @@ local function Drag(obj)
     UserInputService.InputEnded:Connect(function(input) dragging = false end)
 end
 
-function SOUL.new(title, miniCfg)
+function SOUL.new(projName, miniConfig)
     local self = setmetatable({}, SOUL)
-    miniCfg = miniCfg or {Radius = 15, Color = Theme.Main, Text = "S", Image = ""}
-
     self.Gui = Instance.new("ScreenGui", CoreGui)
-    self.Gui.Name = "SOUL_V9"
+    self.Gui.Name = "SOUL_PERFECT"
+    self.Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-    -- // 右下角通知容器 (严格位置) //
+    -- // 右下角提示容器 //
     self.NotifyArea = Instance.new("Frame", self.Gui)
-    self.NotifyArea.Size = UDim2.new(0, 280, 0.8, 0)
-    self.NotifyArea.Position = UDim2.new(1, -290, 0.1, 0)
+    self.NotifyArea.Size = UDim2.new(0, 300, 1, 0)
+    self.NotifyArea.Position = UDim2.new(1, -310, 0, 0)
     self.NotifyArea.BackgroundTransparency = 1
-    local notifyLayout = Instance.new("UIListLayout", self.NotifyArea)
-    notifyLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
-    notifyLayout.Padding = UDim.new(0, 10)
+    local nl = Instance.new("UIListLayout", self.NotifyArea)
+    nl.VerticalAlignment = Enum.VerticalAlignment.Bottom
+    nl.Padding = UDim.new(0, 10)
 
-    -- // 悬浮窗 (固定中心出现) //
+    -- // 悬浮窗配置 (出现在中心) //
+    miniConfig = miniConfig or {Radius = 100, Color = Theme.Main, Text = "S", Image = ""}
     self.Mini = Instance.new("TextButton", self.Gui)
     self.Mini.Size = UDim2.new(0, 55, 0, 55)
     self.Mini.Position = UDim2.new(0.5, -27, 0.5, -27) -- 严格中心
-    self.Mini.BackgroundColor3 = miniCfg.Color
-    self.Mini.Text = miniCfg.Image == "" and miniCfg.Text or ""
-    self.Mini.Font = Enum.Font.GothamBold
-    self.Mini.TextSize = 22
+    self.Mini.BackgroundColor3 = miniConfig.Color
+    self.Mini.Text = (miniConfig.Image == "") and miniConfig.Text or ""
     self.Mini.TextColor3 = Color3.new(1,1,1)
+    self.Mini.Font = "GothamBold"
+    self.Mini.TextSize = 20
     self.Mini.Visible = false
-    Instance.new("UICorner", self.Mini).CornerRadius = UDim.new(0, miniCfg.Radius)
+    self.Mini.ZIndex = 10 -- 确保在顶层
+    Instance.new("UICorner", self.Mini).CornerRadius = UDim.new(0, miniConfig.Radius)
     
-    if miniCfg.Image ~= "" then
-        local i = Instance.new("ImageLabel", self.Mini)
-        i.Size = UDim2.new(0.7,0,0.7,0) i.Position = UDim2.new(0.15,0,0.15,0) i.BackgroundTransparency = 1 i.Image = miniCfg.Image
+    if miniConfig.Image ~= "" then
+        local img = Instance.new("ImageLabel", self.Mini)
+        img.Size = UDim2.new(0.7,0,0.7,0) img.Position = UDim2.new(0.15,0,0.15,0) img.Image = miniConfig.Image img.BackgroundTransparency = 1
     end
-    Drag(self.Mini)
+    MakeDraggable(self.Mini)
 
-    -- // 主界面 (中心爆发动画对象) //
+    -- // 主界面 (中心爆发动画) //
     self.Main = Instance.new("CanvasGroup", self.Gui)
-    self.Main.Size = UDim2.new(0, 0, 0, 0) -- 初始大小0
-    self.Main.Position = UDim2.new(0.5, 0, 0.5, 0) -- 中心点
-    self.Main.BackgroundColor3 = Theme.Background
-    self.Main.GroupTransparency = 1
+    self.Main.Size = UDim2.new(0,0,0,0)
+    self.Main.Position = UDim2.new(0.5, 0, 0.5, 0)
+    self.Main.BackgroundColor3 = Theme.Bg
     self.Main.Visible = false
+    self.Main.GroupTransparency = 1
+    self.Main.ZIndex = 5
     Instance.new("UICorner", self.Main).CornerRadius = UDim.new(0, 15)
-    Drag(self.Main)
+    MakeDraggable(self.Main)
 
-    -- 侧边
-    local Side = Instance.new("Frame", self.Main)
-    Side.Size = UDim2.new(0, 140, 1, 0)
-    Side.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-    Side.BorderSizePixel = 0
+    -- 标题与控制
+    local Top = Instance.new("Frame", self.Main)
+    Top.Size = UDim2.new(1, 0, 0, 50) Top.BackgroundTransparency = 1
+    
+    local Title = Instance.new("TextLabel", Top)
+    Title.Size = UDim2.new(0, 200, 1, 0) Title.Position = UDim2.new(0, 20, 0, 0)
+    Title.Text = projName Title.TextColor3 = Theme.Main Title.Font = "GothamBold" Title.TextSize = 18 Title.TextXAlignment = "Left" Title.BackgroundTransparency = 1
 
-    local Ttl = Instance.new("TextLabel", self.Main)
-    Ttl.Size = UDim2.new(0, 200, 0, 50)
-    Ttl.Position = UDim2.new(0, 15, 0, 0)
-    Ttl.Text = title Ttl.TextColor3 = Theme.Main Ttl.Font = Enum.Font.GothamBold Ttl.TextSize = 18 Ttl.TextXAlignment = "Left" Ttl.BackgroundTransparency = 1
+    -- 关闭按钮 (×)
+    local CloseBtn = Instance.new("TextButton", Top)
+    CloseBtn.Size = UDim2.new(0, 40, 0, 40) CloseBtn.Position = UDim2.new(1, -45, 0, 5) CloseBtn.Text = "×" CloseBtn.TextColor3 = Theme.Main CloseBtn.TextSize = 26 CloseBtn.BackgroundTransparency = 1
 
-    -- 按钮区
-    self.TabLib = Instance.new("ScrollingFrame", Side)
-    self.TabLib.Size = UDim2.new(1, 0, 1, -60)
-    self.TabLib.Position = UDim2.new(0, 0, 0, 50)
-    self.TabLib.BackgroundTransparency = 1 self.TabLib.ScrollBarThickness = 0
-    Instance.new("UIListLayout", self.TabLib).Padding = UDim.new(0, 5)
+    -- // 狠活：纯代码绘制缩小横杠 //
+    -- 这是一个透明的按钮，用来做点击热区
+    local MinHandle = Instance.new("TextButton", Top)
+    MinHandle.Size = UDim2.new(0, 40, 0, 40) MinHandle.Position = UDim2.new(1, -85, 0, 5) MinHandle.Text = "" MinHandle.BackgroundTransparency = 1
 
-    self.PageCont = Instance.new("Frame", self.Main)
-    self.PageCont.Size = UDim2.new(1, -155, 1, -60)
-    self.PageCont.Position = UDim2.new(0, 145, 0, 55)
-    self.PageCont.BackgroundTransparency = 1
+    -- 这是画出来的横杠
+    local MinDraw = Instance.new("Frame", MinHandle)
+    MinDraw.Size = UDim2.new(0, 16, 0, 2) -- 16像素宽，2像素高
+    MinDraw.Position = UDim2.new(0.5, -8, 0.5, -1) -- 居中
+    MinDraw.BackgroundColor3 = Theme.Main -- 淡粉色
+    MinDraw.BorderSizePixel = 0
+    MinDraw.ZIndex = 2 -- 确保在按钮上层
 
-    -- // 控制逻辑 //
-    local close = Instance.new("TextButton", self.Main)
-    close.Size = UDim2.new(0,30,0,30) close.Position = UDim2.new(1,-40,0,10) close.Text = "×" close.TextColor3 = Theme.Main close.BackgroundTransparency = 1 close.TextSize = 25
+    -- 侧边栏
+    self.TabHolder = Instance.new("ScrollingFrame", self.Main)
+    self.TabHolder.Size = UDim2.new(0, 140, 1, -60) self.TabHolder.Position = UDim2.new(0, 10, 0, 55) self.TabHolder.BackgroundTransparency = 1 self.TabHolder.ScrollBarThickness = 0
+    Instance.new("UIListLayout", self.TabHolder).Padding = UDim.new(0, 5)
 
-    local mini = Instance.new("TextButton", self.Main)
-    mini.Size = UDim2.new(0,30,0,30) mini.Position = UDim2.new(1,-80,0,10) mini.Text = "—" mini.TextColor3 = Theme.Main mini.BackgroundTransparency = 1 mini.TextSize = 25
+    self.Container = Instance.new("Frame", self.Main)
+    self.Container.Size = UDim2.new(1, -170, 1, -70) self.Container.Position = UDim2.new(0, 160, 0, 60) self.Container.BackgroundTransparency = 1
 
-    -- 缩小动画 (向中心点缩小)
-    mini.MouseButton1Click:Connect(function()
+    -- // 动画逻辑 (严格执行中心点坍缩) //
+    
+    -- 缩小功能 (修复逻辑 & 绑定到画出来的横杠上)
+    MinHandle.MouseButton1Click:Connect(function()
+        -- 1. 瞬间隐藏内部所有东西，防止缩小过程中挤压变形
         for _, v in pairs(self.Main:GetChildren()) do v.Visible = false end
-        local midX, midY = self.Main.Position.X.Offset + (self.Main.Size.X.Offset/2), self.Main.Position.Y.Offset + (self.Main.Size.Y.Offset/2)
-        Tween(self.Main, 0.4, {Size = UDim2.new(0,0,0,0), Position = UDim2.new(0.5, midX, 0.5, midY), GroupTransparency = 1})
-        task.wait(0.4)
+        
+        -- 2. 向中心坍缩动画
+        Tween(self.Main, 0.5, {Size = UDim2.new(0,0,0,0), Position = UDim2.new(0.5, 0, 0.5, 0), GroupTransparency = 1})
+        
+        task.wait(0.5)
+        -- 3. 切换状态
         self.Main.Visible = false
         self.Mini.Visible = true
+        -- 4. 确保悬浮窗在中心，且大小正确
         self.Mini.Position = UDim2.new(0.5, -27, 0.5, -27)
-        Tween(self.Mini, 0.3, {Size = UDim2.new(0,55,0,55)}, Enum.EasingStyle.Back)
+        self.Mini.Size = UDim2.new(0, 55, 0, 55)
     end)
 
-    -- 展开 (从悬浮窗原位爆发)
+    -- 展开功能
     self.Mini.MouseButton1Click:Connect(function()
         self.Mini.Visible = false
         self.Main.Visible = true
-        self.Main.Size = UDim2.new(0,0,0,0)
-        self.Main.GroupTransparency = 1
-        Tween(self.Main, 0.6, {Size = UDim2.new(0,520,0,360), Position = UDim2.new(0.5, -260, 0.5, -180), GroupTransparency = 0}, Enum.EasingStyle.Elastic)
+        Tween(self.Main, 0.7, {Size = UDim2.new(0, 540, 0, 360), Position = UDim2.new(0.5, -270, 0.5, -180), GroupTransparency = 0}, Enum.EasingStyle.Elastic)
+        
         task.wait(0.2)
+        -- 展开后恢复内部显示
         for _, v in pairs(self.Main:GetChildren()) do v.Visible = true end
     end)
 
-    -- 关闭 (彻底中心黑洞)
-    close.MouseButton1Click:Connect(function()
-        Tween(self.Main, 0.4, {Size = UDim2.new(0,0,0,0), Position = UDim2.new(0.5, self.Main.Position.X.Offset+260, 0.5, self.Main.Position.Y.Offset+180), GroupTransparency = 1}, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-        task.wait(0.4)
+    -- 关闭功能 (中心点坍缩消失)
+    CloseBtn.MouseButton1Click:Connect(function()
+        Tween(self.Main, 0.5, {Size = UDim2.new(0,0,0,0), Position = UDim2.new(0.5, 0, 0.5, 0), GroupTransparency = 1}, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+        task.wait(0.5)
         self.Gui:Destroy()
     end)
 
@@ -150,100 +162,94 @@ function SOUL.new(title, miniCfg)
     return self
 end
 
--- // 右下角通知 //
+-- // 其余函数保持一致 (Notify, CreateTab, AddParagraph, AddToggle, AddInput, Show) //
 function SOUL:Notify(cfg)
     local f = Instance.new("Frame", self.NotifyArea)
-    f.Size = UDim2.new(1, 0, 0, 55) f.BackgroundColor3 = Theme.Element
-    Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
-    local stroke = Instance.new("UIStroke", f) stroke.Color = Theme.Main stroke.Transparency = 0.8
+    f.Size = UDim2.new(1, 0, 0, 60) f.BackgroundColor3 = Theme.Element
+    Instance.new("UICorner", f).CornerRadius = UDim.new(0, 10)
+    local stroke = Instance.new("UIStroke", f) stroke.Color = Theme.Main stroke.Transparency = 0.5
     
-    local txtX = 15
+    local off = 15
     if cfg.Icon and cfg.Icon ~= "" then
-        local i = Instance.new("ImageLabel", f) i.Size = UDim2.new(0,30,0,30) i.Position = UDim2.new(0,10,0.5,-15) i.Image = cfg.Icon i.BackgroundTransparency = 1
-        txtX = 50
+        local i = Instance.new("ImageLabel", f) i.Size = UDim2.new(0,35,0,35) i.Position = UDim2.new(0,10,0.5,-17) i.Image = cfg.Icon i.BackgroundTransparency = 1
+        off = 55
     end
 
-    local t = Instance.new("TextLabel", f) t.Size = UDim2.new(1,-txtX,0,20) t.Position = UDim2.new(0,txtX,0,8) t.Text = cfg.Title t.TextColor3 = Theme.Main t.Font = "GothamBold" t.BackgroundTransparency = 1 t.TextXAlignment = "Left"
-    local d = Instance.new("TextLabel", f) d.Size = UDim2.new(1,-txtX,0,20) d.Position = UDim2.new(0,txtX,0,28) d.Text = cfg.Text t.TextColor3 = Theme.SubText t.Font = "Gotham" d.BackgroundTransparency = 1 d.TextXAlignment = "Left" d.TextColor3 = Color3.new(1,1,1)
+    local t = Instance.new("TextLabel", f) t.Size = UDim2.new(1,-off,0,25) t.Position = UDim2.new(0,off,0,8) t.Text = cfg.Title t.TextColor3 = Theme.Main t.Font = "GothamBold" t.BackgroundTransparency = 1 t.TextXAlignment = "Left"
+    local d = Instance.new("TextLabel", f) d.Size = UDim2.new(1,-off,0,20) d.Position = UDim2.new(0,off,0,30) d.Text = cfg.Text d.TextColor3 = Color3.new(1,1,1) d.Font = "Gotham" d.BackgroundTransparency = 1 d.TextXAlignment = "Left"
 
-    f.Position = UDim2.new(1.5, 0, 0, 0)
+    f.Position = UDim2.new(1.2, 0, 0, 0)
     Tween(f, 0.5, {Position = UDim2.new(0,0,0,0)})
     task.delay(cfg.Duration or 3, function()
-        Tween(f, 0.5, {Position = UDim2.new(1.5,0,0,0)})
+        Tween(f, 0.5, {Position = UDim2.new(1.2,0,0,0)})
         task.wait(0.5) f:Destroy()
     end)
 end
 
 function SOUL:CreateTab(name)
-    local t = {Btn = Instance.new("TextButton", self.TabLib), Page = Instance.new("ScrollingFrame", self.PageCont)}
-    t.Btn.Size = UDim2.new(1,0,0,35) t.Btn.BackgroundTransparency = 1 t.Btn.Text = name t.Btn.TextColor3 = Theme.SubText t.Btn.Font = "GothamBold"
-    t.Page.Size = UDim2.new(1,0,1,0) t.Page.BackgroundTransparency = 1 t.Page.Visible = false t.Page.ScrollBarThickness = 2 t.Page.ScrollBarImageColor3 = Theme.Main
-    Instance.new("UIListLayout", t.Page).Padding = UDim.new(0,8)
+    local tab = {Btn = Instance.new("TextButton", self.TabHolder), Scroll = Instance.new("ScrollingFrame", self.Container)}
+    tab.Btn.Size = UDim2.new(1, 0, 0, 35) tab.Btn.BackgroundTransparency = 1 tab.Btn.Text = name tab.Btn.TextColor3 = Color3.fromRGB(150,150,150) tab.Btn.Font = "GothamBold"
+    tab.Scroll.Size = UDim2.new(1,0,1,0) tab.Scroll.BackgroundTransparency = 1 tab.Scroll.Visible = false tab.Scroll.ScrollBarThickness = 2
+    Instance.new("UIListLayout", tab.Scroll).Padding = UDim.new(0, 10)
 
-    t.Btn.MouseButton1Click:Connect(function()
-        for _, v in pairs(self.Tabs) do v.Page.Visible = false v.Btn.TextColor3 = Theme.SubText end
-        t.Page.Visible = true t.Btn.TextColor3 = Theme.Main
+    tab.Btn.MouseButton1Click:Connect(function()
+        for _, v in pairs(self.Tabs) do v.Scroll.Visible = false v.Btn.TextColor3 = Color3.fromRGB(150,150,150) end
+        tab.Scroll.Visible = true tab.Btn.TextColor3 = Theme.Main
     end)
-    table.insert(self.Tabs, t)
-    if #self.Tabs == 1 then t.Page.Visible = true t.Btn.TextColor3 = Theme.Main end
-    return t
+    table.insert(self.Tabs, tab)
+    if #self.Tabs == 1 then tab.Scroll.Visible = true tab.Btn.TextColor3 = Theme.Main end
+    return tab
 end
 
--- // 信息显示 (四边形背景) //
 function SOUL:AddParagraph(tab, title, desc)
-    local f = Instance.new("Frame", tab.Page)
+    local f = Instance.new("Frame", tab.Scroll)
     f.Size = UDim2.new(0.96, 0, 0, 0) f.BackgroundColor3 = Theme.Element f.AutomaticSize = "Y"
     Instance.new("UICorner", f).CornerRadius = UDim.new(0, 10)
-    local p = Instance.new("UIPadding", f) p.PaddingTop = UDim.new(0,8) p.PaddingBottom = UDim.new(0,8) p.PaddingLeft = UDim.new(0,12)
-    Instance.new("UIListLayout", f).Padding = UDim.new(0,4)
+    local p = Instance.new("UIPadding", f) p.PaddingTop = UDim.new(0,10) p.PaddingBottom = UDim.new(0,10) p.PaddingLeft = UDim.new(0,15)
+    Instance.new("UIListLayout", f).Padding = UDim.new(0,5)
     
     local tl = Instance.new("TextLabel", f) tl.Size = UDim2.new(1,0,0,20) tl.Text = title tl.TextColor3 = Theme.Main tl.Font = "GothamBold" tl.BackgroundTransparency = 1 tl.TextXAlignment = "Left"
     local dl = Instance.new("TextLabel", f) dl.Size = UDim2.new(1,0,0,0) dl.Text = desc dl.TextColor3 = Color3.new(1,1,1) dl.Font = "Gotham" dl.BackgroundTransparency = 1 dl.TextXAlignment = "Left" dl.TextWrapped = true dl.AutomaticSize = "Y"
     
-    task.spawn(function() task.wait(0.1) tab.Page.CanvasSize = UDim2.new(0,0,0, tab.Page.UIListLayout.AbsoluteContentSize.Y + 20) end)
+    task.spawn(function() task.wait(0.1) tab.Scroll.CanvasSize = UDim2.new(0,0,0, tab.Scroll.UIListLayout.AbsoluteContentSize.Y + 20) end)
 end
 
--- // 功能开关 (Toggle) //
 function SOUL:AddToggle(tab, text, callback)
     local state = false
-    local b = Instance.new("TextButton", tab.Page)
-    b.Size = UDim2.new(0.96,0,0,40) b.BackgroundColor3 = Theme.Element b.Text = ""
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0,8)
+    local b = Instance.new("TextButton", tab.Scroll)
+    b.Size = UDim2.new(0.96,0,0,45) b.BackgroundColor3 = Theme.Element b.Text = ""
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0,10)
     
-    local tl = Instance.new("TextLabel", b) tl.Size = UDim2.new(1,-60,1,0) tl.Position = UDim2.new(0,12,0,0) tl.Text = text tl.TextColor3 = Color3.new(1,1,1) tl.BackgroundTransparency = 1 tl.TextXAlignment = "Left"
-    local tr = Instance.new("Frame", b) tr.Size = UDim2.new(0,35,0,18) tr.Position = UDim2.new(1,-45,0.5,-9) tr.BackgroundColor3 = Color3.fromRGB(50,50,55)
+    local tl = Instance.new("TextLabel", b) tl.Size = UDim2.new(1,-70,1,0) tl.Position = UDim2.new(0,15,0,0) tl.Text = text tl.TextColor3 = Color3.new(1,1,1) tl.BackgroundTransparency = 1 tl.TextXAlignment = "Left"
+    local tr = Instance.new("Frame", b) tr.Size = UDim2.new(0,40,0,20) tr.Position = UDim2.new(1,-55,0.5,-10) tr.BackgroundColor3 = Color3.fromRGB(45,45,50)
     Instance.new("UICorner", tr).CornerRadius = UDim.new(1,0)
-    local d = Instance.new("Frame", tr) d.Size = UDim2.new(0,14,0,14) d.Position = UDim2.new(0,2,0.5,-7) d.BackgroundColor3 = Color3.new(1,1,1) Instance.new("UICorner", d).CornerRadius = UDim.new(1,0)
+    local d = Instance.new("Frame", tr) d.Size = UDim2.new(0,16,0,16) d.Position = UDim2.new(0,2,0.5,-8) d.BackgroundColor3 = Color3.new(1,1,1) Instance.new("UICorner", d).CornerRadius = UDim.new(1,0)
 
     b.MouseButton1Click:Connect(function()
         state = not state
-        Tween(tr, 0.2, {BackgroundColor3 = state and Theme.Main or Color3.fromRGB(50,50,55)})
-        Tween(d, 0.2, {Position = state and UDim2.new(1,-16,0.5,-7) or UDim2.new(0,2,0.5,-7)})
+        Tween(tr, 0.2, {BackgroundColor3 = state and Theme.Main or Color3.fromRGB(45,45,50)})
+        Tween(d, 0.2, {Position = state and UDim2.new(1,-18,0.5,-8) or UDim2.new(0,2,0.5,-8)})
         callback(state)
     end)
 end
 
--- // 输入执行 (Input) //
 function SOUL:AddInput(tab, text, placeholder, callback)
-    local f = Instance.new("Frame", tab.Page)
-    f.Size = UDim2.new(0.96,0,0,40) f.BackgroundColor3 = Theme.Element
-    Instance.new("UICorner", f).CornerRadius = UDim.new(0,8)
+    local f = Instance.new("Frame", tab.Scroll)
+    f.Size = UDim2.new(0.96,0,0,45) f.BackgroundColor3 = Theme.Element
+    Instance.new("UICorner", f).CornerRadius = UDim.new(0,10)
     
-    local tl = Instance.new("TextLabel", f) tl.Size = UDim2.new(0.5,0,1,0) tl.Position = UDim2.new(0,12,0,0) tl.Text = text tl.TextColor3 = Color3.new(1,1,1) tl.BackgroundTransparency = 1 tl.TextXAlignment = "Left"
-    local b = Instance.new("TextBox", f) b.Size = UDim2.new(0.4,0,0.7,0) b.Position = UDim2.new(0.6,-5,0.15,0) b.BackgroundColor3 = Color3.fromRGB(20,20,25) b.Text = "" b.PlaceholderText = placeholder b.TextColor3 = Theme.Main
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0,5)
+    local tl = Instance.new("TextLabel", f) tl.Size = UDim2.new(0.5,0,1,0) tl.Position = UDim2.new(0,15,0,0) tl.Text = text tl.TextColor3 = Color3.new(1,1,1) tl.BackgroundTransparency = 1 tl.TextXAlignment = "Left"
+    local b = Instance.new("TextBox", f) b.Size = UDim2.new(0.4,0,0.7,0) b.Position = UDim2.new(0.6,-5,0.15,0) b.BackgroundColor3 = Theme.Bg b.Text = "" b.PlaceholderText = placeholder b.TextColor3 = Theme.Main
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0,6)
     
     b.FocusLost:Connect(function(enter) if enter then callback(b.Text) end end)
 end
 
--- // 原点爆发启动 //
 function SOUL:Show()
     self.Main.Visible = true
-    self.Main.Size = UDim2.new(0, 0, 0, 0)
+    self.Main.Size = UDim2.new(0,0,0,0)
     self.Main.Position = UDim2.new(0.5, 0, 0.5, 0)
-    self.Main.GroupTransparency = 1
-    
-    Tween(self.Main, 0.8, {Size = UDim2.new(0, 520, 0, 360), Position = UDim2.new(0.5, -260, 0.5, -180), GroupTransparency = 0}, Enum.EasingStyle.Elastic)
+    Tween(self.Main, 0.8, {Size = UDim2.new(0, 540, 0, 360), Position = UDim2.new(0.5, -270, 0.5, -180), GroupTransparency = 0}, Enum.EasingStyle.Elastic)
 end
 
 return SOUL
