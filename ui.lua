@@ -1,12 +1,14 @@
--- [[ CyberPink UI V8 - Mobile Optimized with Minimize ]]
-local CyberPink = { _Toggled = true }
+-- [[ CyberPink UI V9 - Advanced Minimize Styles ]]
+local CyberPink = { _Toggled = true, _Config = {} }
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 
 function CyberPink:CreateWindow(Config)
+    self._Config = Config
     local WindowName = Config.Name or "CyberPink UI"
-    
+    local MinStyle = Config.MinimizeStyle or "Default" -- 默认样式：条状折叠
+
     for _, v in pairs(CoreGui:GetChildren()) do
         if v.Name == "CyberPink_Root" then v:Destroy() end
     end
@@ -23,7 +25,8 @@ function CyberPink:CreateWindow(Config)
     Main.BorderSizePixel = 0
     Main.ClipsDescendants = true
     Main.Parent = ScreenGui
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+    local MainCorner = Instance.new("UICorner", Main)
+    MainCorner.CornerRadius = UDim.new(0, 12)
 
     -- 【顶部标题栏】
     local Topbar = Instance.new("Frame")
@@ -31,7 +34,8 @@ function CyberPink:CreateWindow(Config)
     Topbar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     Topbar.BorderSizePixel = 0
     Topbar.Parent = Main
-    Instance.new("UICorner", Topbar).CornerRadius = UDim.new(0, 12)
+    local TopCorner = Instance.new("UICorner", Topbar)
+    TopCorner.CornerRadius = UDim.new(0, 12)
 
     local Title = Instance.new("TextLabel")
     Title.Text = "  " .. WindowName
@@ -50,7 +54,6 @@ function CyberPink:CreateWindow(Config)
     Btns.BackgroundTransparency = 1
     Btns.Parent = Topbar
 
-    -- 关闭按钮
     local Close = Instance.new("TextButton")
     Close.Size = UDim2.new(0, 30, 0, 30)
     Close.Position = UDim2.new(0, 45, 0.5, -15)
@@ -61,7 +64,6 @@ function CyberPink:CreateWindow(Config)
     Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 8)
     Close.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
-    -- 最小化按钮 (恢复正常！)
     local Minimize = Instance.new("TextButton")
     Minimize.Size = UDim2.new(0, 30, 0, 30)
     Minimize.Position = UDim2.new(0, 5, 0.5, -15)
@@ -71,38 +73,83 @@ function CyberPink:CreateWindow(Config)
     Minimize.Parent = Btns
     Instance.new("UICorner", Minimize).CornerRadius = UDim.new(0, 8)
 
-    Minimize.MouseButton1Click:Connect(function()
-        CyberPink._Toggled = not CyberPink._Toggled
-        local targetSize = CyberPink._Toggled and UDim2.new(0, 420, 0, 280) or UDim2.new(0, 420, 0, 45)
-        Main:TweenSize(targetSize, "Out", "Quart", 0.35, true)
-    end)
+    -- 【核心逻辑：样式处理】
+    local function ApplyStyle(mode)
+        if mode == "Default" then
+            -- 默认条状样式不需要额外形状
+        elseif mode == "Circle" then
+            MainCorner.CornerRadius = UDim.new(1, 0)
+            Main.Size = UDim2.new(0, 60, 0, 60)
+        elseif mode == "Square" then
+            MainCorner.CornerRadius = UDim.new(0, 0)
+            Main.Size = UDim2.new(0, 60, 0, 60)
+        elseif mode == "RoundSquare" then
+            MainCorner.CornerRadius = UDim.new(0, 15)
+            Main.Size = UDim2.new(0, 60, 0, 60)
+        elseif mode == "Triangle" then
+            -- 三角形通常通过图片（ImageLabel）或特定切割实现，这里演示切换形状感
+            Main.Size = UDim2.new(0, 60, 0, 60)
+            Title.Text = "▲" -- 缩小后显示图标
+            Title.TextXAlignment = Enum.TextXAlignment.Center
+        end
+    end
 
-    -- 【手机端丝滑拖拽】
-    local dragging, dragStart, startPos
-    Topbar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = Main.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
-            end)
+    Minimize.MouseButton1Click:Connect(function()
+        self._Toggled = not self._Toggled
+        
+        if self._Toggled then
+            -- 恢复正常窗口
+            Title.Text = "  " .. WindowName
+            Title.TextXAlignment = Enum.TextXAlignment.Left
+            MainCorner.CornerRadius = UDim.new(0, 12)
+            Topbar.Visible = true
+            Main:TweenSize(UDim2.new(0, 420, 0, 280), "Out", "Back", 0.4, true)
+        else
+            -- 缩小逻辑
+            if MinStyle == "Default" then
+                Main:TweenSize(UDim2.new(0, 420, 0, 45), "Out", "Quart", 0.3, true)
+            else
+                -- 变为悬浮图标样式
+                Topbar.Visible = false
+                ApplyStyle(MinStyle)
+                -- 缩小后的动画
+                Main:TweenSize(Main.Size, "Out", "Back", 0.4, true)
+            end
         end
     end)
-    UserInputService.InputChanged:Connect(function(input)
+
+    -- 【手机端拖拽 - 即使缩小成球也能拖】
+    local dragging, dragStart, startPos
+    local function DragLogic(input)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
             Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
-    end)
+    end
 
-    -- 内容区
+    -- 标题栏拖拽
+    Topbar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true; dragStart = input.Position; startPos = Main.Position
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+        end
+    end)
+    -- 缩小后的图标拖拽
+    Main.InputBegan:Connect(function(input)
+        if not self._Toggled and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+            dragging = true; dragStart = input.Position; startPos = Main.Position
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+        end
+    end)
+    UserInputService.InputChanged:Connect(DragLogic)
+
+    -- 内容区（略，保持原有逻辑...）
     local ContentFrame = Instance.new("Frame")
     ContentFrame.Size = UDim2.new(1, 0, 1, -45)
     ContentFrame.Position = UDim2.new(0, 0, 0, 45)
     ContentFrame.BackgroundTransparency = 1
     ContentFrame.Parent = Main
-
+    
     local TabContainer = Instance.new("ScrollingFrame")
     TabContainer.Size = UDim2.new(0, 120, 1, -10)
     TabContainer.Position = UDim2.new(0, 5, 0, 5)
@@ -139,14 +186,10 @@ function CyberPink:CreateWindow(Config)
 
         TBtn.MouseButton1Click:Connect(function()
             for _, v in pairs(PageContainer:GetChildren()) do v.Visible = false end
-            for _, v in pairs(TabContainer:GetChildren()) do 
-                if v:IsA("TextButton") then v.BackgroundTransparency = 0.9 end 
-            end
-            Page.Visible = true
-            TBtn.BackgroundTransparency = 0.8
-            TBtn.TextColor3 = Color3.fromRGB(255, 192, 203)
+            for _, v in pairs(TabContainer:GetChildren()) do if v:IsA("TextButton") then v.BackgroundTransparency = 0.9 end end
+            Page.Visible = true; TBtn.BackgroundTransparency = 0.8; TBtn.TextColor3 = Color3.fromRGB(255, 192, 203)
         end)
-
+        
         if #TabContainer:GetChildren() == 1 then Page.Visible = true TBtn.BackgroundTransparency = 0.8 TBtn.TextColor3 = Color3.fromRGB(255, 192, 203) end
 
         local Elements = {}
@@ -157,16 +200,10 @@ function CyberPink:CreateWindow(Config)
             b.Text = "  " .. tname
             b.TextColor3 = Color3.fromRGB(255, 255, 255)
             b.TextXAlignment = Enum.TextXAlignment.Left
-            b.Font = Enum.Font.Gotham
-            b.Parent = Page
+            b.Font = Enum.Font.Gotham; b.Parent = Page
             Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
-
             local s = false
-            b.MouseButton1Click:Connect(function()
-                s = not s
-                b.TextColor3 = s and Color3.fromRGB(255, 192, 203) or Color3.fromRGB(255, 255, 255)
-                callback(s)
-            end)
+            b.MouseButton1Click:Connect(function() s = not s; b.TextColor3 = s and Color3.fromRGB(255, 192, 203) or Color3.fromRGB(255, 255, 255); callback(s) end)
         end
         return Elements
     end
