@@ -1,17 +1,15 @@
--- [[ CyberPink UI V10 - Infinite Customization Edition ]]
+-- [[ CyberPink UI V11 - Professional Fix & Multi-Style ]]
 local CyberPink = { _Toggled = true }
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 
 function CyberPink:CreateWindow(Config)
-    -- 获取配置参数 (提供默认值)
     local WindowName = Config.Name or "CyberPink UI"
     local MinStyle = Config.MinimizeStyle or "Default"
-    local MinType = Config.MinimizeType or "Text" -- "Text" 或 "Image"
-    local MinValue = Config.MinimizeValue or "CP"   -- 缩小时显示的文字或图片链接
+    local MinType = Config.MinimizeType or "Text"
+    local MinValue = Config.MinimizeValue or "CP"
     
-    -- 颜色配置 (默认黑粉)
     local MainColor = Config.MainColor or Color3.fromRGB(15, 15, 15)
     local AccentColor = Config.AccentColor or Color3.fromRGB(255, 192, 203)
     local MinBgColor = Config.MinimizeBgColor or MainColor
@@ -25,7 +23,8 @@ function CyberPink:CreateWindow(Config)
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "CyberPink_Root"
     ScreenGui.Parent = CoreGui
-    
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
     -- 主窗口
     local Main = Instance.new("Frame")
     Main.Name = "Main"
@@ -38,11 +37,22 @@ function CyberPink:CreateWindow(Config)
     local MainCorner = Instance.new("UICorner", Main)
     MainCorner.CornerRadius = UDim.new(0, 12)
 
+    -- 【内容区域容器】一定要在最下面，防止挡住 Topbar
+    local ContentContainer = Instance.new("Frame")
+    ContentContainer.Name = "ContentContainer"
+    ContentContainer.Size = UDim2.new(1, 0, 1, -45)
+    ContentContainer.Position = UDim2.new(0, 0, 0, 45)
+    ContentContainer.BackgroundTransparency = 1
+    ContentContainer.ZIndex = 1
+    ContentContainer.Parent = Main
+
     -- 【顶部标题栏】
     local Topbar = Instance.new("Frame")
+    Topbar.Name = "Topbar"
     Topbar.Size = UDim2.new(1, 0, 0, 45)
     Topbar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     Topbar.BorderSizePixel = 0
+    Topbar.ZIndex = 2
     Topbar.Parent = Main
     Instance.new("UICorner", Topbar).CornerRadius = UDim.new(0, 12)
 
@@ -56,107 +66,104 @@ function CyberPink:CreateWindow(Config)
     Title.BackgroundTransparency = 1
     Title.Parent = Topbar
 
-    -- 【内容区域容器 - 解决缩小后显示栏目的问题】
-    local ContentContainer = Instance.new("Frame")
-    ContentContainer.Size = UDim2.new(1, 0, 1, -45)
-    ContentContainer.Position = UDim2.new(0, 0, 0, 45)
-    ContentContainer.BackgroundTransparency = 1
-    ContentContainer.Parent = Main
+    -- 【按钮组修复】
+    local Btns = Instance.new("Frame")
+    Btns.Size = UDim2.new(0, 90, 1, 0)
+    Btns.Position = UDim2.new(1, -95, 0, 0)
+    Btns.BackgroundTransparency = 1
+    Btns.Parent = Topbar
 
-    -- 【缩小后的悬浮组件】
-    local MinIcon = Instance.new("TextButton") -- 使用 TextButton 兼顾文本和点击
-    MinIcon.Name = "MinIcon"
-    MinIcon.Size = UDim2.new(1, 0, 1, 0)
-    MinIcon.BackgroundTransparency = 1
-    MinIcon.Text = ""
-    MinIcon.Visible = false
-    MinIcon.Parent = Main
+    local function CreateTopBtn(text, color, pos, callback)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0, 30, 0, 30)
+        btn.Position = pos
+        btn.Text = text
+        btn.TextColor3 = color
+        btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+        btn.Font = Enum.Font.GothamBold
+        btn.Parent = Btns
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+        btn.MouseButton1Click:Connect(callback)
+    end
 
-    local MinImage = Instance.new("ImageLabel")
-    MinImage.Size = UDim2.new(0.7, 0, 0.7, 0)
-    MinImage.Position = UDim2.new(0.15, 0, 0.15, 0)
-    MinImage.BackgroundTransparency = 1
-    MinImage.Visible = false
-    MinImage.Parent = Main
-
-    -- 【核心：最小化逻辑】
+    -- 【缩小逻辑】
     local function ToggleUI()
-        self._Toggled = not self._Toggled
-        
-        if self._Toggled then
+        CyberPink._Toggled = not CyberPink._Toggled
+        if CyberPink._Toggled then
             -- 展开
             MainCorner.CornerRadius = UDim.new(0, 12)
             Main.BackgroundColor3 = MainColor
             Topbar.Visible = true
             ContentContainer.Visible = true
-            MinIcon.Visible = false
-            MinImage.Visible = false
+            if Main:FindFirstChild("MinElement") then Main.MinElement:Destroy() end
             Main:TweenSize(UDim2.new(0, 420, 0, 280), "Out", "Back", 0.4, true)
         else
             -- 缩小
             if MinStyle == "Default" then
                 Main:TweenSize(UDim2.new(0, 420, 0, 45), "Out", "Quart", 0.3, true)
             else
-                -- 变成悬浮窗样式
                 Topbar.Visible = false
                 ContentContainer.Visible = false
                 Main.BackgroundColor3 = MinBgColor
                 
-                -- 设置形状
+                -- 形状处理
                 if MinStyle == "Circle" then MainCorner.CornerRadius = UDim.new(1, 0)
                 elseif MinStyle == "RoundSquare" then MainCorner.CornerRadius = UDim.new(0, 15)
                 else MainCorner.CornerRadius = UDim.new(0, 0) end
 
-                -- 设置内容 (文字或图片)
+                -- 创建图标/文字
+                local minEl
                 if MinType == "Image" then
-                    MinImage.Image = MinValue
-                    MinImage.ImageColor3 = MinTextColor
-                    MinImage.Visible = true
+                    minEl = Instance.new("ImageLabel")
+                    minEl.Image = MinValue
+                    minEl.ImageColor3 = MinTextColor
+                    minEl.Size = UDim2.new(0.6, 0, 0.6, 0)
+                    minEl.Position = UDim2.new(0.2, 0, 0.2, 0)
                 else
-                    MinIcon.Text = MinValue
-                    MinIcon.TextColor3 = MinTextColor
-                    MinIcon.Font = Enum.Font.GothamBold
-                    MinIcon.TextSize = 20
-                    MinIcon.Visible = true
+                    minEl = Instance.new("TextLabel")
+                    minEl.Text = MinValue
+                    minEl.TextColor3 = MinTextColor
+                    minEl.Font = Enum.Font.GothamBold
+                    minEl.TextSize = 18
+                    minEl.Size = UDim2.new(1, 0, 1, 0)
                 end
+                minEl.Name = "MinElement"
+                minEl.BackgroundTransparency = 1
+                minEl.Parent = Main
                 
                 Main:TweenSize(UDim2.new(0, 60, 0, 60), "Out", "Back", 0.4, true)
             end
         end
     end
 
-    -- 最小化按钮点击
-    local MiniBtn = Instance.new("TextButton")
-    MiniBtn.Size = UDim2.new(0, 30, 0, 30)
-    MiniBtn.Position = UDim2.new(1, -75, 0.5, -15)
-    MiniBtn.Text = "-"
-    MiniBtn.TextColor3 = AccentColor
-    MiniBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    MiniBtn.Parent = Topbar
-    Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(0, 8)
-    MiniBtn.MouseButton1Click:Connect(ToggleUI)
-    
-    -- 缩小后的点击还原
-    MinIcon.MouseButton1Click:Connect(ToggleUI)
+    CreateTopBtn("-", AccentColor, UDim2.new(0, 10, 0.5, -15), ToggleUI)
+    CreateTopBtn("×", Color3.fromRGB(255, 100, 100), UDim2.new(0, 50, 0.5, -15), function() ScreenGui:Destroy() end)
 
-    -- 【手机端拖拽】
+    -- 【顶级拖拽逻辑修复 - 支持大窗口和悬浮窗】
     local dragging, dragStart, startPos
-    local function HandleDrag(input)
-        if dragging then
-            local delta = input.Position - dragStart
-            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
+    local function UpdateDrag(input)
+        local delta = input.Position - dragStart
+        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 
     Main.InputBegan:Connect(function(input)
         if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-            dragging = true; dragStart = input.Position; startPos = Main.Position
-            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+            -- 如果已经缩小，点击任何地方都还原；如果是大窗口，由 Topbar 负责（或全局）
+            if not CyberPink._Toggled then
+                ToggleUI()
+            else
+                dragging = true; dragStart = input.Position; startPos = Main.Position
+                input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+            end
         end
     end)
-    UserInputService.InputChanged:Connect(HandleDrag)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            UpdateDrag(input)
+        end
+    end)
 
-    -- ... (CreateTab 和 CreateToggle 逻辑保持不变，但父级设为 ContentContainer) ...
+    -- 【分页与按钮显示逻辑修复】
     local TabContainer = Instance.new("ScrollingFrame")
     TabContainer.Size = UDim2.new(0, 120, 1, -10)
     TabContainer.Position = UDim2.new(0, 5, 0, 5)
@@ -179,6 +186,7 @@ function CyberPink:CreateWindow(Config)
         TBtn.BackgroundColor3 = AccentColor
         TBtn.BackgroundTransparency = 0.9
         TBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+        TBtn.Font = Enum.Font.GothamSemibold
         TBtn.Parent = TabContainer
         Instance.new("UICorner", TBtn).CornerRadius = UDim.new(0, 8)
 
@@ -191,7 +199,7 @@ function CyberPink:CreateWindow(Config)
         Instance.new("UIListLayout", Page).Padding = UDim.new(0, 8)
 
         TBtn.MouseButton1Click:Connect(function()
-            for _, v in pairs(PageContainer:GetChildren()) do v.Visible = false end
+            for _, v in pairs(PageContainer:GetChildren()) do if v:IsA("ScrollingFrame") then v.Visible = false end end
             for _, v in pairs(TabContainer:GetChildren()) do if v:IsA("TextButton") then v.BackgroundTransparency = 0.9 end end
             Page.Visible = true; TBtn.BackgroundTransparency = 0.8; TBtn.TextColor3 = AccentColor
         end)
