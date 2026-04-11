@@ -1,6 +1,6 @@
 --[[
-    SOUL UI Library v4.0 - "Invisible & Soul"
-    修复：关闭失效、重影问题、缩小残留、拖拽死锁
+    SOUL UI Library v5.0 - "Pure & Minimal"
+    核心改进：符号化控制键、修正多层重叠、降低亮度、正方形缩小图标
 ]]
 
 local SOUL_Lib = {}
@@ -10,13 +10,12 @@ local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
--- // 调色盘：深邃且渐变的粉 // --
+-- // 调色盘：柔和、低亮度 // --
 local Theme = {
-    Main = Color3.fromRGB(255, 245, 247),  -- 极淡粉背景
-    Deep = Color3.fromRGB(255, 160, 190),  -- 边框渐变色
-    Accent = Color3.fromRGB(255, 90, 140), -- 强调色
-    Text = Color3.fromRGB(90, 70, 80),
-    Transparent = Color3.fromRGB(255, 245, 247)
+    Main = Color3.fromRGB(245, 230, 235),  -- 降低了亮度的莫兰迪粉
+    Deep = Color3.fromRGB(235, 170, 190),  -- 边框渐变色
+    Accent = Color3.fromRGB(255, 120, 160), -- 强调色
+    Text = Color3.fromRGB(70, 60, 65)
 }
 
 local function Tween(obj, time, prop, style)
@@ -26,9 +25,9 @@ local function Tween(obj, time, prop, style)
     return t
 end
 
--- // 强化版拖拽引擎 (修复缩小后失效) // --
+-- // 独立拖拽逻辑 // --
 local function MakeDraggable(obj)
-    local dragging, dragInput, dragStart, startPos
+    local dragging, dragStart, startPos
     obj.InputBegan:Connect(function(input)
         if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
             dragging = true
@@ -56,125 +55,142 @@ function SOUL_Lib.new(projectName)
 
     -- 1. 根容器
     self.Gui = Instance.new("ScreenGui")
-    self.Gui.Name = "SOUL_V4"
+    self.Gui.Name = "SOUL_V5"
     self.Gui.Parent = CoreGui
     self.Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-    -- 2. 悬浮球 (完全独立，防止主窗体干扰)
-    self.Ball = Instance.new("TextButton")
-    self.Ball.Size = UDim2.new(0, 50, 0, 50)
-    self.Ball.Position = UDim2.new(0.1, 0, 0.2, 0)
-    self.Ball.BackgroundColor3 = Theme.Accent
-    self.Ball.Text = "S"
-    self.Ball.Font = Enum.Font.GothamBold
-    self.Ball.TextColor3 = Color3.new(1,1,1)
-    self.Ball.Visible = false
-    self.Ball.Parent = self.Gui
-    Instance.new("UICorner", self.Ball).CornerRadius = UDim.new(1, 0)
-    MakeDraggable(self.Ball)
+    -- 2. 缩小后的圆角正方形 (修复形状)
+    self.MiniSquare = Instance.new("TextButton")
+    self.MiniSquare.Size = UDim2.new(0, 50, 0, 50)
+    self.MiniSquare.Position = UDim2.new(0.05, 0, 0.45, 0)
+    self.MiniSquare.BackgroundColor3 = Theme.Accent
+    self.MiniSquare.Text = "魂"
+    self.MiniSquare.Font = Enum.Font.GothamBold
+    self.MiniSquare.TextColor3 = Color3.new(1,1,1)
+    self.MiniSquare.Visible = false
+    self.MiniSquare.Parent = self.Gui
+    Instance.new("UICorner", self.MiniSquare).CornerRadius = UDim.new(0, 12) -- 12px 确保它是带圆角的正方形
+    MakeDraggable(self.MiniSquare)
 
-    -- 3. 主窗口 (缩小到 450x300)
+    -- 3. 主窗口
     self.Main = Instance.new("Frame")
-    self.Main.Size = UDim2.new(0, 450, 0, 300)
-    self.Main.Position = UDim2.new(0.5, -225, 0.5, -150)
+    self.Main.Size = UDim2.new(0, 460, 0, 310)
+    self.Main.Position = UDim2.new(0.5, -230, 0.5, -155)
     self.Main.BackgroundColor3 = Theme.Main
     self.Main.BorderSizePixel = 0
     self.Main.ClipsDescendants = true
     self.Main.Visible = false
     self.Main.Parent = self.Gui
-    Instance.new("UICorner", self.Main).CornerRadius = UDim.new(0, 20)
+    Instance.new("UICorner", self.Main).CornerRadius = UDim.new(0, 18)
     MakeDraggable(self.Main)
 
-    -- 4. 极致渐变边框 (45px)
-    local function CreateGradientBar(pos, rotation)
-        local f = Instance.new("Frame")
-        f.Size = UDim2.new(1, 0, 0, 45)
-        f.Position = pos
-        f.BackgroundTransparency = 0
-        f.BorderSizePixel = 0
-        f.ZIndex = 5
-        f.Parent = self.Main
+    -- 4. 彻底消除重叠层的 45px 渐变
+    local function CreatePureGradient(pos, rotation)
+        local bar = Instance.new("Frame")
+        bar.Size = UDim2.new(1, 0, 0, 45)
+        bar.Position = pos
+        bar.BackgroundTransparency = 0
+        bar.BorderSizePixel = 0
+        bar.ZIndex = 2 -- 置于背景之上
+        bar.Parent = self.Main
+        
         local g = Instance.new("UIGradient")
         g.Color = ColorSequence.new(Theme.Deep, Theme.Main)
-        g.Transparency = NumberSequence.new(0.2, 1) -- 更加通透
+        g.Transparency = NumberSequence.new(0, 1)
         g.Rotation = rotation
-        g.Parent = f
+        g.Parent = bar
+        
+        -- 给渐变条也加圆角，防止出现直角正方形阴影
+        Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 18)
     end
-    CreateGradientBar(UDim2.new(0,0,0,0), 90)
-    CreateGradientBar(UDim2.new(0,0,1,-45), -90)
+    CreatePureGradient(UDim2.new(0,0,0,0), 90)
+    CreatePureGradient(UDim2.new(0,0,1,-45), -90)
 
-    -- 5. 极简控制按键 (不再明显)
-    local function CreateDot(color, x)
-        local d = Instance.new("TextButton")
-        d.Size = UDim2.new(0, 12, 0, 12)
-        d.Position = UDim2.new(1, x, 0, 15)
-        d.BackgroundColor3 = color
-        d.Text = ""
-        d.ZIndex = 10
-        d.Parent = self.Main
-        Instance.new("UICorner", d).CornerRadius = UDim.new(1, 0)
-        return d
+    -- 5. 侧边栏渐变效果 (修复丢失问题)
+    self.SidebarBg = Instance.new("Frame")
+    self.SidebarBg.Size = UDim2.new(0, 130, 1, 0)
+    self.SidebarBg.BackgroundColor3 = Theme.Deep
+    self.SidebarBg.BorderSizePixel = 0
+    self.SidebarBg.ZIndex = 1
+    self.SidebarBg.Parent = self.Main
+    local sg = Instance.new("UIGradient")
+    sg.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.2), -- 起点带一点透明
+        NumberSequenceKeypoint.new(1, 1)   -- 终点完全消失
+    })
+    sg.Parent = self.SidebarBg
+    Instance.new("UICorner", self.SidebarBg).CornerRadius = UDim.new(0, 18)
+
+    -- 6. 极致纯净控制键 (只有符号)
+    local function CreateSymbol(text, x)
+        local b = Instance.new("TextButton")
+        b.Size = UDim2.new(0, 30, 0, 30)
+        b.Position = UDim2.new(1, x, 0, 8)
+        b.BackgroundTransparency = 1
+        b.Text = text
+        b.Font = Enum.Font.Gotham
+        b.TextSize = 22
+        b.TextColor3 = Theme.Text
+        b.ZIndex = 10
+        b.Parent = self.Main
+        return b
     end
-    local closeBtn = CreateDot(Color3.fromRGB(255, 110, 110), -25)
-    local minBtn = CreateDot(Theme.Accent, -45)
+    local closeBtn = CreateSymbol("✕", -35)
+    local minBtn = CreateSymbol("—", -65)
 
-    -- 6. 侧边栏与容器
+    -- 7. 容器布局
     self.SideScroll = Instance.new("ScrollingFrame")
-    self.SideScroll.Size = UDim2.new(0, 120, 1, -90)
-    self.SideScroll.Position = UDim2.new(0, 10, 0, 50)
+    self.SideScroll.Size = UDim2.new(0, 110, 1, -100)
+    self.SideScroll.Position = UDim2.new(0, 10, 0, 55)
     self.SideScroll.BackgroundTransparency = 1
     self.SideScroll.BorderSizePixel = 0
     self.SideScroll.ScrollBarThickness = 0
-    self.SideScroll.ZIndex = 6
+    self.SideScroll.ZIndex = 5
     self.SideScroll.Parent = self.Main
-    Instance.new("UIListLayout", self.SideScroll).Padding = UDim.new(0, 8)
+    Instance.new("UIListLayout", self.SideScroll).Padding = UDim.new(0, 10)
 
     self.Container = Instance.new("Frame")
-    self.Container.Size = UDim2.new(1, -150, 1, -100)
-    self.Container.Position = UDim2.new(0, 140, 0, 55)
+    self.Container.Size = UDim2.new(1, -150, 1, -110)
+    self.Container.Position = UDim2.new(0, 135, 0, 60)
     self.Container.BackgroundTransparency = 1
-    self.Container.ZIndex = 6
+    self.Container.ZIndex = 5
     self.Container.Parent = self.Main
 
-    -- // 交互逻辑 // --
+    -- // 逻辑实现 // --
 
-    -- 真正的关闭 (修复失效问题)
     closeBtn.MouseButton1Click:Connect(function()
-        Tween(self.Main, 0.4, {Size = UDim2.new(0,0,0,0), BackgroundTransparency = 1}, Enum.EasingStyle.Back)
-        task.wait(0.4)
+        Tween(self.Main, 0.3, {Size = UDim2.new(0,0,0,0), GroupTransparency = 1}, Enum.EasingStyle.Back)
+        task.wait(0.3)
         self.Gui:Destroy()
     end)
 
-    -- 彻底的缩小
     minBtn.MouseButton1Click:Connect(function()
-        Tween(self.Main, 0.5, {Size = UDim2.new(0,0,0,0), Position = self.Ball.Position}, Enum.EasingStyle.Back)
+        Tween(self.Main, 0.5, {Size = UDim2.new(0,0,0,0), Position = self.MiniSquare.Position}, Enum.EasingStyle.Back)
         task.wait(0.4)
         self.Main.Visible = false
-        self.Ball.Visible = true
-        Tween(self.Ball, 0.5, {Size = UDim2.new(0, 50, 0, 50)}, Enum.EasingStyle.Elastic)
+        self.MiniSquare.Visible = true
+        Tween(self.MiniSquare, 0.5, {Size = UDim2.new(0, 50, 0, 50)}, Enum.EasingStyle.Elastic)
     end)
 
-    self.Ball.MouseButton1Click:Connect(function()
+    self.MiniSquare.MouseButton1Click:Connect(function()
         self.Main.Visible = true
-        self.Ball.Visible = false
-        Tween(self.Main, 0.7, {Size = UDim2.new(0, 450, 0, 300), Position = UDim2.new(0.5, -225, 0.5, -150)}, Enum.EasingStyle.Elastic)
+        self.MiniSquare.Visible = false
+        Tween(self.Main, 0.7, {Size = UDim2.new(0, 460, 0, 310), Position = UDim2.new(0.5, -230, 0.5, -155)}, Enum.EasingStyle.Elastic)
     end)
 
     return self
 end
 
--- // 修复栏目切换时的“重影” // --
 function SOUL_Lib:CreateTab(name)
     local tab = {}
-    
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 35)
+    btn.Size = UDim2.new(1, 0, 0, 30)
     btn.BackgroundTransparency = 1
     btn.Text = name
     btn.TextColor3 = Theme.Text
     btn.Font = Enum.Font.GothamMedium
     btn.TextSize = 14
-    btn.ZIndex = 7
+    btn.ZIndex = 6
     btn.Parent = self.SideScroll
 
     local group = Instance.new("CanvasGroup")
@@ -198,39 +214,26 @@ function SOUL_Lib:CreateTab(name)
 
     btn.MouseButton1Click:Connect(function()
         if self.CurrentTab == tab then return end
+        if self.CurrentTab then self.CurrentTab.Group.Visible = false end
         
-        -- 核心修复：先让当前页面彻底消失
-        if self.CurrentTab then
-            self.CurrentTab.Group.Visible = false
-        end
-        
-        -- 再让新页面出现并执行动画
         self.CurrentTab = tab
         group.Visible = true
         group.GroupTransparency = 1
-        group.Position = UDim2.new(0, 15, 0, 0)
+        Tween(group, 0.3, {GroupTransparency = 0})
         
-        Tween(group, 0.3, {GroupTransparency = 0, Position = UDim2.new(0, 0, 0, 0)})
-        Tween(btn, 0.3, {TextColor3 = Theme.Accent})
-        
-        -- 其他按钮恢复颜色
+        -- 视觉高亮
         for _, other in pairs(self.Tabs) do
-            if other ~= tab then
-                Tween(other.Btn, 0.3, {TextColor3 = Theme.Text})
-            end
+            other.Btn.TextColor3 = (other.Btn == btn) and Theme.Accent or Theme.Text
         end
     end)
 
     tab.Btn = btn
     table.insert(self.Tabs, tab)
-    
-    -- 默认显示第一个
     if #self.Tabs == 1 then
         self.CurrentTab = tab
         group.Visible = true
         btn.TextColor3 = Theme.Accent
     end
-
     return tab
 end
 
@@ -238,7 +241,7 @@ function SOUL_Lib:AddButton(tab, text, callback)
     local b = Instance.new("TextButton")
     b.Size = UDim2.new(0.95, 0, 0, 40)
     b.BackgroundColor3 = Color3.new(1,1,1)
-    b.BackgroundTransparency = 0.5
+    b.BackgroundTransparency = 0.6 -- 增加透明度，融入背景
     b.Text = text
     b.TextColor3 = Theme.Text
     b.Font = Enum.Font.Gotham
@@ -251,15 +254,13 @@ function SOUL_Lib:AddButton(tab, text, callback)
         Tween(b, 0.1, {Size = UDim2.new(0.95, 0, 0, 40)})
         callback()
     end)
-    
     tab.Scroll.CanvasSize = UDim2.new(0,0,0, tab.Scroll.UIListLayout.AbsoluteContentSize.Y + 10)
 end
 
--- // 开场动画：极简灵魂呼吸 // --
 function SOUL_Lib:Show()
     self.Main.Visible = true
     self.Main.Size = UDim2.new(0, 0, 0, 0)
-    Tween(self.Main, 0.8, {Size = UDim2.new(0, 450, 0, 300)}, Enum.EasingStyle.Elastic)
+    Tween(self.Main, 0.8, {Size = UDim2.new(0, 460, 0, 310)}, Enum.EasingStyle.Elastic)
 end
 
 return SOUL_Lib
