@@ -1,68 +1,75 @@
--- [[ CyberPink UI Library - V4 Final Refined ]]
--- 配色：极简灰黑背景 + 顶级淡粉 (Sakura Pink)
+-- [[ CyberPink UI Library - V5 Professional Edition ]]
+-- 建议直接替换你 GitHub 仓库中的 ui.lua 内容
 
 local CyberPink = {
-    _V = "4.0.0",
-    _Toggled = true
+    _Toggled = true,
+    _CurrentTab = nil
 }
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 
+-- 顶级配色方案
 local Theme = {
-    Main = Color3.fromRGB(12, 12, 12),       -- 主背景
-    Topbar = Color3.fromRGB(20, 20, 20),     -- 顶部标题栏背景
-    Side = Color3.fromRGB(18, 18, 18),       -- 侧边栏
-    Accent = Color3.fromRGB(255, 192, 203),   -- 优雅淡粉色
-    Text = Color3.fromRGB(255, 255, 255),    -- 纯白
-    TextDark = Color3.fromRGB(150, 150, 150),-- 灰色
-    Element = Color3.fromRGB(28, 28, 28)     -- 控件背景
+    Main = Color3.fromRGB(15, 15, 15),       -- 深黑背景
+    Topbar = Color3.fromRGB(22, 22, 22),     -- 独立标题栏
+    Side = Color3.fromRGB(20, 20, 20),       -- 侧边栏
+    Accent = Color3.fromRGB(255, 209, 220),   -- 优雅淡粉 (Sakura Pink)
+    Text = Color3.fromRGB(245, 245, 245),    -- 主文字
+    TextDark = Color3.fromRGB(140, 140, 140),-- 隐藏/非选中文字
+    Element = Color3.fromRGB(30, 30, 30),     -- 组件背景
+    Stroke = Color3.fromRGB(255, 192, 203)    -- 边框色
 }
 
 function CyberPink:CreateWindow(Config)
-    local WindowName = Config.Name or "CyberPink Premium"
+    local WindowName = Config.Name or "CyberPink Library"
     
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "CP_V4_" .. math.random(1000, 9999)
+    ScreenGui.Name = "CP_V5_" .. math.random(100, 999)
     ScreenGui.Parent = CoreGui
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     pcall(function() gethui().Parent = ScreenGui end)
 
-    -- 主窗口
-    local MainFrame = Instance.new("Frame")
-    MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 550, 0, 350)
-    MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
-    MainFrame.BackgroundColor3 = Theme.Main
-    MainFrame.BorderSizePixel = 0
-    MainFrame.ClipsDescendants = true
-    MainFrame.Parent = ScreenGui
+    -- 主容器
+    local Main = Instance.new("Frame")
+    Main.Name = "Main"
+    Main.Size = UDim2.new(0, 550, 0, 350)
+    Main.Position = UDim2.new(0.5, -275, 0.5, -175)
+    Main.BackgroundColor3 = Theme.Main
+    Main.BorderSizePixel = 0
+    Main.ClipsDescendants = true
+    Main.Parent = ScreenGui
 
-    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
-    local Stroke = Instance.new("UIStroke")
-    Stroke.Color = Theme.Accent
+    local Corner = Instance.new("UICorner", Main)
+    Corner.CornerRadius = UDim.new(0, 12)
+
+    local Stroke = Instance.new("UIStroke", Main)
+    Stroke.Color = Theme.Stroke
     Stroke.Thickness = 1
-    Stroke.Transparency = 0.7
-    Stroke.Parent = MainFrame
+    Stroke.Transparency = 0.8
 
     -- 【独立标题栏】
     local Topbar = Instance.new("Frame")
     Topbar.Name = "Topbar"
-    Topbar.Size = UDim2.new(1, 0, 0, 35)
+    Topbar.Size = UDim2.new(1, 0, 0, 40)
     Topbar.BackgroundColor3 = Theme.Topbar
     Topbar.BorderSizePixel = 0
-    Topbar.Parent = MainFrame
-    Instance.new("UICorner", Topbar).CornerRadius = UDim.new(0, 10)
+    Topbar.Parent = Main
 
-    -- 补齐下方圆角，让标题栏底部平整
-    local TopbarFix = Instance.new("Frame")
-    TopbarFix.Size = UDim2.new(1, 0, 0, 10)
-    TopbarFix.Position = UDim2.new(0, 0, 1, -10)
-    TopbarFix.BackgroundColor3 = Theme.Topbar
-    TopbarFix.BorderSizePixel = 0
-    TopbarFix.Parent = Topbar
+    local TopCorner = Instance.new("UICorner", Topbar)
+    TopCorner.CornerRadius = UDim.new(0, 12)
+
+    -- 补齐圆角缺口
+    local TopbarFill = Instance.new("Frame")
+    TopbarFill.Size = UDim2.new(1, 0, 0, 10)
+    TopbarFill.Position = UDim2.new(0, 0, 1, -10)
+    TopbarFill.BackgroundColor3 = Theme.Topbar
+    TopbarFill.BorderSizePixel = 0
+    TopbarFill.Parent = Topbar
 
     local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
     Title.Text = "  " .. WindowName
     Title.Size = UDim2.new(1, -100, 1, 0)
     Title.TextColor3 = Theme.Accent
@@ -72,59 +79,61 @@ function CyberPink:CreateWindow(Config)
     Title.BackgroundTransparency = 1
     Title.Parent = Topbar
 
-    -- 【控制按钮组】
-    local Btns = Instance.new("Frame")
-    Btns.Size = UDim2.new(0, 80, 1, 0)
-    Btns.Position = UDim2.new(1, -85, 0, 0)
-    Btns.BackgroundTransparency = 1
-    Btns.Parent = Topbar
+    -- 【控制按钮：关闭与最小化】
+    local Controls = Instance.new("Frame")
+    Controls.Size = UDim2.new(0, 80, 1, 0)
+    Controls.Position = UDim2.new(1, -85, 0, 0)
+    Controls.BackgroundTransparency = 1
+    Controls.Parent = Topbar
 
-    local function CreateControlBtn(txt, color, xPos, callback)
+    local function CreateBtn(symbol, color, xOffset, callback)
         local b = Instance.new("TextButton")
-        b.Size = UDim2.new(0, 24, 0, 24)
-        b.Position = UDim2.new(0, xPos, 0.5, -12)
+        b.Size = UDim2.new(0, 26, 0, 26)
+        b.Position = UDim2.new(0, xOffset, 0.5, -13)
         b.BackgroundColor3 = Theme.Element
-        b.Text = txt
+        b.Text = symbol
         b.TextColor3 = color
         b.Font = Enum.Font.GothamBold
         b.TextSize = 14
-        b.Parent = Btns
-        Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+        b.AutoButtonColor = true
+        b.Parent = Controls
+        Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
         b.MouseButton1Click:Connect(callback)
     end
 
-    CreateControlBtn("×", Color3.fromRGB(255, 100, 100), 50, function() ScreenGui:Destroy() end)
-    CreateControlBtn("-", Theme.Accent, 20, function()
+    CreateBtn("×", Color3.fromRGB(255, 100, 100), 50, function() ScreenGui:Destroy() end)
+    CreateBtn("-", Theme.Accent, 15, function()
         CyberPink._Toggled = not CyberPink._Toggled
-        MainFrame:TweenSize(CyberPink._Toggled and UDim2.new(0, 550, 0, 350) or UDim2.new(0, 550, 0, 35), "Out", "Quart", 0.3, true)
+        local targetSize = CyberPink._Toggled and UDim2.new(0, 550, 0, 350) or UDim2.new(0, 550, 0, 40)
+        Main:TweenSize(targetSize, "Out", "Quart", 0.4, true)
     end)
 
-    -- 【拖拽逻辑核心】
+    -- 【修复后的拖拽功能】
     local dragToggle, dragInput, dragStart, startPos
     Topbar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragToggle = true
             dragStart = input.Position
-            startPos = MainFrame.Position
+            startPos = Main.Position
         end
     end)
     UserInputService.InputChanged:Connect(function(input)
         if dragToggle and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
-            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then dragToggle = false end
     end)
 
-    -- 【侧边栏与内容区】
+    -- 【内容分区】
     local Side = Instance.new("Frame")
-    Side.Size = UDim2.new(0, 150, 1, -35)
-    Side.Position = UDim2.new(0, 0, 0, 35)
+    Side.Size = UDim2.new(0, 160, 1, -40)
+    Side.Position = UDim2.new(0, 0, 0, 40)
     Side.BackgroundColor3 = Theme.Side
     Side.BorderSizePixel = 0
-    Side.Parent = MainFrame
+    Side.Parent = Main
 
     local TabScroll = Instance.new("ScrollingFrame")
     TabScroll.Size = UDim2.new(1, -10, 1, -10)
@@ -135,10 +144,10 @@ function CyberPink:CreateWindow(Config)
     Instance.new("UIListLayout", TabScroll).Padding = UDim.new(0, 5)
 
     local Content = Instance.new("Frame")
-    Content.Size = UDim2.new(1, -150, 1, -35)
-    Content.Position = UDim2.new(0, 150, 0, 35)
+    Content.Size = UDim2.new(1, -160, 1, -40)
+    Content.Position = UDim2.new(0, 160, 0, 40)
     Content.BackgroundTransparency = 1
-    Content.Parent = MainFrame
+    Content.Parent = Main
 
     local Window = {}
 
@@ -171,20 +180,20 @@ function CyberPink:CreateWindow(Config)
                 TweenService:Create(v, TweenInfo.new(0.3), {BackgroundTransparency = 1, TextColor3 = Theme.TextDark}):Play()
             end end
             Page.Visible = true
-            TweenService:Create(TabBtn, TweenInfo.new(0.3), {BackgroundTransparency = 0.8, TextColor3 = Theme.Accent}):Play()
+            TweenService:Create(TabBtn, TweenInfo.new(0.3), {BackgroundTransparency = 0.85, TextColor3 = Theme.Accent}):Play()
         end)
 
         if not CyberPink._CurrentTab then
             CyberPink._CurrentTab = true
             Page.Visible = true
-            TabBtn.BackgroundTransparency = 0.8
+            TabBtn.BackgroundTransparency = 0.85
             TabBtn.TextColor3 = Theme.Accent
         end
 
         local Elements = {}
         function Elements:CreateToggle(TConfig)
             local TFrame = Instance.new("TextButton")
-            TFrame.Size = UDim2.new(1, 0, 0, 40)
+            TFrame.Size = UDim2.new(1, 0, 0, 42)
             TFrame.BackgroundColor3 = Theme.Element
             TFrame.AutoButtonColor = false
             TFrame.Text = ""
@@ -193,7 +202,7 @@ function CyberPink:CreateWindow(Config)
 
             local TTitle = Instance.new("TextLabel")
             TTitle.Text = "  " .. TConfig.Name
-            TTitle.Size = UDim2.new(1, 0, 1, 0)
+            TTitle.Size = UDim2.new(1, -50, 1, 0)
             TTitle.TextColor3 = Theme.Text
             TTitle.BackgroundTransparency = 1
             TTitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -201,15 +210,15 @@ function CyberPink:CreateWindow(Config)
             TTitle.Parent = TFrame
 
             local Tgl = Instance.new("Frame")
-            Tgl.Size = UDim2.new(0, 36, 0, 18)
-            Tgl.Position = UDim2.new(1, -45, 0.5, -9)
+            Tgl.Size = UDim2.new(0, 38, 0, 20)
+            Tgl.Position = UDim2.new(1, -48, 0.5, -10)
             Tgl.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
             Tgl.Parent = TFrame
             Instance.new("UICorner", Tgl).CornerRadius = UDim.new(1, 0)
 
             local Ball = Instance.new("Frame")
-            Ball.Size = UDim2.new(0, 14, 0, 14)
-            Ball.Position = UDim2.new(0, 2, 0.5, -7)
+            Ball.Size = UDim2.new(0, 16, 0, 16)
+            Ball.Position = UDim2.new(0, 2, 0.5, -8)
             Ball.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             Ball.Parent = Tgl
             Instance.new("UICorner", Ball).CornerRadius = UDim.new(1, 0)
@@ -217,8 +226,8 @@ function CyberPink:CreateWindow(Config)
             local active = false
             TFrame.MouseButton1Click:Connect(function()
                 active = not active
-                TweenService:Create(Ball, TweenInfo.new(0.2), {Position = active and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)}):Play()
-                TweenService:Create(Tgl, TweenInfo.new(0.2), {BackgroundColor3 = active and Theme.Accent or Color3.fromRGB(45, 45, 45)}):Play()
+                TweenService:Create(Ball, TweenInfo.new(0.25), {Position = active and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}):Play()
+                TweenService:Create(Tgl, TweenInfo.new(0.25), {BackgroundColor3 = active and Theme.Accent or Color3.fromRGB(45, 45, 45)}):Play()
                 TConfig.Callback(active)
             end)
         end
