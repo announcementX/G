@@ -1,10 +1,10 @@
--- [[ CyberPink UI V25 | The Absolute Engine - Unabridged Version ]]
+-- [[ CyberPink UI V26 | Flawless Execution Engine ]]
 local CyberPink = {}
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 
--- [1. 内置 20+ 艺术字体字典]
+-- [1. 20+ 艺术字体字典]
 local FontDict = {
     ["Default"] = Enum.Font.Gotham, ["Bold"] = Enum.Font.GothamBold, ["Black"] = Enum.Font.GothamBlack,
     ["Arcade"] = Enum.Font.Arcade, ["SciFi"] = Enum.Font.SciFi, ["Fantasy"] = Enum.Font.Fantasy,
@@ -16,7 +16,7 @@ local FontDict = {
     ["PatrickHand"] = Enum.Font.PatrickHand, ["PermanentMarker"] = Enum.Font.PermanentMarker
 }
 
--- [2. 内置 20+ 动画样式字典 (Style + Duration)]
+-- [2. 20+ 动画样式字典]
 local AnimDict = {
     ["Linear"] = {Enum.EasingStyle.Linear, 0.3}, ["Smooth"] = {Enum.EasingStyle.Quad, 0.4},
     ["Quick"] = {Enum.EasingStyle.Quart, 0.2}, ["Slow"] = {Enum.EasingStyle.Sine, 0.8},
@@ -30,11 +30,11 @@ local AnimDict = {
     ["Wobble"] = {Enum.EasingStyle.Elastic, 0.6}, ["Snappy"] = {Enum.EasingStyle.Quart, 0.25}
 }
 
--- [3. 内置 20+ 悬浮窗形状样式字典 (CornerRadius, 宽高比修正)]
+-- [3. 20+ 悬浮窗形状字典]
 local ShapeDict = {
     ["Circle"] = UDim.new(1, 0), ["Square"] = UDim.new(0, 0),
     ["RoundSquare"] = UDim.new(0, 15), ["SoftEdge"] = UDim.new(0, 8),
-    ["Pill"] = UDim.new(0.5, 0), ["Leaf"] = UDim.new(0, 25), -- 模拟不同的圆角风格
+    ["Pill"] = UDim.new(0.5, 0), ["Leaf"] = UDim.new(0, 25), 
     ["Sharp"] = UDim.new(0, 2), ["Smooth"] = UDim.new(0, 12),
     ["Diamond"] = UDim.new(0.2, 0), ["HexagonSim"] = UDim.new(0.3, 0),
     ["OctagonSim"] = UDim.new(0.4, 0), ["Oval"] = UDim.new(1, 0),
@@ -44,7 +44,6 @@ local ShapeDict = {
     ["Future"] = UDim.new(0, 30), ["Minimal"] = UDim.new(0, 5)
 }
 
--- [辅助函数：安全的解析尺寸 (比例 or 像素)]
 local function ParseSize(val, default)
     if not val then return default end
     if type(val) == "number" then
@@ -53,27 +52,40 @@ local function ParseSize(val, default)
     return default
 end
 
--- [辅助函数：完整的拖拽逻辑]
-local function MakeDraggable(TopBar, TargetObj)
-    local dragging, dragInput, dragStart, startPos
-    TopBar.InputBegan:Connect(function(input)
+-- [修复核心：高级拖拽与点击判定分离 (防止拖拽悬浮窗时触发恢复)]
+local function MakeDraggableAndClickable(dragHandle, moveTarget, clickCallback)
+    local dragging = false; local moved = false
+    local dragInput, dragStart, startPos
+
+    dragHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true; dragStart = input.Position; startPos = TargetObj.Position
-            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+            dragging = true; moved = false
+            dragStart = input.Position; startPos = moveTarget.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                    if not moved and clickCallback then clickCallback() end
+                end
+            end)
         end
     end)
-    TopBar.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+
+    dragHandle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
     end)
+
     UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             local delta = input.Position - dragStart
-            TargetObj.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            if delta.Magnitude > 3 then moved = true end -- 如果移动超过3像素，视为拖拽，不触发点击
+            moveTarget.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
 end
 
--- [辅助函数：局部独立霓虹环渲染]
 local function ApplyNeon(inst, enabled, mode)
     if not enabled then return nil end
     local stroke = Instance.new("UIStroke")
@@ -94,33 +106,65 @@ end
 function CyberPink:CreateWindow(Config)
     local Window = { _Toggled = true }
     
-    -- [默认值与严格安全限制]
     local W = Config.Width or 550; local H = Config.Height or 350
     local MainUDimW = ParseSize(W, UDim.new(0, 550)); local MainUDimH = ParseSize(H, UDim.new(0, 350))
-    
     local MinW = Config.MinW or 80; local MinH = Config.MinH or 80
     local MinUDimW = ParseSize(MinW, UDim.new(0, 80)); local MinUDimH = ParseSize(MinH, UDim.new(0, 80))
 
     local TitleSize = math.clamp(Config.TitleSize or 16, 10, 50)
-    local MainBgColor = Config.MainBgColor or Color3.fromRGB(20, 20, 20)
+    local MainBgColor = Config.MainBgColor or Color3.fromRGB(15, 15, 15)
     local AccentColor = Config.AccentColor or Color3.fromRGB(255, 105, 180)
-    local TitleFont = FontDict[Config.TitleFont] or Enum.Font.GothamBold
 
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "CyberPink_V25"; ScreenGui.Parent = CoreGui; ScreenGui.IgnoreGuiInset = true
+    ScreenGui.Name = "CyberPink_V26"; ScreenGui.Parent = CoreGui; ScreenGui.IgnoreGuiInset = true
 
-    -- [通知系统 (四角定位)]
+    -- [重制：真正的高级加载界面]
+    if Config.LoadMode and Config.LoadMode ~= "None" then
+        local LFrame = Instance.new("Frame")
+        LFrame.BackgroundColor3 = Config.LoadBgColor or Color3.fromRGB(10, 10, 10)
+        LFrame.BorderSizePixel = 0; LFrame.Parent = ScreenGui; LFrame.ZIndex = 10000
+        
+        if Config.LoadMode == "FullScreen" then
+            LFrame.Size = UDim2.new(1, 0, 1, 0); LFrame.Position = UDim2.new(0, 0, 0, 0)
+        else
+            LFrame.Size = UDim2.new(0, 400, 0, 250); LFrame.Position = UDim2.new(0.5, -200, 0.5, -125)
+            Instance.new("UICorner", LFrame).CornerRadius = UDim.new(0, 15)
+            ApplyNeon(LFrame, true, "Border")
+        end
+        
+        -- 旋转光环
+        local Spinner = Instance.new("Frame", LFrame)
+        Spinner.Size = UDim2.new(0, 80, 0, 80); Spinner.Position = UDim2.new(0.5, -40, 0.5, -60)
+        Spinner.BackgroundTransparency = 1
+        Instance.new("UICorner", Spinner).CornerRadius = UDim.new(1, 0)
+        ApplyNeon(Spinner, true, "Border")
+        task.spawn(function() while Spinner.Parent do Spinner.Rotation = Spinner.Rotation + 4; task.wait(0.01) end end)
+
+        -- 居中文字
+        local LTxt = Instance.new("TextLabel", LFrame)
+        LTxt.Size = UDim2.new(1, 0, 0, 50); LTxt.Position = UDim2.new(0, 0, 0.5, 30)
+        LTxt.Text = Config.LoadText or "SYSTEM BOOTING..."
+        LTxt.TextColor3 = Config.LoadTextColor or AccentColor; LTxt.BackgroundTransparency = 1
+        LTxt.Font = FontDict[Config.LoadFont] or Enum.Font.GothamBlack
+        LTxt.TextScaled = true -- 确保文字绝不越界
+        local tc = Instance.new("UITextSizeConstraint", LTxt)
+        tc.MaxTextSize = math.clamp(Config.LoadTextSize or 30, 10, 80)
+        ApplyNeon(LTxt, Config.LoadNeon, "Text")
+
+        local anim = AnimDict[Config.LoadAnim or "Quint"]
+        task.wait(Config.LoadTime or 2)
+        LFrame:TweenPosition(UDim2.new(0.5, -200, -1, 0), "In", anim[1], anim[2], true, function() LFrame:Destroy() end)
+    end
+
     function Window:Notify(nConfig)
         local positions = {
             ["TopRight"] = UDim2.new(1, -310, 0, 20), ["TopLeft"] = UDim2.new(0, 20, 0, 20),
             ["BottomRight"] = UDim2.new(1, -310, 1, -100), ["BottomLeft"] = UDim2.new(0, 20, 1, -100)
         }
         local NFrame = Instance.new("Frame")
-        NFrame.Size = UDim2.new(0, 280, 0, 70)
-        NFrame.Position = positions[nConfig.Position or "BottomRight"] or positions["BottomRight"]
+        NFrame.Size = UDim2.new(0, 280, 0, 70); NFrame.Position = positions[nConfig.Position or "BottomRight"] or positions["BottomRight"]
         NFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25); NFrame.Parent = ScreenGui
-        Instance.new("UICorner", NFrame).CornerRadius = UDim.new(0, 8)
-        ApplyNeon(NFrame, true, "Border")
+        Instance.new("UICorner", NFrame).CornerRadius = UDim.new(0, 8); ApplyNeon(NFrame, true, "Border")
 
         local txtOffset = 10
         if nConfig.Image then
@@ -132,78 +176,44 @@ function CyberPink:CreateWindow(Config)
 
         local Txt = Instance.new("TextLabel")
         Txt.Size = UDim2.new(1, -(txtOffset+10), 1, 0); Txt.Position = UDim2.new(0, txtOffset, 0, 0)
-        Txt.Text = nConfig.Text or "Notification"; Txt.TextColor3 = Color3.new(1,1,1)
+        Txt.Text = nConfig.Text or "Notice"; Txt.TextColor3 = Color3.new(1,1,1)
         Txt.Font = FontDict[nConfig.Font] or Enum.Font.Gotham; Txt.TextSize = 14
         Txt.BackgroundTransparency = 1; Txt.TextWrapped = true; Txt.TextXAlignment = Enum.TextXAlignment.Left; Txt.Parent = NFrame
-
         task.delay(nConfig.Duration or 3, function() NFrame:Destroy() end)
     end
 
-    -- [加载动画系统]
-    if Config.LoadMode and Config.LoadMode ~= "None" then
-        local LFrame = Instance.new("Frame")
-        LFrame.BackgroundColor3 = Config.LoadBgColor or Color3.new(0,0,0)
-        LFrame.Parent = ScreenGui; LFrame.ZIndex = 100
-        
-        if Config.LoadMode == "FullScreen" then
-            LFrame.Size = UDim2.new(1, 0, 1, 0); LFrame.Position = UDim2.new(0, 0, 0, 0)
-        else
-            LFrame.Size = UDim2.new(0, 400, 0, 250); LFrame.Position = UDim2.new(0.5, -200, 0.5, -125)
-            Instance.new("UICorner", LFrame).CornerRadius = UDim.new(0, 15)
-        end
-        
-        local LTxt = Instance.new("TextLabel")
-        LTxt.Size = UDim2.new(1, 0, 1, 0); LTxt.Text = Config.LoadText or "LOADING..."
-        LTxt.TextColor3 = Config.LoadTextColor or AccentColor; LTxt.BackgroundTransparency = 1
-        LTxt.Font = FontDict[Config.LoadFont] or Enum.Font.GothamBlack
-        LTxt.TextSize = math.clamp(Config.LoadTextSize or 30, 10, 100); LTxt.Parent = LFrame
-        ApplyNeon(LTxt, Config.LoadNeon, "Text")
-
-        local anim = AnimDict[Config.LoadAnim or "Linear"]
-        task.wait(Config.LoadTime or 2)
-        LFrame:TweenPosition(UDim2.new(0.5, -200, -1, 0), "In", anim[1], anim[2], true, function() LFrame:Destroy() end)
-    end
-
-    -- [主窗体核心]
     local Main = Instance.new("Frame")
     Main.Name = "Main"; Main.BackgroundColor3 = MainBgColor; Main.ClipsDescendants = true
     Main.Size = UDim2.new(MainUDimW.Scale, MainUDimW.Offset, MainUDimH.Scale, MainUDimH.Offset)
     Main.Position = UDim2.new(0.5, -(MainUDimW.Offset/2), 0.5, -(MainUDimH.Offset/2))
     Main.Parent = ScreenGui
-    local MainCorner = Instance.new("UICorner", Main)
-    MainCorner.CornerRadius = UDim.new(0, 12)
+    local MainCorner = Instance.new("UICorner", Main); MainCorner.CornerRadius = UDim.new(0, 12)
     local MainNeonStroke = ApplyNeon(Main, Config.NeonMain, "Border")
 
-    -- 标题栏
     local Topbar = Instance.new("Frame")
-    Topbar.Size = UDim2.new(1, 0, 0, 45); Topbar.BackgroundColor3 = Color3.fromRGB(30, 30, 30); Topbar.Parent = Main
+    Topbar.Size = UDim2.new(1, 0, 0, 45); Topbar.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Topbar.Parent = Main
     local Title = Instance.new("TextLabel")
     Title.Size = UDim2.new(0.7, 0, 1, 0); Title.Position = UDim2.new(0, 15, 0, 0)
     Title.Text = Config.Name or "UI Engine"; Title.TextColor3 = AccentColor
-    Title.Font = TitleFont; Title.TextSize = TitleSize; Title.BackgroundTransparency = 1; Title.TextXAlignment = Enum.TextXAlignment.Left; Title.Parent = Topbar
+    Title.Font = FontDict[Config.TitleFont] or Enum.Font.GothamBold; Title.TextSize = TitleSize; Title.BackgroundTransparency = 1; Title.TextXAlignment = Enum.TextXAlignment.Left; Title.Parent = Topbar
     ApplyNeon(Title, Config.NeonTitle, "Text")
 
-    -- 缩小悬浮窗内容载体 (预创建，初始隐藏)
+    -- 缩小悬浮窗容器
     local MinContainer = Instance.new("Frame")
     MinContainer.Size = UDim2.new(1, 0, 1, 0); MinContainer.BackgroundTransparency = 1; MinContainer.Visible = false; MinContainer.Parent = Main
     local MinContent
     if Config.MinType == "Image" then
-        MinContent = Instance.new("ImageLabel")
-        MinContent.Image = Config.MinImage or ""
+        MinContent = Instance.new("ImageLabel"); MinContent.Image = Config.MinImage or ""
     else
-        MinContent = Instance.new("TextLabel")
-        MinContent.Text = Config.MinText or "X"
+        MinContent = Instance.new("TextLabel"); MinContent.Text = Config.MinText or "CP"
         MinContent.Font = FontDict[Config.MinFont] or Enum.Font.GothamBold
-        MinContent.TextSize = math.clamp(Config.MinTextSize or 30, 10, 100)
+        MinContent.TextScaled = true
+        local mtc = Instance.new("UITextSizeConstraint", MinContent)
+        mtc.MaxTextSize = math.clamp(Config.MinTextSize or 30, 10, 150)
     end
     MinContent.Size = UDim2.new(1, 0, 1, 0); MinContent.BackgroundTransparency = 1; MinContent.TextColor3 = AccentColor; MinContent.Parent = MinContainer
     ApplyNeon(MinContent, Config.NeonMinText, "Text")
 
-    -- 拖拽逻辑挂载 (主窗体和悬浮窗状态通用)
-    MakeDraggable(Topbar, Main)
-    MakeDraggable(MinContainer, Main) -- 缩小后通过 MinContainer 拖拽
-
-    -- 内容区
     local Content = Instance.new("Frame")
     Content.Size = UDim2.new(1, 0, 1, -45); Content.Position = UDim2.new(0, 0, 0, 45); Content.BackgroundTransparency = 1; Content.Parent = Main
     local TabScroll = Instance.new("ScrollingFrame")
@@ -212,7 +222,7 @@ function CyberPink:CreateWindow(Config)
     local PageContainer = Instance.new("Frame")
     PageContainer.Size = UDim2.new(1, -150, 1, -10); PageContainer.Position = UDim2.new(0, 140, 0, 5); PageContainer.BackgroundTransparency = 1; PageContainer.Parent = Content
 
-    -- [状态切换：缩小 / 放大]
+    -- [修复：缩小与恢复切换核心]
     local function ToggleUI()
         Window._Toggled = not Window._Toggled
         local minAnim = AnimDict[Config.MinAnim or "Bounce"]
@@ -242,7 +252,10 @@ function CyberPink:CreateWindow(Config)
     MinBtn.MouseButton1Click:Connect(ToggleUI)
     CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
-    -- [栏目与组件生成]
+    -- 挂载拖拽：大窗口拖标题栏，小窗口拖容器（并且小窗口单击可恢复）
+    MakeDraggableAndClickable(Topbar, Main, nil)
+    MakeDraggableAndClickable(MinContainer, Main, ToggleUI)
+
     function Window:CreateTab(Name, tConfig)
         tConfig = tConfig or {}
         local TBtn = Instance.new("TextButton")
