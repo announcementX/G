@@ -9,17 +9,17 @@ local Colors = {
     ElementBg = Color3.fromRGB(25, 25, 25)
 }
 
--- 【优化版光遇动画】彻底解决显示冲突
+-- 【极速光遇动画】响应时间减半，丝滑度翻倍
 local function SkyBlurAnim(obj, duration, visible)
     if not obj then return end
     if visible then
         obj.Visible = true
-        TweenService:Create(obj, TweenInfo.new(duration or 0.4, Enum.EasingStyle.Quart), {GroupTransparency = 0}):Play()
+        TweenService:Create(obj, TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {GroupTransparency = 0}):Play()
     else
-        local t = TweenService:Create(obj, TweenInfo.new(duration or 0.3, Enum.EasingStyle.Quart), {GroupTransparency = 1})
+        local t = TweenService:Create(obj, TweenInfo.new(duration or 0.15, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {GroupTransparency = 1})
         t:Play()
         t.Completed:Connect(function() 
-            if obj.GroupTransparency > 0.9 then obj.Visible = false end -- 只有完全透明后才隐藏
+            if obj.GroupTransparency > 0.9 then obj.Visible = false end 
         end)
     end
 end
@@ -27,19 +27,19 @@ end
 local function ClickAnim(obj)
     obj.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            TweenService:Create(obj, TweenInfo.new(0.1), {Size = UDim2.new(obj.Size.X.Scale, obj.Size.X.Offset - 2, obj.Size.Y.Scale, obj.Size.Y.Offset - 2)}):Play()
+            TweenService:Create(obj, TweenInfo.new(0.08), {Size = UDim2.new(obj.Size.X.Scale, obj.Size.X.Offset - 2, obj.Size.Y.Scale, obj.Size.Y.Offset - 2)}):Play()
         end
     end)
     obj.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            TweenService:Create(obj, TweenInfo.new(0.1), {Size = UDim2.new(obj.Size.X.Scale, obj.Size.X.Offset + 2, obj.Size.Y.Scale, obj.Size.Y.Offset + 2)}):Play()
+            TweenService:Create(obj, TweenInfo.new(0.08), {Size = UDim2.new(obj.Size.X.Scale, obj.Size.X.Offset + 2, obj.Size.Y.Scale, obj.Size.Y.Offset + 2)}):Play()
         end
     end)
 end
 
 function Library:CreateWindow(title)
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "SkyPink_Final"
+    ScreenGui.Name = "SkyPink_Turbo"
     ScreenGui.Parent = game.CoreGui
     ScreenGui.ResetOnSpawn = false
 
@@ -51,9 +51,9 @@ function Library:CreateWindow(title)
     MainCanvas.Parent = ScreenGui
     Instance.new("UICorner", MainCanvas).CornerRadius = UDim.new(0, 15)
 
-    -- 入场动画
+    -- 入场
     MainCanvas.GroupTransparency = 1
-    TweenService:Create(MainCanvas, TweenInfo.new(0.5), {GroupTransparency = 0}):Play()
+    TweenService:Create(MainCanvas, TweenInfo.new(0.4), {GroupTransparency = 0}):Play()
 
     -- 拖拽
     local dragging, dragStart, startPos
@@ -94,7 +94,7 @@ function Library:CreateWindow(title)
     local min = false
     CreateFancyBtn(UDim2.new(1, -82, 0.5, -16), false, function()
         min = not min
-        TweenService:Create(MainCanvas, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Size = min and UDim2.new(0, 500, 0, 50) or UDim2.new(0, 500, 0, 340)}):Play()
+        TweenService:Create(MainCanvas, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = min and UDim2.new(0, 500, 0, 50) or UDim2.new(0, 500, 0, 340)}):Play()
     end)
 
     -- 侧边栏
@@ -129,7 +129,7 @@ function Library:CreateWindow(title)
             local s = false
             btn.MouseButton1Click:Connect(function()
                 s = not s
-                TweenService:Create(dot, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Position = s and UDim2.new(0, 22, 0.5, -9) or UDim2.new(0, 2, 0.5, -9), BackgroundColor3 = s and Colors.MainPink or Color3.fromRGB(150,150,150)}):Play()
+                TweenService:Create(dot, TweenInfo.new(0.2, Enum.EasingStyle.Back), {Position = s and UDim2.new(0, 22, 0.5, -9) or UDim2.new(0, 2, 0.5, -9), BackgroundColor3 = s and Colors.MainPink or Color3.fromRGB(150,150,150)}):Play()
                 callback(s)
             end)
         end
@@ -149,9 +149,9 @@ function Library:CreateWindow(title)
             local open = false
             fBtn.MouseButton1Click:Connect(function()
                 open = not open
-                SkyBlurAnim(fContent, 0.4, open)
-                TweenService:Create(fBase, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Size = open and UDim2.new(1, -10, 0, fList.AbsoluteContentSize.Y + 55) or UDim2.new(1, -10, 0, 42)}):Play()
-                task.wait(0.4); UpdateCanvas()
+                SkyBlurAnim(fContent, 0.2, open)
+                TweenService:Create(fBase, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = open and UDim2.new(1, -10, 0, fList.AbsoluteContentSize.Y + 55) or UDim2.new(1, -10, 0, 42)}):Play()
+                task.wait(0.3); UpdateCanvas()
             end)
             return AddElements(fContent, fList)
         end
@@ -163,33 +163,28 @@ function Library:CreateWindow(title)
         TabBtn.Size = UDim2.new(0, 110, 0, 38); TabBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); TabBtn.Text = name; TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150); TabBtn.Font = Enum.Font.GothamMedium; TabBtn.TextSize = 13; TabBtn.Parent = TabContainer; Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 10)
         
         local Container = Instance.new("CanvasGroup")
-        Container.Size = UDim2.new(1, 0, 1, 0); Container.BackgroundTransparency = 1; Container.Visible = false; Container.Parent = ContentHolder
-        Container.GroupTransparency = 1 -- 默认透明
+        Container.Size = UDim2.new(1, 0, 1, 0); Container.BackgroundTransparency = 1; Container.Visible = false; Container.Parent = ContentHolder; Container.GroupTransparency = 1 
 
         local SContainer = Instance.new("ScrollingFrame")
         SContainer.Size = UDim2.new(1, 0, 1, 0); SContainer.BackgroundTransparency = 1; SContainer.ScrollBarThickness = 3; SContainer.ScrollBarImageColor3 = Colors.MainPink; SContainer.Parent = Container
         local UIList = Instance.new("UIListLayout", SContainer); UIList.Padding = UDim.new(0, 10); UIList.HorizontalAlignment = Enum.HorizontalAlignment.Center
         
-        -- 初始状态处理
         if ScreenGui:FindFirstChild("First") == nil then 
             local f = Instance.new("BoolValue", ScreenGui); f.Name = "First"
             Container.Visible = true; Container.GroupTransparency = 0; TabBtn.TextColor3 = Colors.MainPink
         end
 
         TabBtn.MouseButton1Click:Connect(function()
-            -- 1. 先把所有其他的栏目淡出并隐藏
+            -- 【极速逻辑】立即切换，不等待延时
             for _, v in pairs(ContentHolder:GetChildren()) do 
-                if v:IsA("CanvasGroup") and v ~= Container then 
-                    SkyBlurAnim(v, 0.2, false) 
+                if v:IsA("CanvasGroup") and v ~= Container and v.Visible then 
+                    SkyBlurAnim(v, 0.15, false) -- 快速淡出
                 end 
             end
             for _, v in pairs(TabContainer:GetChildren()) do if v:IsA("TextButton") then v.TextColor3 = Color3.fromRGB(150, 150, 150) end end
             
-            -- 2. 延迟一点点显示新栏目，避免闪烁
-            task.delay(0.1, function()
-                SkyBlurAnim(Container, 0.3, true)
-                TabBtn.TextColor3 = Colors.MainPink
-            end)
+            SkyBlurAnim(Container, 0.2, true) -- 快速淡入
+            TabBtn.TextColor3 = Colors.MainPink
         end)
         return AddElements(SContainer, UIList)
     end
