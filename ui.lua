@@ -25,19 +25,25 @@ end
 
 function Library:CreateWindow(title)
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "SkyPink_UltraFix"
+    ScreenGui.Name = "SkyPink_NoLeak"
     ScreenGui.Parent = game.CoreGui
     ScreenGui.ResetOnSpawn = false
 
-    local MainFrame = Instance.new("Frame") -- 改回 Frame 提高渲染兼容性
+    local MainFrame = Instance.new("Frame")
     MainFrame.Size = UDim2.new(0, 500, 0, 340)
     MainFrame.Position = UDim2.new(0.5, -250, 0.5, -170)
     MainFrame.BackgroundColor3 = Colors.DarkBg
-    MainFrame.ClipsDescendants = true 
+    MainFrame.ClipsDescendants = true -- 开启强制剪裁
     MainFrame.Parent = ScreenGui
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 15)
 
-    -- 拖拽
+    -- 【新增】内容遮罩：缩小后控制整体透明度，解决“漏光”
+    local GlobalCanvas = Instance.new("CanvasGroup")
+    GlobalCanvas.Size = UDim2.new(1, 0, 1, 0)
+    GlobalCanvas.BackgroundTransparency = 1
+    GlobalCanvas.Parent = MainFrame
+
+    -- 拖拽逻辑
     local dragging, dragStart, startPos
     MainFrame.InputBegan:Connect(function(input)
         if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and input.Position.Y - MainFrame.AbsolutePosition.Y < 50 then
@@ -52,7 +58,7 @@ function Library:CreateWindow(title)
     end)
     UserInputService.InputEnded:Connect(function() dragging = false end)
 
-    -- 顶部栏
+    -- 顶部栏 (放在 GlobalCanvas 外面，这样缩小后标题和按钮还在)
     local TopBar = Instance.new("Frame")
     TopBar.Size = UDim2.new(1, 0, 0, 50); TopBar.BackgroundTransparency = 1; TopBar.Parent = MainFrame
     local TitleLabel = Instance.new("TextLabel")
@@ -68,33 +74,33 @@ function Library:CreateWindow(title)
         else
             local l1 = Instance.new("Frame"); l1.Size = UDim2.new(0, 18, 0, 2); l1.Position = UDim2.new(0.5, 0, 0.5, 0); l1.AnchorPoint = Vector2.new(0.5, 0.5); l1.BackgroundColor3 = Colors.MainPink; l1.BorderSizePixel = 0; l1.Parent = b
         end
-        ClickAnim(b)
-        b.MouseButton1Click:Connect(func)
+        ClickAnim(b); b.MouseButton1Click:Connect(func)
     end
 
     CreateFancyBtn(UDim2.new(1, -42, 0.5, -16), true, function() ScreenGui:Destroy() end)
+    
     local min = false
     CreateFancyBtn(UDim2.new(1, -82, 0.5, -16), false, function()
         min = not min
-        TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quart), {Size = min and UDim2.new(0, 500, 0, 50) or UDim2.new(0, 500, 0, 340)}):Play()
+        -- 【核心修复】缩小的一瞬间，内容区变透明并剪裁
+        TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = min and UDim2.new(0, 500, 0, 50) or UDim2.new(0, 500, 0, 340)}):Play()
+        TweenService:Create(GlobalCanvas, TweenInfo.new(0.2), {GroupTransparency = min and 1 or 0}):Play()
     end)
 
-    -- 侧边栏 (解决贴边问题)
+    -- 侧边栏 (在 GlobalCanvas 内)
     local SideBar = Instance.new("Frame")
-    SideBar.Size = UDim2.new(0, 135, 1, -50); SideBar.Position = UDim2.new(0, 0, 0, 50); SideBar.BackgroundColor3 = Color3.fromRGB(22, 22, 22); SideBar.BorderSizePixel = 0; SideBar.Parent = MainFrame
+    SideBar.Size = UDim2.new(0, 135, 1, -50); SideBar.Position = UDim2.new(0, 0, 0, 50); SideBar.BackgroundColor3 = Color3.fromRGB(22, 22, 22); SideBar.BorderSizePixel = 0; SideBar.Parent = GlobalCanvas
     local SideStroke = Instance.new("UIStroke")
     SideStroke.Color = Colors.MainPink; SideStroke.Transparency = 0.8; SideStroke.Thickness = 1.2; SideStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border; SideStroke.Parent = SideBar
 
     local TabContainer = Instance.new("ScrollingFrame")
     TabContainer.Size = UDim2.new(1, 0, 1, -10); TabContainer.BackgroundTransparency = 1; TabContainer.ScrollBarThickness = 0; TabContainer.Parent = SideBar
-    local TabList = Instance.new("UIListLayout", TabContainer)
-    TabList.Padding = UDim.new(0, 10)
-    TabList.HorizontalAlignment = Enum.HorizontalAlignment.Right -- 靠右对齐，配合 Padding 产生间距
+    Instance.new("UIListLayout", TabContainer).Padding = UDim.new(0, 10)
     local TabPadding = Instance.new("UIPadding", TabContainer)
-    TabPadding.PaddingRight = UDim.new(0, 8) -- 【修复】让按钮往右挪
+    TabPadding.PaddingRight = UDim.new(0, 10); TabPadding.PaddingLeft = UDim.new(0, 10) -- 【修复】按钮不再贴边
 
     local ContentHolder = Instance.new("Frame")
-    ContentHolder.Size = UDim2.new(1, -155, 1, -65); ContentHolder.Position = UDim2.new(0, 145, 0, 55); ContentHolder.BackgroundTransparency = 1; ContentHolder.Parent = MainFrame
+    ContentHolder.Size = UDim2.new(1, -155, 1, -65); ContentHolder.Position = UDim2.new(0, 145, 0, 55); ContentHolder.BackgroundTransparency = 1; ContentHolder.Parent = GlobalCanvas
 
     local function AddElements(container, listLayout)
         local Elements = {}
@@ -135,7 +141,6 @@ function Library:CreateWindow(title)
             local open = false
             fBtn.MouseButton1Click:Connect(function()
                 open = not open
-                -- 【修复】文件夹展开使用最稳定的 Tween
                 TweenService:Create(fBase, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = open and UDim2.new(1, -10, 0, fList.AbsoluteContentSize.Y + 55) or UDim2.new(1, -10, 0, 42)}):Play()
                 task.wait(0.3); UpdateCanvas()
             end)
@@ -148,7 +153,7 @@ function Library:CreateWindow(title)
         local TabBtn = Instance.new("TextButton")
         TabBtn.Size = UDim2.new(0, 115, 0, 38); TabBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); TabBtn.Text = name; TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150); TabBtn.Font = Enum.Font.GothamMedium; TabBtn.TextSize = 13; TabBtn.Parent = TabContainer; Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 10)
         
-        local Container = Instance.new("CanvasGroup") -- 仅在 Tab 切换时使用
+        local Container = Instance.new("CanvasGroup")
         Container.Size = UDim2.new(1, 0, 1, 0); Container.BackgroundTransparency = 1; Container.Visible = false; Container.Parent = ContentHolder; Container.GroupTransparency = 1 
 
         local SContainer = Instance.new("ScrollingFrame")
@@ -161,16 +166,10 @@ function Library:CreateWindow(title)
         end
 
         TabBtn.MouseButton1Click:Connect(function()
-            -- 【核心修复】一秒切掉重影
             for _, v in pairs(ContentHolder:GetChildren()) do 
-                if v:IsA("CanvasGroup") and v ~= Container then 
-                    v.Visible = false -- 强行瞬间隐藏
-                    v.GroupTransparency = 1
-                end 
+                if v:IsA("CanvasGroup") and v ~= Container then v.Visible = false; v.GroupTransparency = 1 end 
             end
             for _, v in pairs(TabContainer:GetChildren()) do if v:IsA("TextButton") then v.TextColor3 = Color3.fromRGB(150, 150, 150) end end
-            
-            -- 新栏目极速淡入
             Container.Visible = true
             TweenService:Create(Container, TweenInfo.new(0.15), {GroupTransparency = 0}):Play()
             TabBtn.TextColor3 = Colors.MainPink
