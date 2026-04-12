@@ -35,7 +35,7 @@ function Library:CreateWindow(title, config)
     local WinSize = c.Size or Defaults.Size
 
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "SkyPink_Pinyin_Edition"
+    ScreenGui.Name = "SkyPink_Absolute_Working"
     ScreenGui.Parent = game.CoreGui
     ScreenGui.ResetOnSpawn = false
 
@@ -43,18 +43,21 @@ function Library:CreateWindow(title, config)
     MainFrame.Size = WinSize
     MainFrame.Position = UDim2.new(0.5, -WinSize.X.Offset/2, 0.5, -WinSize.Y.Offset/2)
     MainFrame.BackgroundColor3 = Colors.Bg
+    MainFrame.BorderSizePixel = 0
     MainFrame.ClipsDescendants = true
     MainFrame.Parent = ScreenGui
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 15)
 
-    local ContentGroup = Instance.new("CanvasGroup")
-    ContentGroup.Size = UDim2.new(1, 0, 1, -50)
-    ContentGroup.Position = UDim2.new(0, 0, 0, 50)
-    ContentGroup.BackgroundTransparency = 1
-    ContentGroup.Parent = MainFrame
+    -- 内容容器 (不再用 CanvasGroup 以免显示异常)
+    local Container = Instance.new("Frame")
+    Container.Name = "MainContent"
+    Container.Size = UDim2.new(1, 0, 1, -50)
+    Container.Position = UDim2.new(0, 0, 0, 50)
+    Container.BackgroundTransparency = 1
+    Container.Parent = MainFrame
 
     local TopBar = Instance.new("Frame")
-    TopBar.Size = UDim2.new(1, 0, 0, 50); TopBar.BackgroundTransparency = 1; TopBar.ZIndex = 100; TopBar.Parent = MainFrame
+    TopBar.Size = UDim2.new(1, 0, 0, 50); TopBar.BackgroundTransparency = 1; TopBar.Parent = MainFrame
     
     local TitleLabel = Instance.new("TextLabel")
     TitleLabel.Size = UDim2.new(1, -120, 1, 0); TitleLabel.Position = UDim2.new(0, 20, 0, 0); TitleLabel.BackgroundTransparency = 1
@@ -93,19 +96,13 @@ function Library:CreateWindow(title, config)
     local isMin = false
     CreateIcon(UDim2.new(1, -82, 0.5, -16), false, function()
         isMin = not isMin
-        if isMin then
-            TweenService:Create(ContentGroup, TweenInfo.new(0.15), {GroupTransparency = 1}):Play()
-            task.delay(0.15, function() if isMin then ContentGroup.Visible = false end end)
-        else
-            ContentGroup.Visible = true
-            TweenService:Create(ContentGroup, TweenInfo.new(0.2), {GroupTransparency = 0}):Play()
-        end
+        Container.Visible = not isMin
         TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = isMin and UDim2.new(0, WinSize.X.Offset, 0, 50) or WinSize}):Play()
     end)
 
     local SideBar = Instance.new("Frame")
-    SideBar.Size = UDim2.new(0, 135, 1, 0); SideBar.BackgroundColor3 = Color3.fromRGB(22, 22, 22); SideBar.Parent = ContentGroup
-    Instance.new("UIStroke", SideBar).Color = Colors.Main; SideBar.UIStroke.Transparency = 0.8
+    SideBar.Size = UDim2.new(0, 135, 1, 0); SideBar.BackgroundColor3 = Color3.fromRGB(22, 22, 22); SideBar.BorderSizePixel = 0; SideBar.Parent = Container
+    local Stroke = Instance.new("UIStroke", SideBar); Stroke.Color = Colors.Main; Stroke.Transparency = 0.8
 
     local TabContainer = Instance.new("ScrollingFrame")
     TabContainer.Size = UDim2.new(1, 0, 1, 0); TabContainer.BackgroundTransparency = 1; TabContainer.ScrollBarThickness = 0; TabContainer.Parent = SideBar
@@ -113,16 +110,22 @@ function Library:CreateWindow(title, config)
     Instance.new("UIPadding", TabContainer).PaddingTop = UDim.new(0, 15); Instance.new("UIPadding", TabContainer).PaddingLeft = UDim.new(0, 10)
 
     local ContentHolder = Instance.new("Frame")
-    ContentHolder.Size = UDim2.new(1, -155, 1, -15); ContentHolder.Position = UDim2.new(0, 145, 0, 5); ContentHolder.BackgroundTransparency = 1; ContentHolder.Parent = ContentGroup
+    ContentHolder.Size = UDim2.new(1, -155, 1, -15); ContentHolder.Position = UDim2.new(0, 145, 0, 5); ContentHolder.BackgroundTransparency = 1; ContentHolder.Parent = Container
 
     local WindowObj = {}
 
     local function CreateTab(self, name, color)
         local TabBtn = Instance.new("TextButton")
         TabBtn.Size = UDim2.new(0, 115, 0, 38); TabBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); TabBtn.Text = name; TabBtn.TextColor3 = color or Color3.fromRGB(150, 150, 150); TabBtn.Font = Enum.Font.GothamMedium; TabBtn.TextSize = 13; TabBtn.Parent = TabContainer; Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 10)
+        
         local Page = Instance.new("ScrollingFrame"); Page.Size = UDim2.new(1, 0, 1, 0); Page.BackgroundTransparency = 1; Page.Visible = false; Page.ScrollBarThickness = 0; Page.Parent = ContentHolder
         local Layout = Instance.new("UIListLayout", Page); Layout.Padding = UDim.new(0, 10); Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        if ScreenGui:FindFirstChild("First") == nil then Instance.new("BoolValue", ScreenGui).Name = "First"; Page.Visible = true; TabBtn.TextColor3 = color or Colors.Main end
+        
+        if Container:FindFirstChild("First") == nil then 
+            local f = Instance.new("BoolValue", Container); f.Name = "First"
+            Page.Visible = true; TabBtn.TextColor3 = color or Colors.Main 
+        end
+
         TabBtn.MouseButton1Click:Connect(function()
             for _, v in pairs(ContentHolder:GetChildren()) do if v:IsA("ScrollingFrame") then v.Visible = false end end
             for _, v in pairs(TabContainer:GetChildren()) do if v:IsA("TextButton") then v.TextColor3 = Color3.fromRGB(150, 150, 150) end end
@@ -137,36 +140,28 @@ function Library:CreateWindow(title, config)
             local b = Instance.new("TextButton"); b.Size = UDim2.new(1, -10, 0, 42); b.BackgroundColor3 = Colors.Btn; b.Text = "  " .. t; b.TextColor3 = clr or Colors.Text; b.TextXAlignment = Enum.TextXAlignment.Left; b.Font = Enum.Font.GothamMedium; b.TextSize = 14; b.Parent = Page
             Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10); ClickAnim(b); b.MouseButton1Click:Connect(cb); Update()
         end
-        TabObj.CreateButton = CreateButton
-        TabObj["[anniu]"] = CreateButton -- 拼音映射
+        TabObj["[anniu]"] = CreateButton
 
         local function CreateFolder(self, fn, fc)
             local fBase = Instance.new("Frame"); fBase.Size = UDim2.new(1, -10, 0, 42); fBase.BackgroundColor3 = Color3.fromRGB(32, 32, 32); fBase.ClipsDescendants = true; fBase.Parent = Page; Instance.new("UICorner", fBase).CornerRadius = UDim.new(0, 10)
             local fBtn = Instance.new("TextButton"); fBtn.Size = UDim2.new(1, 0, 0, 42); fBtn.BackgroundTransparency = 1; fBtn.Text = "  📁  " .. fn; fBtn.TextColor3 = fc or Colors.Main; fBtn.TextXAlignment = Enum.TextXAlignment.Left; fBtn.Font = Enum.Font.GothamBold; fBtn.TextSize = 14; fBtn.Parent = fBase
             local fContent = Instance.new("Frame"); fContent.Size = UDim2.new(1, 0, 0, 0); fContent.Position = UDim2.new(0, 0, 0, 42); fContent.BackgroundTransparency = 1; fContent.Parent = fBase
             local fList = Instance.new("UIListLayout", fContent); fList.Padding = UDim.new(0, 8); fList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-            local open = false
             fBtn.MouseButton1Click:Connect(function()
-                open = not open
+                local open = fBase.Size.Y.Offset == 42
                 TweenService:Create(fBase, TweenInfo.new(0.3), {Size = open and UDim2.new(1, -10, 0, fList.AbsoluteContentSize.Y + 50) or UDim2.new(1, -10, 0, 42)}):Play()
                 task.spawn(function() local s = tick(); while tick()-s<0.4 do Update(); task.wait() end end)
             end)
             local FolderObj = {}
-            function FolderObj:CreateButton(t, c, cb) CreateButton(nil, t, c, cb) end
-            FolderObj["[anniu]"] = FolderObj.CreateButton
+            FolderObj["[anniu]"] = function(self, t, c, cb) CreateButton(nil, t, c, cb) end
             return FolderObj
         end
-        TabObj.CreateFolder = CreateFolder
-        TabObj["[wenjianjia]"] = CreateFolder -- 拼音映射
+        TabObj["[wenjianjia]"] = CreateFolder
         return TabObj
     end
-    WindowObj.CreateTab = CreateTab
-    WindowObj["[lanmu]"] = CreateTab -- 拼音映射
+    WindowObj["[lanmu]"] = CreateTab
     return WindowObj
 end
 
--- 顶级库映射
 Library["[chuangkou]"] = Library.CreateWindow
-Library.CreateWindow = Library.CreateWindow
-
 return Library
