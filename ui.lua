@@ -9,6 +9,7 @@ local Colors = {
     ElementBg = Color3.fromRGB(25, 25, 25)
 }
 
+-- 极速点击动画
 local function ClickAnim(obj)
     obj.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -24,7 +25,7 @@ end
 
 function Library:CreateWindow(title)
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "SkyPink_Perfect"
+    ScreenGui.Name = "SkyPink_FinalFix"
     ScreenGui.Parent = game.CoreGui
     ScreenGui.ResetOnSpawn = false
 
@@ -32,31 +33,28 @@ function Library:CreateWindow(title)
     MainFrame.Size = UDim2.new(0, 500, 0, 340)
     MainFrame.Position = UDim2.new(0.5, -250, 0.5, -170)
     MainFrame.BackgroundColor3 = Colors.DarkBg
+    MainFrame.BorderSizePixel = 0
     MainFrame.ClipsDescendants = true 
-    MainFrame.ZIndex = 1
     MainFrame.Parent = ScreenGui
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 15)
 
-    -- 全局内容容器
-    local GlobalContent = Instance.new("CanvasGroup")
-    GlobalContent.Size = UDim2.new(1, 0, 1, -50)
-    GlobalContent.Position = UDim2.new(0, 0, 0, 50)
-    GlobalContent.BackgroundTransparency = 1
-    GlobalContent.ZIndex = 2
-    GlobalContent.Parent = MainFrame
+    -- 全局透明度控制容器
+    local GlobalGroup = Instance.new("CanvasGroup")
+    GlobalGroup.Size = UDim2.new(1, 0, 1, 0)
+    GlobalGroup.BackgroundTransparency = 1
+    GlobalGroup.Parent = MainFrame
 
-    -- 顶部栏 (ZIndex 最高，确保盖住一切)
+    -- 顶部栏 (独立出来，确保关闭按钮永远可见)
     local TopBar = Instance.new("Frame")
     TopBar.Size = UDim2.new(1, 0, 0, 50)
-    TopBar.BackgroundColor3 = Colors.DarkBg
-    TopBar.ZIndex = 10 
+    TopBar.BackgroundTransparency = 1
+    TopBar.ZIndex = 100
     TopBar.Parent = MainFrame
-    Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 15)
 
     local TitleLabel = Instance.new("TextLabel")
-    TitleLabel.Size = UDim2.new(1, -120, 1, 0); TitleLabel.Position = UDim2.new(0, 20, 0, 0); TitleLabel.BackgroundTransparency = 1; TitleLabel.Text = title; TitleLabel.TextColor3 = Colors.MainPink; TitleLabel.Font = Enum.Font.GothamBold; TitleLabel.TextSize = 16; TitleLabel.TextXAlignment = Enum.TextXAlignment.Left; TitleLabel.ZIndex = 11; TitleLabel.Parent = TopBar
+    TitleLabel.Size = UDim2.new(1, -120, 1, 0); TitleLabel.Position = UDim2.new(0, 20, 0, 0); TitleLabel.BackgroundTransparency = 1; TitleLabel.Text = title; TitleLabel.TextColor3 = Colors.MainPink; TitleLabel.Font = Enum.Font.GothamBold; TitleLabel.TextSize = 16; TitleLabel.TextXAlignment = Enum.TextXAlignment.Left; TitleLabel.Parent = TopBar
 
-    -- 拖拽
+    -- 拖拽逻辑 (绑定在 TopBar)
     local dragging, dragStart, startPos
     TopBar.InputBegan:Connect(function(input)
         if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
@@ -73,54 +71,54 @@ function Library:CreateWindow(title)
 
     local function CreateFancyBtn(pos, isClose, func)
         local b = Instance.new("TextButton")
-        b.Size = UDim2.new(0, 32, 0, 32); b.Position = pos; b.BackgroundColor3 = Color3.fromRGB(30, 30, 30); b.Text = ""; b.ZIndex = 12; b.Parent = TopBar
+        b.Size = UDim2.new(0, 32, 0, 32); b.Position = pos; b.BackgroundColor3 = Color3.fromRGB(30, 30, 30); b.Text = ""; b.Parent = TopBar
         Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
         local icon = Instance.new("Frame"); icon.Size = UDim2.new(0, 16, 0, 2); icon.Position = UDim2.new(0.5, 0, 0.5, 0); icon.AnchorPoint = Vector2.new(0.5, 0.5); icon.BorderSizePixel = 0; icon.Parent = b
-        if isClose then icon.BackgroundColor3 = Color3.fromRGB(255,100,100); icon.Rotation = 45; local i2 = icon:Clone(); i2.Rotation = -45; i2.Parent = b else icon.BackgroundColor3 = Colors.MainPink end
+        if isClose then 
+            icon.BackgroundColor3 = Color3.fromRGB(255,100,100); icon.Rotation = 45; 
+            local i2 = icon:Clone(); i2.Rotation = -45; i2.Parent = b 
+        else 
+            icon.BackgroundColor3 = Colors.MainPink 
+        end
         ClickAnim(b); b.MouseButton1Click:Connect(func)
     end
 
+    -- 修复：关闭和缩小按钮重新上线！
     CreateFancyBtn(UDim2.new(1, -42, 0.5, -16), true, function() ScreenGui:Destroy() end)
     
     local min = false
     CreateFancyBtn(UDim2.new(1, -82, 0.5, -16), false, function()
         min = not min
-        -- 核心逻辑：缩小就彻底关掉下方内容的可见性
-        if min then
-            TweenService:Create(GlobalContent, TweenInfo.new(0.15), {GroupTransparency = 1}):Play()
-            task.delay(0.15, function() if min then GlobalContent.Visible = false end end)
-        else
-            GlobalContent.Visible = true
-            TweenService:Create(GlobalContent, TweenInfo.new(0.2), {GroupTransparency = 0}):Play()
-        end
         TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = min and UDim2.new(0, 500, 0, 50) or UDim2.new(0, 500, 0, 340)}):Play()
+        TweenService:Create(GlobalGroup, TweenInfo.new(0.2), {GroupTransparency = min and 1 or 0}):Play()
     end)
 
     -- 侧边栏 (向下挪动优化)
     local SideBar = Instance.new("Frame")
-    SideBar.Size = UDim2.new(0, 135, 1, 0); SideBar.BackgroundColor3 = Color3.fromRGB(22, 22, 22); SideBar.BorderSizePixel = 0; SideBar.Parent = GlobalContent
+    SideBar.Size = UDim2.new(0, 135, 1, -50); SideBar.Position = UDim2.new(0, 0, 0, 50); SideBar.BackgroundColor3 = Color3.fromRGB(22, 22, 22); SideBar.BorderSizePixel = 0; SideBar.Parent = GlobalGroup
     Instance.new("UIStroke", SideBar).Color = Colors.MainPink; SideBar.UIStroke.Transparency = 0.8
 
     local TabContainer = Instance.new("ScrollingFrame")
     TabContainer.Size = UDim2.new(1, 0, 1, 0); TabContainer.BackgroundTransparency = 1; TabContainer.ScrollBarThickness = 0; TabContainer.Parent = SideBar
     Instance.new("UIListLayout", TabContainer).Padding = UDim.new(0, 10)
-    
-    -- 【修复】让侧边按钮往下挪一点点，不要太靠上
     local SidePadding = Instance.new("UIPadding", TabContainer)
-    SidePadding.PaddingTop = UDim.new(0, 15) 
-    SidePadding.PaddingLeft = UDim.new(0, 10)
-    SidePadding.PaddingRight = UDim.new(0, 10)
+    SidePadding.PaddingTop = UDim.new(0, 15); SidePadding.PaddingLeft = UDim.new(0, 10); SidePadding.PaddingRight = UDim.new(0, 10)
 
     local ContentHolder = Instance.new("Frame")
-    ContentHolder.Size = UDim2.new(1, -155, 1, -15); ContentHolder.Position = UDim2.new(0, 145, 0, 5); ContentHolder.BackgroundTransparency = 1; ContentHolder.Parent = GlobalContent
+    ContentHolder.Size = UDim2.new(1, -155, 1, -65); ContentHolder.Position = UDim2.new(0, 145, 0, 55); ContentHolder.BackgroundTransparency = 1; ContentHolder.Parent = GlobalGroup
 
     local function AddElements(container, listLayout)
         local Elements = {}
-        local function UpdateCanvas() if container:IsA("ScrollingFrame") then container.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10) end end
+        local function UpdateCanvas() 
+            if container:IsA("ScrollingFrame") then 
+                container.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 20) 
+            end 
+        end
         listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateCanvas)
 
         function Elements:CreateButton(text, callback)
             local b = Instance.new("TextButton"); b.Size = UDim2.new(1, -10, 0, 42); b.BackgroundColor3 = Colors.ElementBg; b.Text = "  " .. text; b.TextColor3 = Colors.LightPink; b.TextXAlignment = Enum.TextXAlignment.Left; b.Font = Enum.Font.GothamMedium; b.TextSize = 14; b.Parent = container; Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10); ClickAnim(b); b.MouseButton1Click:Connect(callback)
+            UpdateCanvas()
         end
 
         function Elements:CreateToggle(text, callback)
@@ -130,15 +128,24 @@ function Library:CreateWindow(title)
             local dot = Instance.new("Frame"); dot.Size = UDim2.new(0, 18, 0, 18); dot.Position = UDim2.new(0, 2, 0.5, -9); dot.BackgroundColor3 = Color3.fromRGB(150,150,150); dot.Parent = btn; Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
             local s = false
             btn.MouseButton1Click:Connect(function() s = not s; TweenService:Create(dot, TweenInfo.new(0.2, Enum.EasingStyle.Back), {Position = s and UDim2.new(0, 22, 0.5, -9) or UDim2.new(0, 2, 0.5, -9), BackgroundColor3 = s and Colors.MainPink or Color3.fromRGB(150,150,150)}):Play(); callback(s) end)
+            UpdateCanvas()
         end
 
         function Elements:CreateFolder(name)
-            local fBase = Instance.new("Frame"); fBase.Size = UDim2.new(1, -10, 0, 42); fBase.BackgroundColor3 = Color3.fromRGB(32, 32, 32); fBase.ClipsDescendants = true; fBase.Parent = container; Instance.new("UICorner", fBase).CornerRadius = UDim.new(0, 10)
+            local fBase = Instance.new("Frame"); fBase.Size = UDim2.new(1, -10, 0, 42); fBase.BackgroundColor3 = Color3.fromRGB(30, 30, 30); fBase.ClipsDescendants = true; fBase.Parent = container; Instance.new("UICorner", fBase).CornerRadius = UDim.new(0, 10)
             local fBtn = Instance.new("TextButton"); fBtn.Size = UDim2.new(1, 0, 0, 42); fBtn.BackgroundTransparency = 1; fBtn.Text = "  📁  " .. name; fBtn.TextColor3 = Colors.MainPink; fBtn.TextXAlignment = Enum.TextXAlignment.Left; fBtn.Font = Enum.Font.GothamBold; fBtn.TextSize = 14; fBtn.Parent = fBase
             local fContent = Instance.new("Frame"); fContent.Size = UDim2.new(1, 0, 0, 0); fContent.Position = UDim2.new(0, 0, 0, 42); fContent.BackgroundTransparency = 1; fContent.Parent = fBase
             local fList = Instance.new("UIListLayout", fContent); fList.Padding = UDim.new(0, 8); fList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            
             local open = false
-            fBtn.MouseButton1Click:Connect(function() open = not open; TweenService:Create(fBase, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = open and UDim2.new(1, -10, 0, fList.AbsoluteContentSize.Y + 55) or UDim2.new(1, -10, 0, 42)}):Play(); task.wait(0.3); UpdateCanvas() end)
+            fBtn.MouseButton1Click:Connect(function()
+                open = not open
+                -- 修复：动态计算内容高度，确保文件夹能完全打开
+                local targetSize = open and UDim2.new(1, -10, 0, fList.AbsoluteContentSize.Y + 50) or UDim2.new(1, -10, 0, 42)
+                TweenService:Create(fBase, TweenInfo.new(0.35, Enum.EasingStyle.Quart), {Size = targetSize}):Play()
+                task.wait(0.1) -- 稍微等待让容器尺寸更新
+                UpdateCanvas()
+            end)
             return AddElements(fContent, fList)
         end
         return Elements
@@ -148,18 +155,21 @@ function Library:CreateWindow(title)
         local TabBtn = Instance.new("TextButton")
         TabBtn.Size = UDim2.new(0, 115, 0, 38); TabBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); TabBtn.Text = name; TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150); TabBtn.Font = Enum.Font.GothamMedium; TabBtn.TextSize = 13; TabBtn.Parent = TabContainer; Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 10)
         
-        local Container = Instance.new("CanvasGroup"); Container.Size = UDim2.new(1, 0, 1, 0); Container.BackgroundTransparency = 1; Container.Visible = false; Container.Parent = ContentHolder; Container.GroupTransparency = 1 
-        local SContainer = Instance.new("ScrollingFrame"); SContainer.Size = UDim2.new(1, 0, 1, 0); SContainer.BackgroundTransparency = 1; SContainer.ScrollBarThickness = 3; SContainer.ScrollBarImageColor3 = Colors.MainPink; SContainer.Parent = Container
-        local UIList = Instance.new("UIListLayout", SContainer); UIList.Padding = UDim.new(0, 10); UIList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        local Container = Instance.new("ScrollingFrame") -- 修复：直接用滚动层，减少嵌套
+        Container.Size = UDim2.new(1, 0, 1, 0); Container.BackgroundTransparency = 1; Container.Visible = false; Container.ScrollBarThickness = 3; Container.ScrollBarImageColor3 = Colors.MainPink; Container.Parent = ContentHolder
+        local UIList = Instance.new("UIListLayout", Container); UIList.Padding = UDim.new(0, 10); UIList.HorizontalAlignment = Enum.HorizontalAlignment.Center
         
-        if ScreenGui:FindFirstChild("First") == nil then local f = Instance.new("BoolValue", ScreenGui); f.Name = "First"; Container.Visible = true; Container.GroupTransparency = 0; TabBtn.TextColor3 = Colors.MainPink end
+        if ScreenGui:FindFirstChild("First") == nil then 
+            local f = Instance.new("BoolValue", ScreenGui); f.Name = "First"
+            Container.Visible = true; TabBtn.TextColor3 = Colors.MainPink
+        end
 
         TabBtn.MouseButton1Click:Connect(function()
-            for _, v in pairs(ContentHolder:GetChildren()) do if v:IsA("CanvasGroup") and v ~= Container then v.Visible = false; v.GroupTransparency = 1 end end
+            for _, v in pairs(ContentHolder:GetChildren()) do if v:IsA("ScrollingFrame") then v.Visible = false end end
             for _, v in pairs(TabContainer:GetChildren()) do if v:IsA("TextButton") then v.TextColor3 = Color3.fromRGB(150, 150, 150) end end
-            Container.Visible = true; TweenService:Create(Container, TweenInfo.new(0.15), {GroupTransparency = 0}):Play(); TabBtn.TextColor3 = Colors.MainPink
+            Container.Visible = true; TabBtn.TextColor3 = Colors.MainPink
         end)
-        return AddElements(SContainer, UIList)
+        return AddElements(Container, UIList)
     end
     return Library
 end
