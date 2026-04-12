@@ -36,7 +36,7 @@ function Library:CreateWindow(title, config)
     }
 
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "SkyPink_Global_V4"
+    ScreenGui.Name = "SkyPink_Final_Fixed"
     ScreenGui.Parent = game.CoreGui
     ScreenGui.ResetOnSpawn = false
 
@@ -54,7 +54,7 @@ function Library:CreateWindow(title, config)
     local TitleLabel = Instance.new("TextLabel")
     TitleLabel.Size = UDim2.new(1, -120, 1, 0); TitleLabel.Position = UDim2.new(0, 20, 0, 0); TitleLabel.BackgroundTransparency = 1; TitleLabel.Text = title; TitleLabel.TextColor3 = Colors.Main; TitleLabel.Font = Enum.Font.GothamBold; TitleLabel.TextSize = 16; TitleLabel.TextXAlignment = Enum.TextXAlignment.Left; TitleLabel.Parent = TopBar
 
-    -- 拖拽逻辑
+    -- 拖拽
     local dragging, dragStart, startPos
     TopBar.InputBegan:Connect(function(input)
         if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
@@ -79,7 +79,6 @@ function Library:CreateWindow(title, config)
     end
 
     CreateFancyBtn(UDim2.new(1, -42, 0.5, -16), true, function() ScreenGui:Destroy() end)
-    
     local isMin = false
     CreateFancyBtn(UDim2.new(1, -82, 0.5, -16), false, function()
         isMin = not isMin
@@ -105,62 +104,70 @@ function Library:CreateWindow(title, config)
     local ContentHolder = Instance.new("Frame")
     ContentHolder.Size = UDim2.new(1, -155, 1, -15); ContentHolder.Position = UDim2.new(0, 145, 0, 5); ContentHolder.BackgroundTransparency = 1; ContentHolder.Parent = GlobalGroup
 
-    local function AddElements(container, listLayout)
-        local Elements = {}
-        local function UpdateCanvas() 
-            if container:IsA("ScrollingFrame") then container.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 20) end
-        end
-        listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateCanvas)
+    -- 栏目对象 (封装接口)
+    local WindowMethods = {}
 
-        local function CreateButton(self, text, color, callback)
-            local b = Instance.new("TextButton"); b.Size = UDim2.new(1, -10, 0, 42); b.BackgroundColor3 = Colors.Element
-            b.Text = "  " .. text; b.TextColor3 = color or Colors.Text; b.TextXAlignment = Enum.TextXAlignment.Left; b.Font = Enum.Font.GothamMedium; b.TextSize = 14; b.Parent = container
-            Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10); ClickAnim(b); b.MouseButton1Click:Connect(callback)
-            UpdateCanvas()
-        end
-        Elements.CreateButton = CreateButton
-        Elements.创建按钮 = CreateButton
-
-        local function CreateFolder(self, name, color)
-            local fBase = Instance.new("Frame"); fBase.Size = UDim2.new(1, -10, 0, 42); fBase.BackgroundColor3 = Color3.fromRGB(30,30,30); fBase.ClipsDescendants = true; fBase.Parent = container; Instance.new("UICorner", fBase).CornerRadius = UDim.new(0, 10)
-            local fBtn = Instance.new("TextButton"); fBtn.Size = UDim2.new(1, 0, 0, 42); fBtn.BackgroundTransparency = 1
-            fBtn.Text = "  📁  " .. name; fBtn.TextColor3 = color or Colors.Main; fBtn.TextXAlignment = Enum.TextXAlignment.Left; fBtn.Font = Enum.Font.GothamBold; fBtn.TextSize = 14; fBtn.Parent = fBase
-            local fContent = Instance.new("Frame"); fContent.Size = UDim2.new(1, 0, 0, 0); fContent.Position = UDim2.new(0, 0, 0, 42); fContent.BackgroundTransparency = 1; fContent.Parent = fBase
-            local fList = Instance.new("UIListLayout", fContent); fList.Padding = UDim.new(0, 8); fList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-            local open = false
-            fBtn.MouseButton1Click:Connect(function()
-                open = not open
-                local targetHeight = open and (fList.AbsoluteContentSize.Y + 50) or 42
-                TweenService:Create(fBase, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = UDim2.new(1, -10, 0, targetHeight)}):Play()
-                task.spawn(function() local s = tick(); while tick()-s<0.4 do UpdateCanvas(); task.wait() end end)
-            end)
-            return AddElements(fContent, fList)
-        end
-        Elements.CreateFolder = CreateFolder
-        Elements.创建文件夹 = CreateFolder
-
-        return Elements
-    end
-
-    local function CreateTab(self, name, color)
+    function WindowMethods:CreateTab(name, color)
         local TabBtn = Instance.new("TextButton")
         TabBtn.Size = UDim2.new(0, 115, 0, 38); TabBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); TabBtn.Text = name; TabBtn.TextColor3 = color or Color3.fromRGB(150, 150, 150); TabBtn.Font = Enum.Font.GothamMedium; TabBtn.TextSize = 13; TabBtn.Parent = TabContainer; Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 10)
         local Page = Instance.new("ScrollingFrame"); Page.Size = UDim2.new(1, 0, 1, 0); Page.BackgroundTransparency = 1; Page.Visible = false; Page.ScrollBarThickness = 0; Page.Parent = ContentHolder
         local Layout = Instance.new("UIListLayout", Page); Layout.Padding = UDim.new(0, 10); Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        
         if ScreenGui:FindFirstChild("First") == nil then 
             Instance.new("BoolValue", ScreenGui).Name = "First"
             Page.Visible = true; TabBtn.TextColor3 = color or Colors.Main 
         end
+
         TabBtn.MouseButton1Click:Connect(function()
             for _, v in pairs(ContentHolder:GetChildren()) do if v:IsA("ScrollingFrame") then v.Visible = false end end
             for _, v in pairs(TabContainer:GetChildren()) do if v:IsA("TextButton") then v.TextColor3 = Color3.fromRGB(150, 150, 150) end end
             Page.Visible = true; TabBtn.TextColor3 = color or Colors.Main
         end)
-        return AddElements(Page, Layout)
+
+        local TabMethods = {}
+
+        local function UpdateCanvas() 
+            Page.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 20) 
+        end
+        Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateCanvas)
+
+        function TabMethods:CreateButton(text, btnColor, callback)
+            local b = Instance.new("TextButton"); b.Size = UDim2.new(1, -10, 0, 42); b.BackgroundColor3 = Colors.Element
+            b.Text = "  " .. text; b.TextColor3 = btnColor or Colors.Text; b.TextXAlignment = Enum.TextXAlignment.Left; b.Font = Enum.Font.GothamMedium; b.TextSize = 14; b.Parent = Page
+            Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10); ClickAnim(b); b.MouseButton1Click:Connect(callback)
+            UpdateCanvas()
+        end
+        TabMethods.创建按钮 = TabMethods.CreateButton
+
+        function TabMethods:CreateFolder(folderName, folderColor)
+            local fBase = Instance.new("Frame"); fBase.Size = UDim2.new(1, -10, 0, 42); fBase.BackgroundColor3 = Color3.fromRGB(32, 32, 32); fBase.ClipsDescendants = true; fBase.Parent = Page; Instance.new("UICorner", fBase).CornerRadius = UDim.new(0, 10)
+            local fBtn = Instance.new("TextButton"); fBtn.Size = UDim2.new(1, 0, 0, 42); fBtn.BackgroundTransparency = 1
+            fBtn.Text = "  📁  " .. folderName; fBtn.TextColor3 = folderColor or Colors.Main; fBtn.TextXAlignment = Enum.TextXAlignment.Left; fBtn.Font = Enum.Font.GothamBold; fBtn.TextSize = 14; fBtn.Parent = fBase
+            local fContent = Instance.new("Frame"); fContent.Size = UDim2.new(1, 0, 0, 0); fContent.Position = UDim2.new(0, 0, 0, 42); fContent.BackgroundTransparency = 1; fContent.Parent = fBase
+            local fList = Instance.new("UIListLayout", fContent); fList.Padding = UDim.new(0, 8); fList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            
+            local open = false
+            fBtn.MouseButton1Click:Connect(function()
+                open = not open
+                local targetHeight = open and (fList.AbsoluteContentSize.Y + 50) or 42
+                TweenService:Create(fBase, TweenInfo.new(0.3), {Size = UDim2.new(1, -10, 0, targetHeight)}):Play()
+                task.spawn(function() local s = tick(); while tick()-s<0.4 do UpdateCanvas(); task.wait() end end)
+            end)
+
+            local FolderMethods = {}
+            function FolderMethods:CreateButton(t, c, cb)
+                local b = Instance.new("TextButton"); b.Size = UDim2.new(1, -10, 0, 42); b.BackgroundColor3 = Colors.Element; b.Text = "  " .. t; b.TextColor3 = c or Colors.Text; b.Parent = fContent
+                Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10); ClickAnim(b); b.MouseButton1Click:Connect(cb)
+            end
+            FolderMethods.创建按钮 = FolderMethods.CreateButton
+            return FolderMethods
+        end
+        TabMethods.创建文件夹 = TabMethods.CreateFolder
+
+        return TabMethods
     end
-    
-    local TabMethods = { CreateTab = CreateTab, 创建栏目 = CreateTab }
-    return setmetatable(TabMethods, {__index = function(_, k) return TabMethods[k] end})
+    WindowMethods.创建栏目 = WindowMethods.CreateTab
+    return WindowMethods
 end
 
 Library.创建窗口 = Library.CreateWindow
