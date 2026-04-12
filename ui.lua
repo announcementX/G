@@ -24,10 +24,8 @@ local function ClickAnim(obj)
     end)
 end
 
--- [[ 核心：创建窗口 ]]
 function Library:CreateWindow(title, config)
     local cfg = config or {}
-    -- 同时支持中英文参数名
     local Colors = {
         Main = cfg.标题颜色 or cfg.MainPink or DefaultColors.MainPink,
         Text = cfg.文字颜色 or cfg.LightPink or DefaultColors.LightPink,
@@ -38,8 +36,9 @@ function Library:CreateWindow(title, config)
     }
 
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "SkyPink_Final_Global"
+    ScreenGui.Name = "SkyPink_Global_V4"
     ScreenGui.Parent = game.CoreGui
+    ScreenGui.ResetOnSpawn = false
 
     local MainFrame = Instance.new("Frame")
     MainFrame.Size = UDim2.new(0, 500, 0, 340); MainFrame.Position = UDim2.new(0.5, -250, 0.5, -170)
@@ -53,11 +52,9 @@ function Library:CreateWindow(title, config)
     TopBar.Size = UDim2.new(1, 0, 0, 50); TopBar.BackgroundTransparency = 1; TopBar.ZIndex = 100; TopBar.Parent = MainFrame
     
     local TitleLabel = Instance.new("TextLabel")
-    TitleLabel.Size = UDim2.new(1, -120, 1, 0); TitleLabel.Position = UDim2.new(0, 20, 0, 0); TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Text = title; TitleLabel.TextColor3 = Colors.Main; TitleLabel.Font = Enum.Font.GothamBold; TitleLabel.TextSize = 16
-    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left; TitleLabel.Parent = TopBar
+    TitleLabel.Size = UDim2.new(1, -120, 1, 0); TitleLabel.Position = UDim2.new(0, 20, 0, 0); TitleLabel.BackgroundTransparency = 1; TitleLabel.Text = title; TitleLabel.TextColor3 = Colors.Main; TitleLabel.Font = Enum.Font.GothamBold; TitleLabel.TextSize = 16; TitleLabel.TextXAlignment = Enum.TextXAlignment.Left; TitleLabel.Parent = TopBar
 
-    -- 拖拽
+    -- 拖拽逻辑
     local dragging, dragStart, startPos
     TopBar.InputBegan:Connect(function(input)
         if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
@@ -82,6 +79,7 @@ function Library:CreateWindow(title, config)
     end
 
     CreateFancyBtn(UDim2.new(1, -42, 0.5, -16), true, function() ScreenGui:Destroy() end)
+    
     local isMin = false
     CreateFancyBtn(UDim2.new(1, -82, 0.5, -16), false, function()
         isMin = not isMin
@@ -102,7 +100,7 @@ function Library:CreateWindow(title, config)
     local TabContainer = Instance.new("ScrollingFrame")
     TabContainer.Size = UDim2.new(1, 0, 1, 0); TabContainer.BackgroundTransparency = 1; TabContainer.ScrollBarThickness = 0; TabContainer.Parent = SideBar
     Instance.new("UIListLayout", TabContainer).Padding = UDim.new(0, 10)
-    Instance.new("UIPadding", TabContainer).PaddingTop = UDim.new(0, 15)
+    Instance.new("UIPadding", TabContainer).PaddingTop = UDim.new(0, 15); Instance.new("UIPadding", TabContainer).PaddingLeft = UDim.new(0, 10)
 
     local ContentHolder = Instance.new("Frame")
     ContentHolder.Size = UDim2.new(1, -155, 1, -15); ContentHolder.Position = UDim2.new(0, 145, 0, 5); ContentHolder.BackgroundTransparency = 1; ContentHolder.Parent = GlobalGroup
@@ -114,23 +112,19 @@ function Library:CreateWindow(title, config)
         end
         listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateCanvas)
 
-        -- [[ 功能：创建按钮 ]]
         local function CreateButton(self, text, color, callback)
             local b = Instance.new("TextButton"); b.Size = UDim2.new(1, -10, 0, 42); b.BackgroundColor3 = Colors.Element
-            b.Text = "  " .. text; b.TextColor3 = color or Colors.Text
-            b.TextXAlignment = Enum.TextXAlignment.Left; b.Font = Enum.Font.GothamMedium; b.TextSize = 14; b.Parent = container
+            b.Text = "  " .. text; b.TextColor3 = color or Colors.Text; b.TextXAlignment = Enum.TextXAlignment.Left; b.Font = Enum.Font.GothamMedium; b.TextSize = 14; b.Parent = container
             Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10); ClickAnim(b); b.MouseButton1Click:Connect(callback)
             UpdateCanvas()
         end
         Elements.CreateButton = CreateButton
-        Elements.创建按钮 = CreateButton -- 中文映射
+        Elements.创建按钮 = CreateButton
 
-        -- [[ 功能：创建文件夹 ]]
         local function CreateFolder(self, name, color)
             local fBase = Instance.new("Frame"); fBase.Size = UDim2.new(1, -10, 0, 42); fBase.BackgroundColor3 = Color3.fromRGB(30,30,30); fBase.ClipsDescendants = true; fBase.Parent = container; Instance.new("UICorner", fBase).CornerRadius = UDim.new(0, 10)
             local fBtn = Instance.new("TextButton"); fBtn.Size = UDim2.new(1, 0, 0, 42); fBtn.BackgroundTransparency = 1
-            fBtn.Text = "  📁  " .. name; fBtn.TextColor3 = color or Colors.Main
-            fBtn.TextXAlignment = Enum.TextXAlignment.Left; fBtn.Font = Enum.Font.GothamBold; fBtn.TextSize = 14; fBtn.Parent = fBase
+            fBtn.Text = "  📁  " .. name; fBtn.TextColor3 = color or Colors.Main; fBtn.TextXAlignment = Enum.TextXAlignment.Left; fBtn.Font = Enum.Font.GothamBold; fBtn.TextSize = 14; fBtn.Parent = fBase
             local fContent = Instance.new("Frame"); fContent.Size = UDim2.new(1, 0, 0, 0); fContent.Position = UDim2.new(0, 0, 0, 42); fContent.BackgroundTransparency = 1; fContent.Parent = fBase
             local fList = Instance.new("UIListLayout", fContent); fList.Padding = UDim.new(0, 8); fList.HorizontalAlignment = Enum.HorizontalAlignment.Center
             local open = false
@@ -143,18 +137,14 @@ function Library:CreateWindow(title, config)
             return AddElements(fContent, fList)
         end
         Elements.CreateFolder = CreateFolder
-        Elements.创建文件夹 = CreateFolder -- 中文映射
+        Elements.创建文件夹 = CreateFolder
 
         return Elements
     end
 
-    -- [[ 功能：创建标签页 ]]
     local function CreateTab(self, name, color)
         local TabBtn = Instance.new("TextButton")
-        TabBtn.Size = UDim2.new(0, 115, 0, 38); TabBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-        TabBtn.Text = name; TabBtn.TextColor3 = color or Color3.fromRGB(150, 150, 150)
-        TabBtn.Font = Enum.Font.GothamMedium; TabBtn.TextSize = 13; TabBtn.Parent = TabContainer; Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 10)
-        
+        TabBtn.Size = UDim2.new(0, 115, 0, 38); TabBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); TabBtn.Text = name; TabBtn.TextColor3 = color or Color3.fromRGB(150, 150, 150); TabBtn.Font = Enum.Font.GothamMedium; TabBtn.TextSize = 13; TabBtn.Parent = TabContainer; Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 10)
         local Page = Instance.new("ScrollingFrame"); Page.Size = UDim2.new(1, 0, 1, 0); Page.BackgroundTransparency = 1; Page.Visible = false; Page.ScrollBarThickness = 0; Page.Parent = ContentHolder
         local Layout = Instance.new("UIListLayout", Page); Layout.Padding = UDim.new(0, 10); Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
         if ScreenGui:FindFirstChild("First") == nil then 
@@ -168,13 +158,10 @@ function Library:CreateWindow(title, config)
         end)
         return AddElements(Page, Layout)
     end
-    Library.CreateTab = CreateTab
-    Library.创建栏目 = CreateTab -- 中文映射
-
-    return Library
+    
+    local TabMethods = { CreateTab = CreateTab, 创建栏目 = CreateTab }
+    return setmetatable(TabMethods, {__index = function(_, k) return TabMethods[k] end})
 end
 
--- 别忘了库本身的中文名
 Library.创建窗口 = Library.CreateWindow
-
 return Library
